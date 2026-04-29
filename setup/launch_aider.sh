@@ -1,0 +1,74 @@
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# launch_aider.sh -- Run aider configured for the SC26 tutorial vLLM server
+#
+# Aider is a CLI coding agent that edits your local files based on natural-
+# language instructions. This wrapper points it at the locally-served
+# Qwen3-Coder model from Module 7's vLLM backend, so no API keys or external
+# accounts are needed.
+#
+# Usage:
+#     cd <project directory you want aider to work on>
+#     bash <repo>/setup/launch_aider.sh [aider args...]
+#
+# Examples:
+#     bash setup/launch_aider.sh                     # default chat mode
+#     bash setup/launch_aider.sh pi_serial.c         # open a file
+#     bash setup/launch_aider.sh --message "Add OpenMP to pi_serial.c"
+#
+# Once inside aider, you can type instructions in plain English. Aider will
+# edit files in your current directory and commit changes (if it's a git repo).
+# Type /help inside aider to see commands, /exit to quit.
+# ---------------------------------------------------------------------------
+
+set -euo pipefail
+
+# --- Pre-flight checks ------------------------------------------------------
+if [[ -z "${WORK:-}" ]]; then
+    echo "ERROR: The WORK environment variable is not set." >&2
+    echo "       Please ask an instructor for help." >&2
+    exit 1
+fi
+
+URL_FILE="$WORK/sc26_agent_server_url"
+if [[ ! -f "$URL_FILE" ]]; then
+    echo "ERROR: vLLM server URL file not found at $URL_FILE" >&2
+    echo "       The agent backend isn't running. Ask an instructor for help." >&2
+    exit 1
+fi
+
+VENV_DIR="$WORK/sc26_venv"
+if [[ ! -d "$VENV_DIR" ]]; then
+    echo "ERROR: Python venv not found at $VENV_DIR" >&2
+    echo "       Set it up first: sbatch setup/setup_venv.sh" >&2
+    exit 1
+fi
+
+# shellcheck disable=SC1091
+source "$VENV_DIR/bin/activate"
+
+if ! command -v aider >/dev/null 2>&1; then
+    echo "ERROR: aider is not installed in $VENV_DIR." >&2
+    echo "       Re-run setup_venv.sh: sbatch setup/setup_venv.sh" >&2
+    exit 1
+fi
+
+# --- Configure aider for the local vLLM server -----------------------------
+export OPENAI_API_BASE="$(cat "$URL_FILE")"
+export OPENAI_API_KEY="sk-no-key-needed"   # vLLM ignores this; aider needs *something*
+
+MODEL="openai/Qwen/Qwen3-Coder-30B-A3B-Instruct"
+
+echo "=== Launching aider (SC26) ==="
+echo "  API:    $OPENAI_API_BASE"
+echo "  Model:  $MODEL"
+echo "  CWD:    $(pwd)"
+echo ""
+echo "Type /help inside aider for commands, /exit to quit."
+echo ""
+
+exec aider \
+    --model "$MODEL" \
+    --no-auto-commits \
+    --no-show-model-warnings \
+    "$@"
