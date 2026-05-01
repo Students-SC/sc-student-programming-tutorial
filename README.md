@@ -56,11 +56,37 @@ bash setup/check_environment.sh
 
 You should see [PASS] for all items. If anything fails, ask an instructor for help.
 
-### 4. Set Up Your Python Environment (Module 2)
+### 4. Set Up Your Python Environment
 
-During Module 2, you will create a Python virtual environment for the AI exercises in the
-afternoon. The setup script is at `setup/setup_venv.sh` -- you'll run it as a Slurm batch
-job (which is part of the lesson!).
+Create the Python virtual environment now, before starting the modules. You will
+use this same environment several times throughout the day, including for the
+tutorial-provided AI agent and the afternoon AI exercises.
+
+From the repository root:
+
+```bash
+sbatch setup/setup_venv.sh
+```
+
+This runs as a Slurm batch job, so it may take a few minutes. You will learn what
+`sbatch` is doing in Module 2; for now, submit the job and wait for it to finish:
+
+```bash
+squeue -u $USER
+tail -f setup_venv_<JOBID>.out      # Watch the log (Ctrl+C to stop)
+```
+
+When the job completes, verify the environment:
+
+```bash
+source "$WORK/sc26_venv/bin/activate"
+python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
+deactivate
+```
+
+You only need to create this venv once. Module 2 includes a checkpoint that
+explains the Slurm command you used here and helps anyone who skipped this step
+catch up.
 
 ## Compute (virtual) Node Details
 
@@ -98,13 +124,13 @@ coding agent) pointed at **Qwen3-Coder-30B-A3B-Instruct**, served on a
 dedicated MI300X compute node by your instructors. Exercises that say *"ask
 your AI agent..."* refer to this tool.
 
-Launch it from inside the repo (after running the setup steps below):
+Launch it from inside the repo after completing the setup steps above:
 
 ```bash
 # cd into a directory you want aider to work in (your code, exercises, etc.)
 cd module-03-openmp/exercises
 
-# Launch aider (this activates the venv and points at the local model)
+# Launch aider (this activates the venv from Step 4 and points at the local model)
 bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
 ```
 

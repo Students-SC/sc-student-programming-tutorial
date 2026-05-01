@@ -40,7 +40,7 @@ fi
 VENV_DIR="$WORK/sc26_venv"
 if [[ ! -d "$VENV_DIR" ]]; then
     echo "ERROR: Python venv not found at $VENV_DIR" >&2
-    echo "       Set it up first: sbatch setup/setup_venv.sh" >&2
+    echo "       Set it up from the repo root: sbatch setup/setup_venv.sh" >&2
     exit 1
 fi
 
@@ -49,7 +49,7 @@ source "$VENV_DIR/bin/activate"
 
 if ! command -v aider >/dev/null 2>&1; then
     echo "ERROR: aider is not installed in $VENV_DIR." >&2
-    echo "       Re-run setup_venv.sh: sbatch setup/setup_venv.sh" >&2
+    echo "       Re-run from the repo root: sbatch setup/setup_venv.sh" >&2
     exit 1
 fi
 

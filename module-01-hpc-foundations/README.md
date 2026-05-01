@@ -201,8 +201,8 @@ squeue                    # Current job queue (may be empty or busy)
    to explain it. Does the agent correctly identify the CPU model? The GPU? Does it
    get anything wrong?
 
-   > **First time using the agent?** Launch the tutorial-provided coding agent
-   > (aider) from this directory:
+   > **First time using the agent?** After completing Getting Started Step 4,
+   > launch the tutorial-provided coding agent (aider) from this directory:
    >
    > ```bash
    > bash ../../setup/launch_aider.sh

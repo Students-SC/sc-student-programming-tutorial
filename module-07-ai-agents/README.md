@@ -131,6 +131,10 @@ cd module-07-ai-agents/exercises
 > export AGENT_API_URL=$(cat "$WORK/sc26_agent_server_url")
 > ```
 
+These scripts use the same Python venv you created in Getting Started Step 4.
+If `"$WORK/sc26_venv"` is missing, go back to that setup step before submitting
+the agent jobs.
+
 ### Step 0: Look at the Example
 
 Examine the minimal agent loop:

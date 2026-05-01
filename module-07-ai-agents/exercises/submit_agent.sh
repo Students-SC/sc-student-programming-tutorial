@@ -20,6 +20,11 @@ if [[ -z "${WORK:-}" ]]; then
     exit 1
 fi
 VENV_DIR="$WORK/sc26_venv"
+if [[ ! -d "$VENV_DIR" ]]; then
+    echo "ERROR: Python venv not found at $VENV_DIR" >&2
+    echo "       Create it from the repo root with: sbatch setup/setup_venv.sh" >&2
+    exit 1
+fi
 source "$VENV_DIR/bin/activate"
 
 # Auto-discover the shared vLLM server URL from the instructor-provided file.
