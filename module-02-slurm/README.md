@@ -216,23 +216,36 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | head -30
 
 ---
 
-### Exercise 4: Set Up Your Python Environment (Core)
+### Exercise 4: Python Environment Checkpoint (Core)
 
-In the afternoon (Modules 6 and 7), you'll need Python with PyTorch. Let's
-create a virtual environment now as a Slurm job:
+In Getting Started Step 4, you submitted `setup/setup_venv.sh` as a Slurm job.
+Now that you've seen `sbatch`, `squeue`, and output files, that command should
+make more sense: it requested a compute node and installed the Python packages
+used by the tutorial agent and the afternoon AI modules.
+
+First, verify that the venv exists:
+
+```bash
+source "$WORK/sc26_venv/bin/activate"
+python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
+deactivate
+```
+
+If that works, you're done. If you skipped Getting Started Step 4 or the venv is
+missing, create it now from this module's `exercises` directory:
 
 ```bash
 sbatch ../../setup/setup_venv.sh
 ```
 
-This takes a few minutes. You can check progress with:
+This takes a few minutes. Check progress with:
 
 ```bash
 squeue -u $USER
 tail -f setup_venv_<JOBID>.out      # Watch the log (Ctrl+C to stop)
 ```
 
-Once it's done, verify:
+Once the job finishes, run the verification commands again:
 
 ```bash
 source "$WORK/sc26_venv/bin/activate"

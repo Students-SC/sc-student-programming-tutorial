@@ -94,18 +94,19 @@ cd module-06-ai-inference-finetuning/exercises
 
 ### Step 0: Verify Your Python Environment
 
-If you set up the venv in Module 2, verify it:
+You should already have the venv from Getting Started Step 4 (checked again in
+Module 2). Verify it before starting the AI exercises:
 
 ```bash
 source "$WORK/sc26_venv/bin/activate"
 python3 -c "import torch; print(f'PyTorch {torch.__version__}, ROCm: {torch.cuda.is_available()}')"
 ```
 
-If the venv doesn't exist yet, set it up now:
+If the venv is missing, set it up now from this module's `exercises` directory:
 
 ```bash
 sbatch ../../setup/setup_venv.sh
-# Wait for the job to finish, then activate:
+# Wait for the job to finish, then activate it:
 source "$WORK/sc26_venv/bin/activate"
 ```
 

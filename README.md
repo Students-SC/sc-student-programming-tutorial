@@ -31,7 +31,8 @@ parallel programs that run on GPUs and training AI models -- all on a real HPC c
 
 ### 1. Connect to the Cluster
 
-You will receive login credentials for the AMD University Program (AUP) AI & HPC Cluster.
+You will receive login credentials for the
+[AMD University Program (AUP) AI & HPC Cluster](https://amdresearch.github.io/hpcfund/index.html).
 Connect via SSH:
 
 ```bash
@@ -56,19 +57,51 @@ bash setup/check_environment.sh
 
 You should see [PASS] for all items. If anything fails, ask an instructor for help.
 
-### 4. Set Up Your Python Environment (Module 2)
+### 4. Set Up Your Python Environment
 
-During Module 2, you will create a Python virtual environment for the AI exercises in the
-afternoon. The setup script is at `setup/setup_venv.sh` -- you'll run it as a Slurm batch
-job (which is part of the lesson!).
+Create the Python virtual environment now, before starting the modules. You will
+use this same environment several times throughout the day, including for the
+tutorial-provided AI agent and the afternoon AI exercises.
+
+From the repository root:
+
+```bash
+sbatch setup/setup_venv.sh
+```
+
+This runs as a Slurm batch job, so it may take a few minutes. You will learn what
+`sbatch` is doing in Module 2; for now, submit the job and wait for it to finish:
+
+```bash
+squeue -u $USER
+tail -f setup_venv_<JOBID>.out      # Watch the log (Ctrl+C to stop)
+```
+
+When the job completes, verify the environment:
+
+```bash
+source "$WORK/sc26_venv/bin/activate"
+python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
+deactivate
+```
+
+You only need to create this venv once. Module 2 includes a checkpoint that
+explains the Slurm command you used here and helps anyone who skipped this step
+catch up.
 
 ## Compute (virtual) Node Details
+
+In this tutorial, a **virtual compute node** is a slice of a larger physical
+compute node. You can think of it like having your own assigned portion of a
+shared machine: each virtual node gets a fraction of the physical node's CPU
+cores, memory, and GPU resources, while Slurm keeps different users' jobs
+separated from each other.
 
 | Resource | Details |
 |----------|---------|
 | CPU | AMD EPYC (16 cores per virtual node) |
-| GPU | 1x AMD Instinct MI210 (64 GB HBM2e) per node |
-| RAM | 64 GB system DRAM per node |
+| GPU | 1x AMD Instinct MI210 (64 GB HBM2e) per virtual node |
+| RAM | 64 GB system DRAM per virtual node |
 | Partition | `mi2101x` |
 | Scheduler | Slurm |
 | Compiler | GCC 12.2, `hipcc` (ROCm 7.2) |
@@ -98,13 +131,13 @@ coding agent) pointed at **Qwen3-Coder-30B-A3B-Instruct**, served on a
 dedicated MI300X compute node by your instructors. Exercises that say *"ask
 your AI agent..."* refer to this tool.
 
-Launch it from inside the repo (after running the setup steps below):
+Launch it from inside the repo after completing the setup steps above:
 
 ```bash
 # cd into a directory you want aider to work in (your code, exercises, etc.)
 cd module-03-openmp/exercises
 
-# Launch aider (this activates the venv and points at the local model)
+# Launch aider (this activates the venv from Step 4 and points at the local model)
 bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
 ```
 
