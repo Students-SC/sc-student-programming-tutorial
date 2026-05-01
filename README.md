@@ -31,7 +31,8 @@ parallel programs that run on GPUs and training AI models -- all on a real HPC c
 
 ### 1. Connect to the Cluster
 
-You will receive login credentials for the AMD University Program (AUP) AI & HPC Cluster.
+You will receive login credentials for the
+[AMD University Program (AUP) AI & HPC Cluster](https://amdresearch.github.io/hpcfund/index.html).
 Connect via SSH:
 
 ```bash
