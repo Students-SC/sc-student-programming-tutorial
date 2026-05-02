@@ -1,6 +1,10 @@
 # Module 3 -- Shared-Memory Parallelism with OpenMP
 
-**Time**: 10:20 -- 11:10 AM (50 min: ~15 min lecture, ~35 min hands-on)
+<div class="event-meta module-meta">
+  <span><strong>10:20 to 11:10 AM CST</strong></span>
+  <span>50 min total</span>
+  <span>~15 min lecture · ~35 min hands-on</span>
+</div>
 
 ## Learning Objectives
 

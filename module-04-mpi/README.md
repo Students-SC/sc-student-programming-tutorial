@@ -1,6 +1,10 @@
 # Module 4 -- Distributed-Memory Parallelism with MPI
 
-**Time**: 11:10 AM -- 12:00 PM (50 min: ~15 min lecture, ~35 min hands-on)
+<div class="event-meta module-meta">
+  <span><strong>11:10 AM to 12:00 PM CST</strong></span>
+  <span>50 min total</span>
+  <span>~15 min lecture · ~35 min hands-on</span>
+</div>
 
 ## Learning Objectives
 
@@ -214,8 +218,10 @@ Fill in the TODOs to implement the ring using `MPI_Send` and `MPI_Recv`. Each
 rank sends its rank number to the next; after going around the ring, rank 0
 should have received `size - 1` (the last rank's number).
 
-**Tip:** Think carefully about who sends first to avoid **deadlock** (all ranks
-waiting to receive before anyone sends).
+```{tip}
+Think carefully about who sends first to avoid **deadlock** (all ranks waiting
+to receive before anyone sends).
+```
 
 ### Challenge B: Ask the Agent
 

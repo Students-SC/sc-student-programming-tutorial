@@ -1,6 +1,10 @@
 # Module 6 -- AI on HPC: Inference & Fine-Tuning
 
-**Time**: 2:00 -- 3:00 PM (60 min: ~20 min lecture, ~40 min hands-on)
+<div class="event-meta module-meta">
+  <span><strong>2:00 to 3:00 PM CST</strong></span>
+  <span>60 min total</span>
+  <span>~20 min lecture · ~40 min hands-on</span>
+</div>
 
 ## Learning Objectives
 
@@ -88,9 +92,11 @@ First, navigate to the exercises directory for this module:
 cd module-06-ai-inference-finetuning/exercises
 ```
 
-> **Node sharing reminder:** All exercises run as **batch jobs** that produce output
-> files. Submit your script, wait for it to complete, then examine the output while
-> others use the nodes.
+```{important}
+All exercises run as **batch jobs** that produce output files. Submit your
+script, wait for it to complete, then examine the output while others use the
+nodes.
+```
 
 ### Step 0: Verify Your Python Environment
 
@@ -110,9 +116,11 @@ sbatch ../../setup/setup_venv.sh
 source "$WORK/sc26_venv/bin/activate"
 ```
 
-> **Note:** The venv lives under `$WORK` (your `/work1/<project>/<username>/`
-> directory) because `/work1` has much more storage space than `$HOME`.
-> The `$WORK` environment variable is set automatically when you log in.
+```{note}
+The venv lives under `$WORK` (your `/work1/<project>/<username>/` directory)
+because `/work1` has much more storage space than `$HOME`. The `$WORK`
+environment variable is set automatically when you log in.
+```
 
 ---
 

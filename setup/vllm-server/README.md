@@ -129,10 +129,12 @@ export AGENT_API_URL=$(cat "$WORK/sc26_agent_server_url")
 This is already built into the Module 7 submit scripts and the `ask_model.py`
 helper.
 
-> **TODO for tutorial-day rollout:** the URL file currently lives under each
-> developer's `$WORK`. For 80-100 students, we need it in a shared,
-> world-readable location (e.g., a project-wide directory like
-> `/work1/sc26tut/shared/`). Confirm this with cluster admins before tutorial day.
+```{warning}
+The URL file currently lives under each developer's `$WORK`. For 80-100
+students, we need it in a shared, world-readable location (e.g., a project-wide
+directory like `/work1/sc26tut/shared/`). Confirm this with cluster admins
+before tutorial day.
+```
 
 ### Monitor the server
 

@@ -1,8 +1,11 @@
 # Hands-On Introduction to HPC and AI
 
-**SC26 Student Programming Tutorial**
-Sunday, November 15, 2026 | 8:30 AM -- 4:30 PM CST
-McCormick Place, Chicago, IL
+<div class="event-meta">
+  <div><strong>SC26 Student Programming Tutorial</strong></div>
+  <div>Sunday, November 15, 2026</div>
+  <div>8:30 AM to 4:30 PM CST</div>
+  <div>McCormick Place, Chicago, IL</div>
+</div>
 
 ---
 
@@ -89,6 +92,15 @@ You only need to create this venv once. Module 2 includes a checkpoint that
 explains the Slurm command you used here and helps anyone who skipped this step
 catch up.
 
+## Getting Help
+
+If you get stuck, ask for help early. Instructors will be in the room throughout
+the tutorial and can help with cluster access, Slurm jobs, code errors, and
+conceptual questions.
+
+We may also provide an online help channel, such as Slack, for questions during
+or after the session. Details will be added here before the tutorial.
+
 ## Compute (virtual) Node Details
 
 In this tutorial, a **virtual compute node** is a slice of a larger physical
@@ -107,10 +119,12 @@ separated from each other.
 | Compiler | GCC 12.2, `hipcc` (ROCm 7.2) |
 | MPI | OpenMPI 4.1.8 |
 
-> **Important:** Do not run compute workloads on the login node. All programs must be
-> submitted through Slurm (`sbatch` or `srun`). This is both good practice and necessary
-> so that all 80+ participants can share the cluster fairly alongside the production
-> research and education workloads being run on the system.
+```{important}
+Do not run compute workloads on the login node. All programs must be
+submitted through Slurm (`sbatch` or `srun`). This is both good practice and
+necessary so that all 80+ participants can share the cluster fairly alongside
+the production research and education workloads being run on the system.
+```
 
 ## Using AI Assistants
 
@@ -144,10 +158,12 @@ bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
 Inside aider, type instructions in plain English. Aider will read and edit
 files in the current directory. Type `/help` to see commands, `/exit` to quit.
 
-> **Note for advanced students:** If you'd rather use your own coding assistant
-> (Cursor, GitHub Copilot, ChatGPT, Claude, etc.), feel free -- the exercises
-> don't require ours. But the tutorial-provided one works for everyone with no
-> setup beyond what's already in this README.
+```{note}
+If you'd rather use your own coding assistant (Cursor, GitHub Copilot, ChatGPT,
+Claude, etc.), feel free -- the exercises don't require ours. But the
+tutorial-provided one works for everyone with no setup beyond what's already in
+this README.
+```
 
 ### How the agent backend works (preview of Module 7)
 
@@ -176,15 +192,15 @@ folder with starter code and templates.
 
 | Time | Session |
 |------|---------|
-| 8:30 -- 8:50 | Welcome & AI Assistants Intro |
-| 8:50 -- 9:20 | Module 1: HPC Foundations |
-| 9:20 -- 10:05 | Module 2: Slurm |
-| 10:05 -- 10:20 | *Break* |
-| 10:20 -- 11:10 | Module 3: OpenMP |
-| 11:10 -- 12:00 | Module 4: MPI |
-| 12:00 -- 12:45 | *Working Lunch* |
-| 12:45 -- 1:45 | Module 5: HIP GPU Programming |
-| 1:45 -- 2:00 | *Break* |
-| 2:00 -- 3:00 | Module 6: AI Inference & Fine-Tuning |
-| 3:00 -- 3:50 | Module 7: AI Agents & Capstone |
-| 3:50 -- 4:10 | Wrap-Up |
+| 8:30 to 8:50 CST | Welcome & AI Assistants Intro |
+| 8:50 to 9:20 CST | Module 1: HPC Foundations |
+| 9:20 to 10:05 CST | Module 2: Slurm |
+| 10:05 to 10:20 CST | *Break* |
+| 10:20 to 11:10 CST | Module 3: OpenMP |
+| 11:10 to 12:00 CST | Module 4: MPI |
+| 12:00 to 12:45 CST | *Working Lunch* |
+| 12:45 to 1:45 CST | Module 5: HIP GPU Programming |
+| 1:45 to 2:00 CST | *Break* |
+| 2:00 to 3:00 CST | Module 6: AI Inference & Fine-Tuning |
+| 3:00 to 3:50 CST | Module 7: AI Agents & Capstone |
+| 3:50 to 4:10 CST | Wrap-Up |

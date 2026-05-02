@@ -1,6 +1,10 @@
 # Module 2 -- Job Scheduling with Slurm
 
-**Time**: 9:20 -- 10:05 AM (45 min: ~15 min lecture, ~30 min hands-on)
+<div class="event-meta module-meta">
+  <span><strong>9:20 to 10:05 AM CST</strong></span>
+  <span>45 min total</span>
+  <span>~15 min lecture · ~30 min hands-on</span>
+</div>
 
 ## Learning Objectives
 
@@ -147,7 +151,9 @@ squeue -u $USER                     # Should disappear when done
 cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 ```
 
-> **Tip:** `ls -lt *.out | head` shows the most recent output files.
+```{tip}
+`ls -lt *.out | head` shows the most recent output files.
+```
 
 ---
 
@@ -211,8 +217,10 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 lscpu | grep "Model na
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | head -30
 ```
 
-> **Note:** `srun` waits for a node, runs the command, and returns. If the
-> partition is busy, you may wait a moment.
+```{note}
+`srun` waits for a node, runs the command, and returns. If the partition is
+busy, you may wait a moment.
+```
 
 ---
 
