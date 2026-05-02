@@ -1,3 +1,5 @@
 *.out
 *.err
 __pycache__
+_build/
+.venv/
