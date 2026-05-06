@@ -1,6 +1,6 @@
 # Module 1 -- HPC Foundations & Cluster Architecture
 
-**Time**: 8:50 -- 9:20 AM (30 min: ~20 min lecture, ~10 min hands-on)
+> **Time:** 8:50 to 9:20 AM CST · 30 min total · ~20 min lecture · ~10 min hands-on
 
 ## Learning Objectives
 
@@ -178,9 +178,11 @@ hipcc --version           # What version?
 rocminfo | head -20       # ROCm system info (first 20 lines)
 ```
 
-> **Note:** The login node may or may not have GPUs. The compute nodes in the `mi2101x`
-> partition definitely do. You'll see the full GPU information when you run jobs in
-> Module 2.
+```{note}
+The login node may or may not have GPUs. The compute nodes in the `mi2101x`
+partition definitely do. You'll see the full GPU information when you run jobs
+in Module 2.
+```
 
 #### Step 6: Look at the Cluster
 
@@ -201,15 +203,17 @@ squeue                    # Current job queue (may be empty or busy)
    to explain it. Does the agent correctly identify the CPU model? The GPU? Does it
    get anything wrong?
 
-   > **First time using the agent?** After completing Getting Started Step 4,
-   > launch the tutorial-provided coding agent (aider) from this directory:
-   >
-   > ```bash
-   > bash ../../setup/launch_aider.sh
-   > ```
-   >
-   > Inside aider, paste the `rocminfo` output and ask for an explanation.
-   > Type `/exit` when done. See the top-level README for more on the agent.
+   ````{tip}
+   After completing Getting Started Step 4, launch the tutorial-provided coding
+   agent (aider) from this directory:
+
+   ```bash
+   bash ../../setup/launch_aider.sh
+   ```
+
+   Inside aider, paste the `rocminfo` output and ask for an explanation. Type
+   `/exit` when done. See the top-level README for more on the agent.
+   ````
 
 ---
 

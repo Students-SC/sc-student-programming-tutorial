@@ -1,6 +1,6 @@
 # Module 7 -- AI Agents & Capstone
 
-**Time**: 3:00 -- 3:50 PM (50 min: ~15 min lecture, ~35 min hands-on)
+> **Time:** 3:00 to 3:50 PM CST · 50 min total · ~15 min lecture · ~35 min hands-on
 
 ## Learning Objectives
 
@@ -114,22 +114,24 @@ First, navigate to the exercises directory for this module:
 cd module-07-ai-agents/exercises
 ```
 
-> **Agent backend:** These exercises use a shared inference server (vLLM) that
-> your instructors have deployed on a dedicated MI300X compute node. It serves
-> Qwen3-Coder-30B-A3B-Instruct via an OpenAI-compatible API.
->
-> The batch scripts auto-discover the server URL from a shared file. To check
-> it manually:
->
-> ```bash
-> cat "$WORK/sc26_agent_server_url"
-> ```
->
-> If you want to test interactively, set the environment variable:
->
-> ```bash
-> export AGENT_API_URL=$(cat "$WORK/sc26_agent_server_url")
-> ```
+````{note}
+These exercises use a shared inference server (vLLM) that your instructors have
+deployed on a dedicated MI300X compute node. It serves
+Qwen3-Coder-30B-A3B-Instruct via an OpenAI-compatible API.
+
+The batch scripts auto-discover the server URL from a shared file. To check it
+manually:
+
+```bash
+cat "$WORK/sc26_agent_server_url"
+```
+
+If you want to test interactively, set the environment variable:
+
+```bash
+export AGENT_API_URL=$(cat "$WORK/sc26_agent_server_url")
+```
+````
 
 These scripts use the same Python venv you created in Getting Started Step 4.
 If `"$WORK/sc26_venv"` is missing, go back to that setup step before submitting
@@ -248,10 +250,12 @@ Then ask aider to:
 
 See `capstone.md` for the full description.
 
-> **Critical thinking:** As you go, ask yourself the same questions you've
-> been asking all day -- did the agent get the GPU memory management right?
-> Did it use the right reduction pattern? Did the launch configuration make
-> sense? You verify; the agent assists.
+```{tip}
+As you go, ask yourself the same questions you've been asking all day -- did
+the agent get the GPU memory management right? Did it use the right reduction
+pattern? Did the launch configuration make sense? You verify; the agent
+assists.
+```
 
 ---
 

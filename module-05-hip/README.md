@@ -1,6 +1,6 @@
 # Module 5 -- GPU Programming with HIP
 
-**Time**: 12:45 -- 1:45 PM (60 min: ~20 min lecture, ~40 min hands-on)
+> **Time:** 12:45 to 1:45 PM CST · 60 min total · ~20 min lecture · ~40 min hands-on
 
 ## Learning Objectives
 
