@@ -5,11 +5,12 @@
 > A full-day, hands-on path from logging into an HPC cluster to running parallel
 > programs on CPUs and GPUs, then using AI models and agents on the same system.
 
-[Start the Tutorial](README.md) | [Open Module 1](module-01-hpc-foundations/README.md)
+**Session details**
 
-| Format | Venue |
-|--------|-------|
-| Hands-on cluster exercises and challenges | SC26, Chicago · Room TBD |
+- **Format:** Hands-on cluster exercises and challenges
+- **Venue:** SC26, Chicago · Room TBD
+
+**[Start the Tutorial](README.md)**
 
 ## Getting Help
 
