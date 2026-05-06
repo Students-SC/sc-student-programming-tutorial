@@ -1,10 +1,6 @@
 # Module 6 -- AI on HPC: Inference & Fine-Tuning
 
-<div class="event-meta module-meta">
-  <span><strong>2:00 to 3:00 PM CST</strong></span>
-  <span>60 min total</span>
-  <span>~20 min lecture · ~40 min hands-on</span>
-</div>
+> **Time:** 2:00 to 3:00 PM CST · 60 min total · ~20 min lecture · ~40 min hands-on
 
 ## Learning Objectives
 

@@ -1,10 +1,6 @@
 # Module 1 -- HPC Foundations & Cluster Architecture
 
-<div class="event-meta module-meta">
-  <span><strong>8:50 to 9:20 AM CST</strong></span>
-  <span>30 min total</span>
-  <span>~20 min lecture · ~10 min hands-on</span>
-</div>
+> **Time:** 8:50 to 9:20 AM CST · 30 min total · ~20 min lecture · ~10 min hands-on
 
 ## Learning Objectives
 

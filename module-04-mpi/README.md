@@ -1,10 +1,6 @@
 # Module 4 -- Distributed-Memory Parallelism with MPI
 
-<div class="event-meta module-meta">
-  <span><strong>11:10 AM to 12:00 PM CST</strong></span>
-  <span>50 min total</span>
-  <span>~15 min lecture · ~35 min hands-on</span>
-</div>
+> **Time:** 11:10 AM to 12:00 PM CST · 50 min total · ~15 min lecture · ~35 min hands-on
 
 ## Learning Objectives
 

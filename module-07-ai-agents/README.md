@@ -1,10 +1,6 @@
 # Module 7 -- AI Agents & Capstone
 
-<div class="event-meta module-meta">
-  <span><strong>3:00 to 3:50 PM CST</strong></span>
-  <span>50 min total</span>
-  <span>~15 min lecture · ~35 min hands-on</span>
-</div>
+> **Time:** 3:00 to 3:50 PM CST · 50 min total · ~15 min lecture · ~35 min hands-on
 
 ## Learning Objectives
 

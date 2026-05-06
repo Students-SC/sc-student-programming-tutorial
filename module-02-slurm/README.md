@@ -1,10 +1,6 @@
 # Module 2 -- Job Scheduling with Slurm
 
-<div class="event-meta module-meta">
-  <span><strong>9:20 to 10:05 AM CST</strong></span>
-  <span>45 min total</span>
-  <span>~15 min lecture · ~30 min hands-on</span>
-</div>
+> **Time:** 9:20 to 10:05 AM CST · 45 min total · ~15 min lecture · ~30 min hands-on
 
 ## Learning Objectives
 

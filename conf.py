@@ -51,8 +51,8 @@ html_sidebars = {
 
 html_theme_options = {
     "light_css_variables": {
-        "color-brand-primary": "#4f46e5",
-        "color-brand-content": "#4f46e5",
+        "color-brand-primary": "#368fd8",
+        "color-brand-content": "#368fd8",
         "color-admonition-background": "#f8fafc",
     },
 }

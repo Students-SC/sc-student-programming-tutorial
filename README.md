@@ -1,11 +1,10 @@
 # Hands-On Introduction to HPC and AI
 
-<div class="event-meta">
-  <div><strong>SC26 Student Programming Tutorial</strong></div>
-  <div>Sunday, November 15, 2026</div>
-  <div>8:30 AM to 4:30 PM CST</div>
-  <div>McCormick Place, Chicago, IL</div>
-</div>
+> **SC26 Student Programming Tutorial**
+>
+> - Sunday, November 15, 2026
+> - 8:30 AM to 4:30 PM CST
+> - McCormick Place, Chicago, IL
 
 ---
 
