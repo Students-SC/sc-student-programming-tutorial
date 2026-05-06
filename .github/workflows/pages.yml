@@ -3,7 +3,7 @@ name: Build and deploy docs
 on:
   push:
     branches:
-      - jackm/sphinx
+      - main
   workflow_dispatch:
 
 permissions:
