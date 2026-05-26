@@ -5,105 +5,108 @@
 # Run this on the LOGIN node:
 #   bash explore_cluster.sh
 #
-# The script runs commands and pauses between sections so you can read
-# the output. Press Enter to continue after each section.
+# For each step, you'll see a short description and the command to run.
+# Type the command yourself at the prompt to build muscle memory.
 # ---------------------------------------------------------------------------
 
-pause() {
-    echo ""
-    echo "--- Press Enter to continue ---"
-    read -r
-    echo ""
-}
-
 section() {
+    echo ""
     echo "============================================="
     echo "  $1"
     echo "============================================="
+}
+
+run_command() {
+    local description="$1"
+    local command="$2"
+
+    echo ""
+    echo "$description"
+    echo ""
+    echo "Type the command below exactly as shown:"
+    echo "    $command"
+    while true; do
+        read -e -p "$ " user_input
+        if [ "$user_input" = "$command" ]; then
+            break
+        elif [ -z "$user_input" ]; then
+            continue
+        else
+            echo "Not quite -- try again. Expected: $command"
+        fi
+    done
+    echo ""
+    eval "$command"
     echo ""
 }
 
 # -------------------------------------------------------
 section "Step 1: Where Are You?"
 # -------------------------------------------------------
-echo "Hostname:          $(hostname)"
-echo "Username:          $(whoami)"
-echo "Home directory:    $HOME"
-echo "Current directory: $(pwd)"
-echo "Date/time:         $(date)"
-pause
+run_command "Print the name of the machine you are logged into." \
+    "hostname"
+run_command "Print your username on this system." \
+    "whoami"
+run_command "Print the path to your home directory (the \$HOME variable)." \
+    "echo \$HOME"
+run_command "Print the current working directory." \
+    "pwd"
+run_command "Print the current date and time." \
+    "date"
 
 # -------------------------------------------------------
 section "Step 2: Filesystem"
 # -------------------------------------------------------
-echo "--- Your home directory ---"
-ls -la "$HOME" | head -20
-echo ""
-echo "--- Your work directory ---"
-ls -la "$WORK" | head -20
-echo ""
-echo "--- home disk space ---"
-df -h "$HOME" 2>/dev/null || echo "(df not available for this path)"
-echo ""
-echo "--- work disk space ---"
-df -h "$WORK" 2>/dev/null || echo "(df not available for this path)"
-pause
+run_command "List everything in your home directory, long format, including hidden files." \
+    "ls -la \$HOME"
+run_command "List everything in your work directory (the \$WORK area for larger files)." \
+    "ls -la \$WORK"
+run_command "Show disk space usage for the filesystem holding your home directory." \
+    "df -h \$HOME"
+run_command "Show disk space usage for the filesystem holding your work directory." \
+    "df -h \$WORK"
 
 # -------------------------------------------------------
 section "Step 3: Software Modules"
 # -------------------------------------------------------
-echo "--- Currently loaded modules ---"
-module -t list 2>&1
-echo ""
-echo "--- Available modules ---"
-module -t avail 2>&1
-echo ""
-echo "--- What does 'hpcfund' provide? ---"
-module show hpcfund 2>&1
-pause
+run_command "List the environment modules currently loaded in your shell." \
+    "module list"
+run_command "List every module available to load on this cluster." \
+    "module avail"
+run_command "Show details about what the 'hpcfund' module sets up when loaded." \
+    "module show hpcfund"
 
 # -------------------------------------------------------
 section "Step 4: CPU Information"
 # -------------------------------------------------------
-echo "CPU model:         $(lscpu | grep 'Model name' | sed 's/.*:\s*//')"
-echo "Sockets:           $(lscpu | grep 'Socket(s)' | sed 's/.*:\s*//')"
-echo "Cores per socket:  $(lscpu | grep 'Core(s) per socket' | sed 's/.*:\s*//')"
-echo "Total CPUs:        $(lscpu | grep '^CPU(s):' | sed 's/.*:\s*//')"
-echo ""
-echo "--- Memory ---"
-free -h
+run_command "Print CPU architecture details: model, sockets, cores, threads." \
+    "lscpu"
+run_command "Show memory usage and total RAM in human-readable units." \
+    "free -h"
 echo ""
 echo "NOTE: This is the LOGIN node. The compute nodes we'll use have 16 cores and 64 GB RAM."
-pause
 
 # -------------------------------------------------------
 section "Step 5: GPU Software Stack"
 # -------------------------------------------------------
-echo "HIP compiler: $(which hipcc 2>/dev/null || echo 'not found')"
-echo ""
-if command -v hipcc &>/dev/null; then
-    echo "--- hipcc version ---"
-    hipcc --version 2>&1
-fi
-echo ""
-echo "--- ROCm info (first 20 lines) ---"
-rocminfo 2>/dev/null | head -20 || echo "(rocminfo not available on this node)"
+run_command "Find the path of the HIP compiler (AMD's equivalent of nvcc)." \
+    "which hipcc"
+run_command "Print the HIP compiler version." \
+    "hipcc --version"
+run_command "Show ROCm (AMD GPU runtime) info -- piped to 'head' since output is long." \
+    "rocminfo | head -20"
 echo ""
 echo "NOTE: Full GPU details will be visible when running on a compute node (Module 2)."
-pause
 
 # -------------------------------------------------------
 section "Step 6: The Cluster (Slurm)"
 # -------------------------------------------------------
-echo "--- All partitions ---"
-sinfo 2>/dev/null || echo "(sinfo not available)"
-echo ""
-echo "--- Our partition (mi2101x) detail ---"
-sinfo -p mi2101x -N -l 2>/dev/null || echo "(partition not found)"
-echo ""
-echo "--- Current job queue ---"
-squeue 2>/dev/null | head -20 || echo "(squeue not available)"
-pause
+run_command "Show all Slurm partitions and the state of their nodes." \
+    "sinfo"
+run_command "Show node-level details just for the mi2101x partition (the one we'll use)." \
+    "sinfo -p mi2101x -N -l"
+run_command "Show the current job queue across the cluster." \
+    "squeue"
 
 # -------------------------------------------------------
 section "Exploration Complete!"
@@ -115,6 +118,8 @@ echo "  - The software module system"
 echo "  - CPU and memory information"
 echo "  - The GPU software stack"
 echo "  - The Slurm cluster overview"
+echo ""
+echo "The README.md file has all the commands you typed if you need to reference them later"
 echo ""
 echo "Next up: Module 2 -- submitting your first job to a compute node!"
 echo ""
