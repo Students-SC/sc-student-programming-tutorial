@@ -233,3 +233,4 @@ squeue                    # Current job queue (may be empty or busy)
 ---
 
 **Next up:** [Module 2 -- Job Scheduling with Slurm](../module-02-slurm/README.md)
+```

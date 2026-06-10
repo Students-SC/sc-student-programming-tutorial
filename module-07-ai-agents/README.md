@@ -119,17 +119,18 @@ These exercises use a shared inference server (vLLM) that your instructors have
 deployed on a dedicated MI300X compute node. It serves
 Qwen3-Coder-30B-A3B-Instruct via an OpenAI-compatible API.
 
-The batch scripts auto-discover the server URL from a shared file. To check it
-manually:
+The batch scripts auto-discover the server URL from a shared file under the
+tutorial project's shared directory (default `/work1/sc26dev/shared/`). To check
+it manually:
 
 ```bash
-cat "$WORK/sc26_agent_server_url"
+cat "${SC26_SHARED_DIR:-/work1/sc26dev/shared}/sc26_agent_server_url"
 ```
 
 If you want to test interactively, set the environment variable:
 
 ```bash
-export AGENT_API_URL=$(cat "$WORK/sc26_agent_server_url")
+export AGENT_API_URL=$(cat "${SC26_SHARED_DIR:-/work1/sc26dev/shared}/sc26_agent_server_url")
 ```
 ````
 

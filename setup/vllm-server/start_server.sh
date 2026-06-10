@@ -19,6 +19,7 @@
 # Stop:    scancel --name=vllm-server
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=vllm-server
+#SBATCH --qos=alloc_sc26dev_02232026_12312026
 #SBATCH --partition=mi3001x
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -28,18 +29,24 @@
 
 set -euo pipefail
 
-# --- Configuration ----------------------------------------------------------
-if [[ -z "${WORK:-}" ]]; then
-    echo "ERROR: The WORK environment variable is not set." >&2
-    echo "       Please ask an instructor for help." >&2
-    exit 1
-fi
+# Create the URL file group-writable and group-only (no "other" access) so any
+# member of the sc26dev group can read it and the next instructor can replace
+# it. This pairs with the setgid bit on $SC26_SHARED_DIR, which makes new files
+# inherit the group.
+umask 0007
 
-SIF_FILE="$WORK/sc26_containers/vllm-openai-rocm.sif"
+# --- Configuration ----------------------------------------------------------
+# All shared tutorial resources -- container SIF, model cache, and the server
+# URL file that students read -- live under $SC26_SHARED_DIR. The default is
+# the tutorial project's shared directory; override SC26_SHARED_DIR to test
+# against a different location.
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
+
+SIF_FILE="$SC26_SHARED_DIR/sc26_containers/vllm-openai-rocm.sif"
 MODEL_NAME="Qwen/Qwen3-Coder-30B-A3B-Instruct"
-CACHE_DIR="$WORK/sc26_model_cache"
+CACHE_DIR="$SC26_SHARED_DIR/sc26_model_cache"
 PORT=8321
-URL_FILE="$WORK/sc26_agent_server_url"
+URL_FILE="$SC26_SHARED_DIR/sc26_agent_server_url"
 READY_TIMEOUT=900   # max seconds to wait for vLLM to become ready
 
 # --- Helpers ----------------------------------------------------------------
