@@ -24,13 +24,16 @@
 set -euo pipefail
 
 # --- Pre-flight checks ------------------------------------------------------
+# The Python venv is per-user (under $WORK), but the agent server URL file is
+# shared (under $SC26_SHARED_DIR) so all students hit the same vLLM endpoint.
 if [[ -z "${WORK:-}" ]]; then
     echo "ERROR: The WORK environment variable is not set." >&2
     echo "       Please ask an instructor for help." >&2
     exit 1
 fi
 
-URL_FILE="$WORK/sc26_agent_server_url"
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
+URL_FILE="$SC26_SHARED_DIR/sc26_agent_server_url"
 if [[ ! -f "$URL_FILE" ]]; then
     echo "ERROR: vLLM server URL file not found at $URL_FILE" >&2
     echo "       The agent backend isn't running. Ask an instructor for help." >&2

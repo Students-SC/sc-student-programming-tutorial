@@ -8,6 +8,7 @@
 # Submit:  sbatch setup/vllm-server/pull_image.sh
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=pull-vllm-sif
+#SBATCH --qos=alloc_sc26dev_02232026_12312026
 #SBATCH --partition=mi2101x
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -17,13 +18,18 @@
 
 set -euo pipefail
 
-if [[ -z "${WORK:-}" ]]; then
-    echo "ERROR: The WORK environment variable is not set." >&2
-    echo "       Please ask an instructor for help." >&2
-    exit 1
-fi
+# Create new files group-writable and group-only (no "other" access) so any
+# member of the sc26dev group can manage the shared artifacts. This pairs with
+# the setgid bit on $SC26_SHARED_DIR, which makes new files inherit the group.
+umask 0007
 
-SIF_DIR="$WORK/sc26_containers"
+# Shared tutorial resources live under $SC26_SHARED_DIR so all instructors
+# share a single pre-pulled SIF (and so start_server.sh, which lives elsewhere
+# in this repo, can find it). Override SC26_SHARED_DIR to test in a different
+# location.
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
+
+SIF_DIR="$SC26_SHARED_DIR/sc26_containers"
 SIF_FILE="$SIF_DIR/vllm-openai-rocm.sif"
 
 mkdir -p "$SIF_DIR"

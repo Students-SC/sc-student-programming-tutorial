@@ -11,24 +11,29 @@
 # Submit:  sbatch setup/vllm-server/download_model.sh
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=download-model
+#SBATCH --qos=alloc_sc26dev_02232026_12312026
 #SBATCH --partition=mi2101x
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --time=60:00
+#SBATCH --time=90:00
 #SBATCH --output=download-model_%j.out
 #SBATCH --error=download-model_%j.err
 
 set -euo pipefail
 
-if [[ -z "${WORK:-}" ]]; then
-    echo "ERROR: The WORK environment variable is not set." >&2
-    echo "       Please ask an instructor for help." >&2
-    exit 1
-fi
+# Create new files group-writable and group-only (no "other" access) so any
+# member of the sc26dev group can manage the shared artifacts. This pairs with
+# the setgid bit on $SC26_SHARED_DIR, which makes new files inherit the group.
+umask 0007
 
-SIF_FILE="$WORK/sc26_containers/vllm-openai-rocm.sif"
+# Shared tutorial resources live under $SC26_SHARED_DIR so the weights are
+# downloaded once and reused by start_server.sh on tutorial day. Override
+# SC26_SHARED_DIR to test in a different location.
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
+
+SIF_FILE="$SC26_SHARED_DIR/sc26_containers/vllm-openai-rocm.sif"
 MODEL_NAME="Qwen/Qwen3-Coder-30B-A3B-Instruct"
-CACHE_DIR="$WORK/sc26_model_cache"
+CACHE_DIR="$SC26_SHARED_DIR/sc26_model_cache"
 
 if [[ ! -f "$SIF_FILE" ]]; then
     echo "ERROR: Container image not found at $SIF_FILE"

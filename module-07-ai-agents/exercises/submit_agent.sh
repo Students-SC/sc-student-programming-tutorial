@@ -28,8 +28,10 @@ fi
 source "$VENV_DIR/bin/activate"
 
 # Auto-discover the shared vLLM server URL from the instructor-provided file.
-# The server writes its URL to this file once it's ready to accept requests.
-SERVER_URL_FILE="$WORK/sc26_agent_server_url"
+# The server writes its URL to this file (under the shared tutorial directory)
+# once it's ready to accept requests.
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
+SERVER_URL_FILE="$SC26_SHARED_DIR/sc26_agent_server_url"
 
 if [ -f "$SERVER_URL_FILE" ]; then
     export AGENT_API_URL=$(cat "$SERVER_URL_FILE")

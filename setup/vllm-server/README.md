@@ -31,12 +31,36 @@ work directly. The model is a 30B-parameter Mixture-of-Experts coder model
 with only ~3B parameters active per token, so inference is fast even under
 heavy concurrent load.
 
+## Shared Tutorial Directory
+
+All resources that need to be visible to multiple people -- the container SIF,
+the model cache, and the server URL file -- live under a single shared
+directory. The default is:
+
+```
+/work1/sc26dev/shared/
+├── sc26_containers/vllm-openai-rocm.sif    # pulled by pull_image.sh
+├── sc26_model_cache/                       # populated by download_model.sh
+└── sc26_agent_server_url                   # written by start_server.sh
+```
+
+Every script in this directory (and `setup/launch_aider.sh`,
+`module-07-ai-agents/exercises/submit_agent.sh`) computes this path as:
+
+```bash
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
+```
+
+Set the `SC26_SHARED_DIR` environment variable before submitting if you need
+to test against a different location (for example, a per-developer scratch
+area). All scripts will pick it up.
+
 ## URL File Lifecycle
 
 The scripts maintain this invariant:
 
-> **The URL file (`$WORK/sc26_agent_server_url`) exists if and only if a vLLM
-> server is currently running and ready to accept requests.**
+> **The URL file (`$SC26_SHARED_DIR/sc26_agent_server_url`) exists if and only
+> if a vLLM server is currently running and ready to accept requests.**
 
 This is enforced by:
 
@@ -48,8 +72,9 @@ This is enforced by:
 3. **A bash `trap` removes the URL file on any exit** -- success, `scancel`,
    timeout, or error.
 
-So if `$WORK/sc26_agent_server_url` exists, you can trust it. If it doesn't,
-either no server is running or one is starting up -- check the job log.
+So if `$SC26_SHARED_DIR/sc26_agent_server_url` exists, you can trust it. If it
+doesn't, either no server is running or one is starting up -- check the job
+log.
 
 ## Pre-Tutorial Setup (Day Before)
 
@@ -62,7 +87,7 @@ converts it to an Apptainer SIF file (~10 GB):
 sbatch setup/vllm-server/pull_image.sh
 ```
 
-The SIF file is stored at `$WORK/sc26_containers/vllm-openai-rocm.sif`.
+The SIF file is stored at `$SC26_SHARED_DIR/sc26_containers/vllm-openai-rocm.sif`.
 
 ### Step 2: Download model weights to shared storage
 
@@ -73,8 +98,8 @@ sbatch setup/vllm-server/download_model.sh
 ```
 
 This downloads Qwen3-Coder-30B-A3B-Instruct (~60 GB) to a shared cache
-directory under `$WORK/sc26_model_cache`. Takes ~15-30 minutes depending on
-network speed.
+directory under `$SC26_SHARED_DIR/sc26_model_cache`. Takes ~15-30 minutes
+depending on network speed.
 
 ### Step 3: Test the server
 
@@ -85,7 +110,7 @@ sbatch setup/vllm-server/start_server.sh
 tail -f vllm-server_<JOBID>.out
 
 # Once you see "[READY] Server URL written...", from the login node:
-curl $(cat "$WORK/sc26_agent_server_url")/models
+curl $(cat "$SC26_SHARED_DIR/sc26_agent_server_url")/models
 
 # Or use the included CLI helper:
 python3 setup/vllm-server/ask_model.py "Write a HIP kernel that adds two vectors."
@@ -116,25 +141,18 @@ The job:
 The server URL is auto-discovered and written to the shared file:
 
 ```bash
-cat "$WORK/sc26_agent_server_url"
+cat "${SC26_SHARED_DIR:-/work1/sc26dev/shared}/sc26_agent_server_url"
 # e.g., http://10.0.100.182:8321/v1
 ```
 
 Students load it with:
 
 ```bash
-export AGENT_API_URL=$(cat "$WORK/sc26_agent_server_url")
+export AGENT_API_URL=$(cat "${SC26_SHARED_DIR:-/work1/sc26dev/shared}/sc26_agent_server_url")
 ```
 
 This is already built into the Module 7 submit scripts and the `ask_model.py`
 helper.
-
-```{warning}
-The URL file currently lives under each developer's `$WORK`. For 80-100
-students, we need it in a shared, world-readable location (e.g., a project-wide
-directory like `/work1/sc26tut/shared/`). Confirm this with cluster admins
-before tutorial day.
-```
 
 ### Monitor the server
 
@@ -143,7 +161,7 @@ before tutorial day.
 squeue -u $USER --name=vllm-server
 
 # Check server health
-curl $(cat "$WORK/sc26_agent_server_url")/models
+curl $(cat "${SC26_SHARED_DIR:-/work1/sc26dev/shared}/sc26_agent_server_url")/models
 
 # Watch the server logs
 tail -f vllm-server_<JOBID>.out
@@ -172,9 +190,9 @@ The URL file will be cleaned up automatically by the trap.
 
 | Problem | Solution |
 |---------|----------|
-| "URL file already exists" | A server is already running. `scancel --name=vllm-server` first. If you're sure none is running, `rm "$WORK/sc26_agent_server_url"`. |
+| "URL file already exists" | A server is already running. `scancel --name=vllm-server` first. If you're sure none is running, `rm "$SC26_SHARED_DIR/sc26_agent_server_url"`. |
 | URL file appears but `curl` gives `Connection refused` | Shouldn't happen with the new lifecycle. If it does, the server crashed between the readiness check and accepting your request -- check the `.out` log. |
 | Job is running but no URL file yet | vLLM is still loading the model. Watch `tail -f vllm-server_<JOBID>.out` -- look for `[READY]`. First load takes ~60-120s; cached loads are faster. |
 | Server OOM during startup | Reduce `--max-model-len` in `start_server.sh` (currently 32768). |
-| `WORK environment variable is not set` | The cluster module that sets `$WORK` isn't loaded. Ask an admin which module to load on this cluster. |
+| Permission denied writing to `$SC26_SHARED_DIR` | Confirm with cluster admins that you have write access to the shared tutorial directory (default `/work1/sc26dev/shared`), or override `SC26_SHARED_DIR` to a writable path for testing. |
 | Container not found | Run `sbatch setup/vllm-server/pull_image.sh` first. |

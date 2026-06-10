@@ -30,7 +30,8 @@ Examples:
 URL discovery order:
     1. --url command-line flag
     2. AGENT_API_URL environment variable
-    3. --url-file (default: $WORK/sc26_agent_server_url)
+    3. --url-file (default: $SC26_SHARED_DIR/sc26_agent_server_url, where
+       SC26_SHARED_DIR defaults to /work1/sc26dev/shared)
 
 Requires only the Python standard library -- no venv activation needed.
 """
@@ -43,8 +44,8 @@ import time
 import urllib.error
 import urllib.request
 
-_WORK = os.environ.get("WORK")
-DEFAULT_URL_FILE = f"{_WORK}/sc26_agent_server_url" if _WORK else None
+SC26_SHARED_DIR = os.environ.get("SC26_SHARED_DIR", "/work1/sc26dev/shared")
+DEFAULT_URL_FILE = f"{SC26_SHARED_DIR}/sc26_agent_server_url"
 DEFAULT_SYSTEM = "You are a helpful, concise coding assistant."
 
 
@@ -59,14 +60,9 @@ def discover_url(cli_url, url_file):
             url = f.read().strip()
         if url:
             return url.rstrip("/")
-    tried = "--url, $AGENT_API_URL"
-    if url_file:
-        tried += f", {url_file}"
-    else:
-        tried += " (and $WORK is not set, so no default URL file)"
     sys.exit(
         "ERROR: Could not determine server URL.\n"
-        f"  Tried: {tried}\n"
+        f"  Tried: --url, $AGENT_API_URL, {url_file}\n"
         "  Is the vLLM server running? Check with: squeue -u $USER --name=vllm-server"
     )
 
@@ -171,7 +167,8 @@ def main():
                    help="Server base URL. Overrides --url-file and $AGENT_API_URL.")
     p.add_argument("--url-file", default=DEFAULT_URL_FILE,
                    help="File containing the server URL "
-                        "(default: $WORK/sc26_agent_server_url).")
+                        "(default: ${SC26_SHARED_DIR:-/work1/sc26dev/shared}/"
+                        "sc26_agent_server_url).")
     p.add_argument("--no-stream", action="store_true",
                    help="Wait for the full response instead of streaming.")
     p.add_argument("--list-models", action="store_true",
