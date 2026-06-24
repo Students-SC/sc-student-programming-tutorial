@@ -2,29 +2,29 @@
 # ---------------------------------------------------------------------------
 # launch_aider.sh -- Run aider configured for the SC26 tutorial vLLM server
 #
-# Aider is a CLI coding agent that edits your local files based on natural-
-# language instructions. This wrapper points it at the locally-served
+# Aider is a CLI coding agent. This wrapper points it at the locally-served
 # Qwen3-Coder model from Module 7's vLLM backend, so no API keys or external
-# accounts are needed.
+# accounts are needed. It runs aider from its dedicated venv
+# ($WORK/sc26_aider_venv, created by setup/install_aider.sh).
+#
+# By default aider runs in ASK mode: it reads the files you give it and explains
+# what to do, but does not edit them -- understanding is the participant's job.
 #
 # Usage:
-#     cd <project directory you want aider to work on>
+#     cd <project directory you want to ask about>
 #     bash <repo>/setup/launch_aider.sh [aider args...]
 #
 # Examples:
-#     bash setup/launch_aider.sh                     # default chat mode
-#     bash setup/launch_aider.sh pi_serial.c         # open a file
-#     bash setup/launch_aider.sh --message "Add OpenMP to pi_serial.c"
+#     bash setup/launch_aider.sh                          # ask-mode guidance
+#     bash setup/launch_aider.sh --read README.md foo.c   # pin files as context
 #
-# Once inside aider, you can type instructions in plain English. Aider will
-# edit files in your current directory and commit changes (if it's a git repo).
 # Type /help inside aider to see commands, /exit to quit.
 # ---------------------------------------------------------------------------
 
 set -euo pipefail
 
 # --- Pre-flight checks ------------------------------------------------------
-# The Python venv is per-user (under $WORK), but the agent server URL file is
+# aider's venv is per-user (under $WORK), but the agent server URL file is
 # shared (under $SC26_SHARED_DIR) so all students hit the same vLLM endpoint.
 if [[ -z "${WORK:-}" ]]; then
     echo "ERROR: The WORK environment variable is not set." >&2
@@ -40,19 +40,14 @@ if [[ ! -f "$URL_FILE" ]]; then
     exit 1
 fi
 
-VENV_DIR="$WORK/sc26_venv"
-if [[ ! -d "$VENV_DIR" ]]; then
-    echo "ERROR: Python venv not found at $VENV_DIR" >&2
-    echo "       Set it up from the repo root: sbatch setup/setup_venv.sh" >&2
-    exit 1
-fi
-
-# shellcheck disable=SC1091
-source "$VENV_DIR/bin/activate"
-
-if ! command -v aider >/dev/null 2>&1; then
-    echo "ERROR: aider is not installed in $VENV_DIR." >&2
-    echo "       Re-run from the repo root: sbatch setup/setup_venv.sh" >&2
+# aider lives in its OWN per-user venv (separate from the ML venv sc26_venv),
+# created by setup/install_aider.sh. We invoke its binary by absolute path so
+# this never accidentally picks up some other aider on $PATH.
+AIDER_VENV="$WORK/sc26_aider_venv"
+AIDER_BIN="$AIDER_VENV/bin/aider"
+if [[ ! -x "$AIDER_BIN" ]]; then
+    echo "ERROR: aider not found at $AIDER_BIN" >&2
+    echo "       Install it first (from the repo root): bash setup/install_aider.sh" >&2
     exit 1
 fi
 
@@ -70,8 +65,14 @@ echo ""
 echo "Type /help inside aider for commands, /exit to quit."
 echo ""
 
-exec aider \
+# Default to ask mode: aider reasons about the participant's actual files and
+# explains what to do, but never edits them -- understanding is the
+# participant's job. Module 7's capstone deliberately overrides this with
+# `--chat-mode code` to introduce the full edit-capable agent. Because "$@" is
+# expanded last, any caller-supplied --chat-mode wins over this default.
+exec "$AIDER_BIN" \
     --model "$MODEL" \
+    --chat-mode ask \
     --no-auto-commits \
     --no-show-model-warnings \
     "$@"
