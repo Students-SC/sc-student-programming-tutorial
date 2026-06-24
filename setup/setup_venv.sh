@@ -55,9 +55,9 @@ echo "Installing AI/ML libraries..."
 pip install transformers datasets peft accelerate bitsandbytes
 pip install openai requests
 
-echo ""
-echo "Installing aider (CLI coding agent for Module 7)..."
-pip install aider-chat
+# NOTE: aider is intentionally NOT installed here. It is a per-user client tool
+# with dependencies (openai/pydantic versions) that conflict with this ML stack,
+# so it lives in its own venv. Install it separately:  bash setup/install_aider.sh
 
 echo ""
 echo "=== Verifying installation ==="

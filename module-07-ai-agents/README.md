@@ -209,11 +209,18 @@ Compare what aider does against your `build_agent.py`:
 | Streaming responses | no | yes |
 | Multi-file context | no | yes |
 
+> **A new mode.** All day, `launch_aider.sh` has run aider in **ask mode**: it
+> reads your files and explains *what* to do, but never edits them -- so the
+> learning stayed your job. For this module we deliberately turn on the agent's
+> ability to **act**. Passing `--chat-mode code` lets aider edit files and run
+> commands -- the full observe-think-act loop. This contrast is the whole point
+> of Module 7: you're switching the assistant from *advising* to *doing*.
+
 Try driving aider through a small task. From the repo root:
 
 ```bash
 cd module-03-openmp/exercises
-bash ../../setup/launch_aider.sh
+bash ../../setup/launch_aider.sh --chat-mode code
 
 # Inside aider, type:
 > Add OpenMP directives to pi_serial.c to parallelize the main loop using a reduction. Save it as pi_openmp_aider.c.
@@ -238,8 +245,10 @@ Recommended workflow with aider:
 
 ```bash
 mkdir -p ~/capstone && cd ~/capstone
-bash <repo-path>/setup/launch_aider.sh
+bash <repo-path>/setup/launch_aider.sh --chat-mode code
 ```
+
+(`--chat-mode code` enables editing, as introduced in Exercise 2.)
 
 Then ask aider to:
 

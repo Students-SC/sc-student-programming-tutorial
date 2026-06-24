@@ -91,6 +91,19 @@ You only need to create this venv once. Module 2 includes a checkpoint that
 explains the Slurm command you used here and helps anyone who skipped this step
 catch up.
 
+### 5. Install the AI Agent
+
+The coding agent (aider) lives in its own small environment, separate from the
+AI/ML venv above. This install is quick and runs right on the login node (no
+Slurm job needed):
+
+```bash
+bash setup/install_aider.sh
+```
+
+You only need to do this once. You'll launch the agent with
+`setup/launch_aider.sh` (see "Using AI Assistants" below).
+
 ## Getting Help
 
 If you get stuck, ask for help early. Instructors will be in the room throughout
@@ -147,15 +160,18 @@ your AI agent..."* refer to this tool.
 Launch it from inside the repo after completing the setup steps above:
 
 ```bash
-# cd into a directory you want aider to work in (your code, exercises, etc.)
+# cd into a directory whose files you want to ask about (your code, exercises, etc.)
 cd module-03-openmp/exercises
 
-# Launch aider (this activates the venv from Step 4 and points at the local model)
+# Launch aider (uses the agent you installed in Step 5, pointed at the local model)
 bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
 ```
 
-Inside aider, type instructions in plain English. Aider will read and edit
-files in the current directory. Type `/help` to see commands, `/exit` to quit.
+Inside aider, type questions in plain English. By default the agent runs in
+**ask mode**: it reads the files you give it and explains what to do, but it
+does not edit them -- understanding and writing the code is your job. Pin files
+as context with `--read` (e.g. `launch_aider.sh --read README.md`). Type
+`/help` to see commands, `/exit` to quit.
 
 ```{note}
 If you'd rather use your own coding assistant (Cursor, GitHub Copilot, ChatGPT,
