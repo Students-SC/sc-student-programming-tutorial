@@ -44,7 +44,7 @@ int main(void) {
 
     /* --- Parallel version (YOUR WORK) --- */
     /*
-     * TODO: Add an OpenMP directive to parallelize the OUTER loop (over i).
+     * TODO: Add an OpenMP directive to parallelize the below loop.
      * Each row i is independent -- its output y_parallel[i] depends only
      * on row i of A and the vector x.
      *

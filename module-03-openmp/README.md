@@ -263,6 +263,17 @@ The outer loop over rows is embarrassingly parallel -- each row of the output
 can be computed independently. Add the appropriate OpenMP directive and compare
 performance with the serial version.
 
+
+### Challenge C: OpenMP Offload (Extra Challenge!)
+
+(Note: come back to this challenge after you finish Module 05).
+
+The OpenMP you have learned so far started and ran parallel threads on the CPU. OpenMP Offload
+allows you to instead offload the computation onto the GPU and take advantage of the powerful hardware that is available on these HPC systems. OpenMP Offload is more high level than HIP, and it shares many of the same concepts as the OpenMP you have already learned.
+
+Parallelize the `matvec_openmp.c` to use OpenMP to offload the for loop to the GPU. A short tutorial of the concepts you need can be found [here](https://github.com/olcf/hands-on-with-odo/tree/master/challenges/OpenMP_Offload).
+
+
 ---
 
 ## Quick Reference
