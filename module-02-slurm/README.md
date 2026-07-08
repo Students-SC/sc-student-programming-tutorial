@@ -213,10 +213,9 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 lscpu | grep "Model na
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | head -30
 ```
 
-```{note}
-`srun` waits for a node, runs the command, and returns. If the partition is
-busy, you may wait a moment.
-```
+> [!note]
+> `srun` waits for a node, runs the command, and returns. If the partition is
+> busy, you may wait a moment.
 
 ---
 
