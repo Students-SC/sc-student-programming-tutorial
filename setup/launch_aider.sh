@@ -18,6 +18,11 @@
 #     bash setup/launch_aider.sh                          # ask-mode guidance
 #     bash setup/launch_aider.sh --read README.md foo.c   # pin files as context
 #
+# Note:
+# You need to start aider from the root of the git repo if you want it to read
+# the AGENTS.md from the root directory. It will not read it if you start it 
+# from a subdirectory.
+#
 # Type /help inside aider to see commands, /exit to quit.
 # ---------------------------------------------------------------------------
 
