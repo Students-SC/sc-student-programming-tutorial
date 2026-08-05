@@ -159,9 +159,11 @@ your AI agent..."* refer to this tool.
 
 Launch it from inside the repo after completing the setup steps above:
 
+
 ```bash
-# cd into a directory whose files you want to ask about (your code, exercises, etc.)
-cd module-03-openmp/exercises
+# In a new terminal, navigate to the tutorial directory
+cd ~/sc-student-programming-tutorial
+
 
 # Launch aider (uses the agent you installed in Step 5, pointed at the local model)
 bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
@@ -169,8 +171,10 @@ bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
 
 Inside aider, type questions in plain English. By default the agent runs in
 **ask mode**: it reads the files you give it and explains what to do, but it
-does not edit them -- understanding and writing the code is your job. Pin files
-as context with `--read` (e.g. `launch_aider.sh --read README.md`). Type
+does not edit them -- understanding and writing the code is your job. After starting 
+aider, add files or directories to your context with the `/read` command (e.g. run
+`/read module-03-slurm` to get aider to read its contents so it can answers questions
+about it). Type
 `/help` to see commands, `/exit` to quit.
 
 ```{note}
