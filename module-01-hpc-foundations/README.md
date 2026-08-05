@@ -126,56 +126,56 @@ First, navigate to the exercises directory for this module:
 cd module-01-hpc-foundations/exercises
 ```
 
-Then run the guided exploration script, which walks you through key commands:
+Work through the steps below, typing each command yourself and reading the output
+before moving on.
 
-```bash
-bash explore_cluster.sh
-```
-
-The script will pause between sections so you can read the output. Alternatively,
-you can run each command below individually.
 
 #### Step 1: Where Are You?
 
 ```bash
-hostname                  # What machine are you on?
-whoami                    # What's your username?
-echo $HOME                # Your home directory
-pwd                       # Current working directory
+hostname          # Print the name of the machine you are logged into.
+whoami            # Print your username on this system.
+echo $HOME        # Print the path to your home directory (the $HOME variable).
+echo $WORK        # Print the path to the AMD cluster's project filesystem 
+pwd               # Print the current working directory.
+date              # Print the current date and time.
 ```
 
 #### Step 2: Explore the Filesystem
 
 ```bash
-ls $HOME                  # Your home directory contents
-ls /work1                 # Shared work directory
-df -h $HOME               # Disk space available
-df -h $WORK
+ls -la $HOME      # List everything in your home directory, long format, including hidden files.
+ls -la $WORK      # List everything in your work directory (the $WORK area for larger files).
+df -h $HOME       # Show disk space usage for the filesystem holding your home directory.
+df -h $WORK       # Show disk space usage for the filesystem holding your work directory.
 ```
 
 #### Step 3: Check the Software Environment
 
 ```bash
-module list               # Currently loaded modules
-module avail              # All available modules
-module show hpcfund       # What does the base module provide?
+module list           # List the environment modules currently loaded in your shell.
+module avail          # Lists the modules that can be loaded given the currently loaded modules
+module spider         # Lists all the available modules on the system
+module show hpcfund   # Show details about what the 'hpcfund' module sets up when loaded.
 ```
 
 #### Step 4: Inspect the Hardware (Login Node)
 
 ```bash
-lscpu                     # CPU information
-lscpu | grep "Model name" # Just the CPU model
-lscpu | grep "CPU(s):"    # Number of CPUs
-free -h                   # Memory information
+lscpu             # Print CPU architecture details: model, sockets, cores, threads.
+free -h           # Show memory usage and total RAM in human-readable units.
+```
+
+```{note}
+This is the LOGIN node. The compute nodes we'll use have 16 cores and 64 GB RAM.
 ```
 
 #### Step 5: Preview the GPU Software
 
 ```bash
-which hipcc               # Is the HIP compiler available?
-hipcc --version           # What version?
-rocminfo | head -20       # ROCm system info (first 20 lines)
+which hipcc           # Find the path of the HIP compiler (AMD's equivalent of nvcc).
+hipcc --version       # Print the HIP compiler version.
+rocminfo | head -20   # Show ROCm (AMD GPU runtime) info -- piped to 'head' since output is long.
 ```
 
 ```{note}
@@ -187,10 +187,9 @@ in Module 2.
 #### Step 6: Look at the Cluster
 
 ```bash
-sinfo                     # Show all partitions and node states
-sinfo -p mi2101x          # Just our partition
-sinfo -p mi2101x -N -l    # Detailed per-node listing
-squeue                    # Current job queue (may be empty or busy)
+sinfo                       # Show all Slurm partitions and the state of their nodes.
+sinfo -p mi2101x -N -l      # Show node-level details just for the mi2101x partition (the one we'll use).
+squeue                      # Show the current job queue across the cluster.
 ```
 
 ### Challenge
