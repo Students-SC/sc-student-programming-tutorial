@@ -136,6 +136,7 @@ before moving on.
 hostname          # Print the name of the machine you are logged into.
 whoami            # Print your username on this system.
 echo $HOME        # Print the path to your home directory (the $HOME variable).
+echo $WORK        # Print the path to the AMD cluster's project filesystem 
 pwd               # Print the current working directory.
 date              # Print the current date and time.
 ```
@@ -153,7 +154,8 @@ df -h $WORK       # Show disk space usage for the filesystem holding your work d
 
 ```bash
 module list           # List the environment modules currently loaded in your shell.
-module avail          # List every module available to load on this cluster.
+module avail          # Lists the modules that can be loaded given the currently loaded modules
+module spider         # Lists all the available modules on the system
 module show hpcfund   # Show details about what the 'hpcfund' module sets up when loaded.
 ```
 
