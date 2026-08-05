@@ -263,6 +263,8 @@ The outer loop over rows is embarrassingly parallel -- each row of the output
 can be computed independently. Add the appropriate OpenMP directive and compare
 performance with the serial version.
 
+
+
 ---
 
 ## Quick Reference
