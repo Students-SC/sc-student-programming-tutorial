@@ -127,7 +127,7 @@ cd module-01-hpc-foundations/exercises
 ```
 
 Work through the steps below, typing each command yourself and reading the output
-before moving on. Getting practice running the commands yourself is valuable for learning.
+before moving on.
 
 
 #### Step 1: Where Are You?
