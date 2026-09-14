@@ -131,7 +131,7 @@ canonical "do this once" idiom -- optional for a benign assignment like this.)
 ### Compiling and Running
 
 ```bash
-gcc -fopenmp -o program program.c       # Compile with OpenMP
+gcc -fopenmp -o program program.c        # Compile with OpenMP
 export OMP_NUM_THREADS=4                 # Set thread count
 ./program                                # Run with 4 threads
 ```
