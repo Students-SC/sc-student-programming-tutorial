@@ -205,15 +205,16 @@ squeue                      # Show the current job queue across the cluster.
    get anything wrong?
 
    ````{tip}
-   After completing Getting Started Step 4, launch the tutorial-provided coding
-   agent (Aider) from this directory:
+   If you installed the tutorial-provided coding agent during Getting Started,
+   launch Aider from any directory:
 
    ```bash
-   bash ../../setup/launch_aider.sh
+   bash "$HOME/sc-student-programming-tutorial/setup/launch_aider.sh"
    ```
 
    Inside Aider, paste the `rocminfo` output and ask for an explanation. Type
-   `/exit` when done. See the top-level README for more on the agent.
+   `/exit` when done. See [Using AI Assistants](../README.md#using-ai-assistants)
+   for more on the agent.
    ````
 
 ---
