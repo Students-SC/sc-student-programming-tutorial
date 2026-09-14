@@ -192,14 +192,16 @@ Note the computed value of pi and the execution time.
 ### Exercise 2: Add OpenMP Parallelism
 
 Open the template with an editor so you can complete its TODO markers. For
-example, use the beginner-friendly `nano` editor on the login node:
+example, use `vim` on the login node:
 
 ```bash
-nano pi_openmp.c
+vim pi_openmp.c
 ```
 
-In `nano`, press **Ctrl+O**, then **Enter** to save, and **Ctrl+X** to exit. You
-can instead use `vim`, `emacs`, or an existing VS Code Remote SSH connection.
+In Vim, use the arrow keys to move the cursor, then press `i` to enter insert
+mode and make your edits. When you are finished, press `Esc`, type `:wq`, and
+press `Enter` to save the file and exit. You can instead use `nano`, `emacs`, or
+an existing VS Code Remote SSH connection.
 
 There are **2 TODOs** to fill in:
 
