@@ -98,13 +98,13 @@ cd module-02-slurm/exercises
 Your first batch script includes a `sleep` so the job stays running long enough
 for you to practice monitoring it.
 
-**Step 1:** Look at the template:
+#### Step 1: Look at the Template
 
 ```bash
 cat first_job.sh
 ```
 
-**Step 2:** Submit it:
+#### Step 2: Submit the Job
 
 ```bash
 sbatch first_job.sh
@@ -112,7 +112,7 @@ sbatch first_job.sh
 
 Slurm will print something like `Submitted batch job 12345`. Note the **job ID**.
 
-**Step 3:** Immediately check the queue:
+#### Step 3: Check the Queue
 
 ```bash
 squeue -u $USER
@@ -126,7 +126,9 @@ scontrol show job <JOBID>           # Detailed job info
 squeue -p mi2101x                   # All jobs on our partition
 ```
 
-**Step 4:** Cancel the job (don't wait for it to finish):
+#### Step 4: Cancel the Job
+
+Don't wait for it to finish:
 
 ```bash
 scancel <JOBID>
@@ -138,7 +140,9 @@ Verify it's gone:
 squeue -u $USER
 ```
 
-**Step 5:** Submit it again and let it finish. Then read the output:
+#### Step 5: Let the Job Finish
+
+Submit it again and let it finish. Then read the output:
 
 ```bash
 sbatch first_job.sh
@@ -158,7 +162,7 @@ cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 Now let's do something more realistic: compile a C program and run it on a
 compute node.
 
-**Step 1:** Look at the source code:
+#### Step 1: Look at the Source Code
 
 ```bash
 cat hello_compute.c
@@ -166,25 +170,29 @@ cat hello_compute.c
 
 This program prints information about the compute node, including GPU details.
 
-**Step 2:** Compile it on the login node (compiling is lightweight, that's OK):
+#### Step 2: Compile on the Login Node
+
+Compiling is lightweight, so it is OK to do on the login node:
 
 ```bash
 gcc -o hello_compute hello_compute.c
 ```
 
-**Step 3:** Look at the batch script that runs it:
+#### Step 3: Look at the Batch Script
 
 ```bash
 cat submit_hello.sh
 ```
 
-**Step 4:** Submit:
+#### Step 4: Submit the Job
 
 ```bash
 sbatch submit_hello.sh
 ```
 
-**Step 5:** Once it completes, examine the output:
+#### Step 5: Examine the Output
+
+Once the job completes, examine its output:
 
 ```bash
 cat hello-compute_<JOBID>.out
@@ -202,11 +210,13 @@ cat hello-compute_<JOBID>.out
 `srun` lets you run a single command on a compute node without writing a batch
 script. Useful for quick tests.
 
+#### Step 1: Run a Command
+
 ```bash
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 hostname
 ```
 
-Try a few more:
+#### Step 2: Try More Commands
 
 ```bash
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 lscpu | grep "Model name"
@@ -227,6 +237,8 @@ Now that you've seen `sbatch`, `squeue`, and output files, that command should
 make more sense: it requested a compute node and installed the Python packages
 used by the tutorial agent and the afternoon AI modules.
 
+#### Step 1: Verify the Environment
+
 First, verify that the venv exists:
 
 ```bash
@@ -235,12 +247,16 @@ python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
 deactivate
 ```
 
-If that works, you're done. If you skipped the Python environment setup or the
-venv is missing, create it now with the repository's setup script:
+#### Step 2: Create the Environment if Needed
+
+If the verification works, you're done. If you skipped the Python environment
+setup or the venv is missing, create it now with the repository's setup script:
 
 ```bash
 sbatch "$HOME/sc-student-programming-tutorial/setup/setup_venv.sh"
 ```
+
+#### Step 3: Monitor the Setup Job
 
 This takes a few minutes. Check progress with:
 
@@ -248,6 +264,8 @@ This takes a few minutes. Check progress with:
 squeue -u $USER
 tail -f setup_venv_<JOBID>.out      # Watch the log (Ctrl+C to stop)
 ```
+
+#### Step 4: Verify the Completed Setup
 
 Once the job finishes, run the verification commands again:
 

@@ -94,7 +94,9 @@ script, wait for it to complete, then examine the output while others use the
 nodes.
 ```
 
-### Preparation: Verify Your Python Environment
+### Exercise 1: Verify Your Python Environment
+
+#### Step 1: Check the Existing Environment
 
 You should already have the venv from the Getting Started Python environment
 setup (checked again in Module 2). Verify it before starting the AI exercises:
@@ -103,6 +105,8 @@ setup (checked again in Module 2). Verify it before starting the AI exercises:
 source "$WORK/sc26_venv/bin/activate"
 python3 -c "import torch; print(f'PyTorch {torch.__version__}, ROCm: {torch.cuda.is_available()}')"
 ```
+
+#### Step 2: Create the Environment if Needed
 
 If the venv is missing, set it up now from this module's `exercises` directory:
 
@@ -120,13 +124,17 @@ environment variable is set automatically when you log in.
 
 ---
 
-### Exercise 1: Your First Inference (Core)
+### Exercise 2: Run Your First Inference
+
+#### Step 1: Examine the Example
 
 Look at the simple inference example:
 
 ```bash
 cat ../examples/simple_inference.py
 ```
+
+#### Step 2: Review the Inference Workflow
 
 This script loads a small pre-trained text generation model and generates
 responses to a few prompts. Examine how it:
@@ -136,11 +144,13 @@ responses to a few prompts. Examine how it:
 4. Generates output tokens
 5. Decodes back to text
 
-Submit it as a batch job:
+#### Step 3: Submit the Batch Job
 
 ```bash
 sbatch submit_inference.sh
 ```
+
+#### Step 4: Examine the Output
 
 Check the output when it finishes:
 
@@ -155,7 +165,9 @@ cat inference_<JOBID>.out
 
 ---
 
-### Exercise 2: Experiment with Inference (Core)
+### Exercise 3: Experiment with Inference
+
+#### Step 1: Open the Exercise
 
 Open the inference exercise:
 
@@ -163,17 +175,23 @@ Open the inference exercise:
 cat run_inference.py
 ```
 
+#### Step 2: Complete the TODOs
+
 There are **3 TODOs**:
 
 1. **TODO 1**: Load the model onto the GPU (choose the right device)
 2. **TODO 2**: Set generation parameters (max tokens, temperature)
 3. **TODO 3**: Add your own custom prompts to the prompt list
 
+#### Step 3: Submit the Batch Job
+
 Edit the file, add your own prompts, and submit:
 
 ```bash
 sbatch submit_inference.sh
 ```
+
+#### Step 4: Experiment with Temperature
 
 Try varying the `temperature` parameter:
 - `temperature=0.1` -- very focused, repetitive
@@ -182,10 +200,12 @@ Try varying the `temperature` parameter:
 
 ---
 
-### Exercise 3: Fine-Tune a Model with LoRA (Core)
+### Exercise 4: Fine-Tune a Model with LoRA
 
 Now let's adapt a pre-trained model to a new task. We'll fine-tune a text
 classification model (DistilBERT) on a sentiment analysis dataset using LoRA.
+
+#### Step 1: Examine the Fine-Tuning Script
 
 Look at the script:
 
@@ -193,19 +213,21 @@ Look at the script:
 cat finetune_lora.py
 ```
 
+#### Step 2: Complete the TODOs
+
 There are **3 TODOs**:
 
 1. **TODO 1**: Configure the LoRA adapter parameters
 2. **TODO 2**: Write the training loop (forward pass, loss, backward, optimizer step)
 3. **TODO 3**: Run evaluation and print accuracy
 
-Submit the fine-tuning job:
+#### Step 3: Submit the Fine-Tuning Job
 
 ```bash
 sbatch submit_finetune.sh
 ```
 
-Check the output:
+#### Step 4: Examine the Output
 
 ```bash
 cat finetune_<JOBID>.out

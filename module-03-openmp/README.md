@@ -149,7 +149,9 @@ First, navigate to the exercises directory for this module:
 cd module-03-openmp/exercises
 ```
 
-### Example: OpenMP Hello World
+### Exercise 1: Run an OpenMP Hello World
+
+#### Step 1: Examine and Compile the Program
 
 On the login node, examine and compile a simple OpenMP hello-world program:
 
@@ -158,18 +160,24 @@ cat ../examples/openmp_hello.c
 gcc -fopenmp -o openmp_hello ../examples/openmp_hello.c
 ```
 
-Then use `srun` to execute the compiled program on a compute node:
+#### Step 2: Run on a Compute Node
+
+Use `srun` to execute the compiled program on a compute node:
 
 ```bash
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
   bash -c 'export OMP_NUM_THREADS=4; ./openmp_hello'
 ```
 
+#### Step 3: Experiment with Thread Counts
+
 Try changing the thread count (1, 4, 8, 16) and observe the output.
 
 ---
 
-### Exercise 1: Understand the Serial Code
+### Exercise 2: Understand the Serial Code
+
+#### Step 1: Examine the Serial Program
 
 We have a serial program that estimates **pi** using numerical integration.
 The idea: the integral of `4 / (1 + x²)` from 0 to 1 equals pi.
@@ -178,18 +186,22 @@ The idea: the integral of `4 / (1 + x²)` from 0 to 1 equals pi.
 cat pi_serial.c
 ```
 
-Compile and run it:
+#### Step 2: Compile and Run the Program
 
 ```bash
 gcc -O2 -o pi_serial pi_serial.c -lm
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./pi_serial
 ```
 
+#### Step 3: Record the Result
+
 Note the computed value of pi and the execution time.
 
 ---
 
-### Exercise 2: Add OpenMP Parallelism
+### Exercise 3: Add OpenMP Parallelism
+
+#### Step 1: Open the Template
 
 Open the template with an editor so you can complete its TODO markers. For
 example, use `vim` on the login node:
@@ -203,6 +215,8 @@ mode and make your edits. When you are finished, press `Esc`, type `:wq`, and
 press `Enter` to save the file and exit. You can instead use `nano`, `emacs`, or
 an existing VS Code Remote SSH connection.
 
+#### Step 2: Complete the TODOs
+
 There are **2 TODOs** to fill in:
 
 1. **TODO 1**: Add the OpenMP header include.
@@ -213,19 +227,26 @@ There are **2 TODOs** to fill in:
    reduction(+:sum)` on the loop itself. See "Decomposing `parallel for`"
    above for the pattern.
 
-After filling in the TODOs, compile and run:
+#### Step 3: Compile the Program
+
+After filling in the TODOs, compile the program:
 
 ```bash
 gcc -fopenmp -O2 -o pi_openmp pi_openmp.c -lm
 ```
 
-Then submit the batch script that runs it with varying thread counts:
+#### Step 4: Submit the Batch Job
+
+Submit the batch script that runs it with varying thread counts:
 
 ```bash
 sbatch submit_openmp.sh
 ```
 
 This will run with 1, 2, 4, 8, and 16 threads and report the time for each.
+
+#### Step 5: Examine the Output
+
 Check the output:
 
 ```bash

@@ -138,7 +138,9 @@ These scripts use the same Python venv you created during Getting Started.
 If `"$WORK/sc26_venv"` is missing, return to that setup section before submitting
 the agent jobs.
 
-### Example: A Simple Agent
+### Exercise 1: Run a Simple Agent
+
+#### Step 1: Examine the Agent Loop
 
 Examine the minimal agent loop:
 
@@ -147,7 +149,11 @@ cat ../examples/simple_agent.py
 ```
 
 This shows the complete pattern: prompt the LLM, parse tool calls, execute
-them, feed results back. Run it to see it in action:
+them, and feed results back.
+
+#### Step 2: Run the Agent
+
+Run it to see the loop in action:
 
 ```bash
 sbatch submit_agent.sh
@@ -155,7 +161,9 @@ sbatch submit_agent.sh
 
 ---
 
-### Exercise 1: Build Your Own Agent (Part A -- Core)
+### Exercise 2: Build Your Own Agent (Part A)
+
+#### Step 1: Open the Template
 
 Open the exercise template:
 
@@ -163,17 +171,23 @@ Open the exercise template:
 cat build_agent.py
 ```
 
+#### Step 2: Complete the TODOs
+
 There are **3 TODOs**:
 
 1. **TODO 1**: Implement the `run_command` tool (execute a shell command safely)
 2. **TODO 2**: Send a request to the LLM API with the conversation history
 3. **TODO 3**: Parse the LLM's response -- detect tool calls and extract arguments
 
+#### Step 3: Test Your Agent
+
 After filling in the TODOs, test your agent:
 
 ```bash
 sbatch submit_agent.sh
 ```
+
+#### Step 4: Try Several Tasks
 
 Try asking your agent to:
 - *"Write a C program that prints 'Hello from HPC!' and compile it"*
@@ -187,7 +201,7 @@ Try asking your agent to:
 
 ---
 
-### Exercise 2: Use a Real CLI Agent (Core)
+### Exercise 3: Use a Real CLI Agent
 
 The agent you just built is a minimal example. The CLI agent you've been using
 all day -- **Aider** -- is essentially the same idea, but with many more tools
@@ -196,6 +210,8 @@ careful prompt engineering and error recovery.
 
 In other words: you've already used the production version of what you just
 built. Now let's open the hood.
+
+#### Step 1: Compare the Agents
 
 Compare what Aider does against your `build_agent.py`:
 
@@ -209,12 +225,16 @@ Compare what Aider does against your `build_agent.py`:
 | Streaming responses | no | yes |
 | Multi-file context | no | yes |
 
+#### Step 2: Enable Aider's Code Mode
+
 > **A new mode.** All day, `launch_aider.sh` has run Aider in **ask mode**: it
 > reads your files and explains *what* to do, but never edits them -- so the
 > learning stayed your job. For this module we deliberately turn on the agent's
 > ability to **act**. Passing `--chat-mode code` lets Aider edit files and run
 > commands -- the full observe-think-act loop. This contrast is the whole point
 > of Module 7: you're switching the assistant from *advising* to *doing*.
+
+#### Step 3: Give Aider a Task
 
 Try driving Aider through a small task. From the repo root:
 
@@ -232,7 +252,7 @@ and writes the new file. That's the same observe-think-act loop your
 
 ---
 
-### Exercise 3: Capstone Challenge (Part B -- Extension)
+### Exercise 4: Capstone Challenge (Part B -- Extension)
 
 Now put the whole day together. Use **Aider** (or your own agent if you'd
 like a real challenge) to solve this multi-step problem:
@@ -241,6 +261,8 @@ like a real challenge) to solve this multi-step problem:
 > The kernel should use parallel reduction within a block. Compile it, run it on
 > the GPU via Slurm, and verify the result against a CPU reference.
 
+#### Step 1: Launch Aider
+
 Recommended workflow with Aider:
 
 ```bash
@@ -248,7 +270,9 @@ mkdir -p ~/capstone && cd ~/capstone
 bash <repo-path>/setup/launch_aider.sh --chat-mode code
 ```
 
-(`--chat-mode code` enables editing, as introduced in Exercise 2.)
+(`--chat-mode code` enables editing, as introduced in Exercise 3.)
+
+#### Step 2: Complete the Capstone Workflow
 
 Then ask Aider to:
 
