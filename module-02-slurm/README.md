@@ -45,8 +45,8 @@ most widely used scheduler in HPC.
 
 ### Anatomy of a Batch Script
 
-A batch script is a regular shell script with special `#SBATCH` comment lines that
-tell Slurm what resources you need:
+A batch script is a regular shell script with special `#SBATCH` comment lines called
+**scheduler directives**. They tell Slurm what resources you need:
 
 ```bash
 #!/bin/bash
