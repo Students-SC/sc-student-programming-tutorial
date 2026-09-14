@@ -190,16 +190,16 @@ Try asking your agent to:
 ### Exercise 2: Use a Real CLI Agent (Core)
 
 The agent you just built is a minimal example. The CLI agent you've been using
-all day -- **aider** -- is essentially the same idea, but with many more tools
+all day -- **Aider** -- is essentially the same idea, but with many more tools
 (read/write files, apply diffs, run tests, integrate with git) and much more
 careful prompt engineering and error recovery.
 
 In other words: you've already used the production version of what you just
 built. Now let's open the hood.
 
-Compare what aider does against your `build_agent.py`:
+Compare what Aider does against your `build_agent.py`:
 
-| Feature | Your agent | aider |
+| Feature | Your agent | Aider |
 |---|---|---|
 | Backend LLM | Same Qwen3-Coder via vLLM | Same Qwen3-Coder via vLLM |
 | Tool: run shell command | yes | yes |
@@ -209,14 +209,14 @@ Compare what aider does against your `build_agent.py`:
 | Streaming responses | no | yes |
 | Multi-file context | no | yes |
 
-> **A new mode.** All day, `launch_aider.sh` has run aider in **ask mode**: it
+> **A new mode.** All day, `launch_aider.sh` has run Aider in **ask mode**: it
 > reads your files and explains *what* to do, but never edits them -- so the
 > learning stayed your job. For this module we deliberately turn on the agent's
-> ability to **act**. Passing `--chat-mode code` lets aider edit files and run
+> ability to **act**. Passing `--chat-mode code` lets Aider edit files and run
 > commands -- the full observe-think-act loop. This contrast is the whole point
 > of Module 7: you're switching the assistant from *advising* to *doing*.
 
-Try driving aider through a small task. From the repo root:
+Try driving Aider through a small task. From the repo root:
 
 ```bash
 cd module-03-openmp/exercises
@@ -226,7 +226,7 @@ bash ../../setup/launch_aider.sh --chat-mode code
 > Add OpenMP directives to pi_serial.c to parallelize the main loop using a reduction. Save it as pi_openmp_aider.c.
 ```
 
-Watch what happens: aider reads the file, proposes a diff, asks you to confirm,
+Watch what happens: Aider reads the file, proposes a diff, asks you to confirm,
 and writes the new file. That's the same observe-think-act loop your
 `build_agent.py` ran -- it just has nicer tools.
 
@@ -234,14 +234,14 @@ and writes the new file. That's the same observe-think-act loop your
 
 ### Exercise 3: Capstone Challenge (Part B -- Extension)
 
-Now put the whole day together. Use **aider** (or your own agent if you'd
+Now put the whole day together. Use **Aider** (or your own agent if you'd
 like a real challenge) to solve this multi-step problem:
 
 > **Challenge:** Write a HIP kernel that computes the dot product of two vectors.
 > The kernel should use parallel reduction within a block. Compile it, run it on
 > the GPU via Slurm, and verify the result against a CPU reference.
 
-Recommended workflow with aider:
+Recommended workflow with Aider:
 
 ```bash
 mkdir -p ~/capstone && cd ~/capstone
@@ -250,7 +250,7 @@ bash <repo-path>/setup/launch_aider.sh --chat-mode code
 
 (`--chat-mode code` enables editing, as introduced in Exercise 2.)
 
-Then ask aider to:
+Then ask Aider to:
 
 1. Generate the HIP code (`> Write dot_product.cpp that ...`).
 2. Review the code -- does the reduction look correct? Are there race conditions?

@@ -189,7 +189,7 @@ fine-tuning details.
 | Export the agent server URL for interactive testing | `export AGENT_API_URL=$(cat "$WORK/sc26_agent_server_url")` |
 | Run the agent exercise | `sbatch submit_agent.sh` |
 | Launch the tutorial-provided CLI agent | `bash ../../setup/launch_aider.sh` |
-| Launch aider from an arbitrary working directory | `bash <repo-path>/setup/launch_aider.sh` |
+| Launch Aider from an arbitrary working directory | `bash <repo-path>/setup/launch_aider.sh` |
 
 See [Module 7](module-07-ai-agents/README.md) for the agent exercises.
 

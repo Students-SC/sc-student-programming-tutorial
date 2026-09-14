@@ -204,13 +204,13 @@ squeue                      # Show the current job queue across the cluster.
 
    ````{tip}
    After completing Getting Started Step 4, launch the tutorial-provided coding
-   agent (aider) from this directory:
+   agent (Aider) from this directory:
 
    ```bash
    bash ../../setup/launch_aider.sh
    ```
 
-   Inside aider, paste the `rocminfo` output and ask for an explanation. Type
+   Inside Aider, paste the `rocminfo` output and ask for an explanation. Type
    `/exit` when done. See the top-level README for more on the agent.
    ````
 
