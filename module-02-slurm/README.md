@@ -236,10 +236,10 @@ deactivate
 ```
 
 If that works, you're done. If you skipped Getting Started Step 4 or the venv is
-missing, create it now from this module's `exercises` directory:
+missing, create it now with the repository's setup script:
 
 ```bash
-sbatch ../../setup/setup_venv.sh
+sbatch "$HOME/sc-student-programming-tutorial/setup/setup_venv.sh"
 ```
 
 This takes a few minutes. Check progress with:
