@@ -63,7 +63,7 @@ system and splitting the work across them.
 - You access them by submitting **jobs** through the Slurm scheduler (Module 2)
 
 **High-speed network** connects nodes so they can communicate fast --
-critical for MPI programs (Module 4).
+critical for HPC and AI applications.
 
 **Shared storage** means your files in `$HOME` and `/work1` are visible from every node.
 You don't need to copy files to each node.
