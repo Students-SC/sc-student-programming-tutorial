@@ -93,7 +93,7 @@ First, navigate to the exercises directory for this module:
 cd module-02-slurm/exercises
 ```
 
-### Exercise 1: Observe the Job Lifecycle (Core)
+### Exercise 1: Observe the Job Lifecycle
 
 Your first batch script includes a `sleep` so the job stays running long enough
 for you to practice monitoring it.
@@ -153,7 +153,7 @@ cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 
 ---
 
-### Exercise 2: Compile and Run on a Compute Node (Core)
+### Exercise 2: Compile and Run on a Compute Node
 
 Now let's do something more realistic: compile a C program and run it on a
 compute node.
@@ -197,7 +197,7 @@ cat hello-compute_<JOBID>.out
 
 ---
 
-### Exercise 3: Interactive Commands with `srun` (Core)
+### Exercise 3: Interactive Commands with `srun`
 
 `srun` lets you run a single command on a compute node without writing a batch
 script. Useful for quick tests.
@@ -219,7 +219,7 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | head -30
 
 ---
 
-### Exercise 4: Python Environment Checkpoint (Core)
+### Exercise 4: Python Environment Checkpoint
 
 In Getting Started Step 4, you submitted `setup/setup_venv.sh` as a Slurm job.
 Now that you've seen `sbatch`, `squeue`, and output files, that command should
