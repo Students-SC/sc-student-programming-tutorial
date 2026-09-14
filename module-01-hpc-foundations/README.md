@@ -235,4 +235,3 @@ squeue                      # Show the current job queue across the cluster.
 ---
 
 **Next up:** [Module 2 -- Job Scheduling with Slurm](../module-02-slurm/README.md)
-```
