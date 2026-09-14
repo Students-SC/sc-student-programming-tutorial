@@ -222,7 +222,7 @@ busy, you may wait a moment.
 
 ### Exercise 4: Python Environment Checkpoint
 
-In Getting Started Step 4, you submitted `setup/setup_venv.sh` as a Slurm job.
+During Getting Started, you submitted `setup/setup_venv.sh` as a Slurm job.
 Now that you've seen `sbatch`, `squeue`, and output files, that command should
 make more sense: it requested a compute node and installed the Python packages
 used by the tutorial agent and the afternoon AI modules.
@@ -235,8 +235,8 @@ python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
 deactivate
 ```
 
-If that works, you're done. If you skipped Getting Started Step 4 or the venv is
-missing, create it now with the repository's setup script:
+If that works, you're done. If you skipped the Python environment setup or the
+venv is missing, create it now with the repository's setup script:
 
 ```bash
 sbatch "$HOME/sc-student-programming-tutorial/setup/setup_venv.sh"

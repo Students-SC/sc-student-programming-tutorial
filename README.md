@@ -166,7 +166,7 @@ Launch it from inside the repo after completing the setup steps above:
 cd ~/sc-student-programming-tutorial
 
 
-# Launch aider (uses the agent you installed in Step 5, pointed at the local model)
+# Launch aider (uses the agent you installed during Getting Started, pointed at the local model)
 bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
 ```
 

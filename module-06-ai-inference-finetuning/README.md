@@ -94,10 +94,10 @@ script, wait for it to complete, then examine the output while others use the
 nodes.
 ```
 
-### Step 0: Verify Your Python Environment
+### Preparation: Verify Your Python Environment
 
-You should already have the venv from Getting Started Step 4 (checked again in
-Module 2). Verify it before starting the AI exercises:
+You should already have the venv from the Getting Started Python environment
+setup (checked again in Module 2). Verify it before starting the AI exercises:
 
 ```bash
 source "$WORK/sc26_venv/bin/activate"

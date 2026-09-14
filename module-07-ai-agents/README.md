@@ -134,11 +134,11 @@ export AGENT_API_URL=$(cat "${SC26_SHARED_DIR:-/work1/sc26dev/shared}/sc26_agent
 ```
 ````
 
-These scripts use the same Python venv you created in Getting Started Step 4.
-If `"$WORK/sc26_venv"` is missing, go back to that setup step before submitting
+These scripts use the same Python venv you created during Getting Started.
+If `"$WORK/sc26_venv"` is missing, return to that setup section before submitting
 the agent jobs.
 
-### Step 0: Look at the Example
+### Example: A Simple Agent
 
 Examine the minimal agent loop:
 

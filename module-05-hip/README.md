@@ -134,7 +134,7 @@ First, navigate to the exercises directory for this module:
 cd module-05-hip/exercises
 ```
 
-### Step 0: Look at the Example
+### Example: HIP Vector Addition
 
 Examine the complete vector addition program:
 

@@ -115,7 +115,7 @@ First, navigate to the exercises directory for this module:
 cd module-04-mpi/exercises
 ```
 
-### Step 0: Look at the Example
+### Example: MPI Hello World
 
 Examine the MPI hello-world program:
 

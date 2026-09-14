@@ -149,7 +149,7 @@ First, navigate to the exercises directory for this module:
 cd module-03-openmp/exercises
 ```
 
-### Step 0: Look at the Example
+### Example: OpenMP Hello World
 
 Start by examining and running a simple OpenMP hello-world:
 

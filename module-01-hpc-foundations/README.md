@@ -120,7 +120,7 @@ You'll learn all three today!
 
 ## Hands-On Exercises (~10 min)
 
-### Core: Explore the Cluster
+### Exercise 1: Explore the Cluster
 
 First, navigate to the exercises directory for this module:
 
