@@ -46,10 +46,12 @@ system and splitting the work across them.
 │              │ 1  │ │   │ │    │ │ N  │    (CPUs + GPUs)    │
 │              └────┘ └───┘ └────┘ └────┘                     │
 │                  │     │     │     │                        │
-│              ┌───┴─────┴─────┴─────┴───┐                    │
-│              │    Shared Storage       │                    │
-│              │  (Parallel Filesystem)  │                    │
-│              └─────────────────────────┘                    │
+│       ┌──────────┴─────┴─────┴─────┴────────────────┐       │
+│       │     Shared storage visible to all nodes     │       │
+│       ├──────────────────────┬──────────────────────┤       │
+│       │ $HOME                │ $WORK (/work1)       │       │
+│       │ Home filesystem      │ Parallel filesystem  │       │
+│       └──────────────────────┴──────────────────────┘       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -65,8 +67,9 @@ system and splitting the work across them.
 **High-speed network** connects nodes so they can communicate fast --
 critical for HPC and AI applications.
 
-**Shared storage** means your files in `$HOME` and `/work1` are visible from every node.
-You don't need to copy files to each node.
+**Shared storage** means your files are visible from every node, so you don't need
+to copy them to each node. `$HOME` is your smaller home filesystem, while `$WORK`
+points to your larger project area on the `/work1` parallel filesystem.
 
 ### Our Cluster: The AUP AI & HPC Cluster
 
