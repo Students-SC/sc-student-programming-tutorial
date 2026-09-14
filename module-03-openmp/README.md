@@ -151,17 +151,16 @@ cd module-03-openmp/exercises
 
 ### Example: OpenMP Hello World
 
-Start by examining and running a simple OpenMP hello-world:
+On the login node, examine and compile a simple OpenMP hello-world program:
 
 ```bash
 cat ../examples/openmp_hello.c
+gcc -fopenmp -o openmp_hello ../examples/openmp_hello.c
 ```
 
-Compile and run it on a compute node:
+Then use `srun` to execute the compiled program on a compute node:
 
 ```bash
-gcc -fopenmp -o openmp_hello ../examples/openmp_hello.c
-
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
   bash -c 'export OMP_NUM_THREADS=4; ./openmp_hello'
 ```
