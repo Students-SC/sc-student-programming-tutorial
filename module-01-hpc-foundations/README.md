@@ -39,7 +39,6 @@ system and splitting the work across them.
 │                            │                                │
 │               ┌────────────┼────────────┐                   │
 │               │     High-Speed Network  │                   │
-│               │      (InfiniBand)       │                   │
 │               └──┬─────┬─────┬───────┬──┘                   │
 │                  │     │     │       │                      │
 │              ┌───▼┐ ┌──▼┐ ┌──▼─┐ ┌───▼┐                     │
@@ -63,7 +62,7 @@ system and splitting the work across them.
 - The compute nodes we'll be using in this cluster have 16 CPU cores + 1 AMD MI210 GPU
 - You access them by submitting **jobs** through the Slurm scheduler (Module 2)
 
-**High-speed network** (InfiniBand, RoCEv2) connects nodes so they can communicate fast --
+**High-speed network** connects nodes so they can communicate fast --
 critical for MPI programs (Module 4).
 
 **Shared storage** means your files in `$HOME` and `/work1` are visible from every node.
