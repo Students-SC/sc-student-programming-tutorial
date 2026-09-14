@@ -169,7 +169,7 @@ Try changing the thread count (1, 4, 8, 16) and observe the output.
 
 ---
 
-### Exercise 1: Understand the Serial Code (Core)
+### Exercise 1: Understand the Serial Code
 
 We have a serial program that estimates **pi** using numerical integration.
 The idea: the integral of `4 / (1 + x²)` from 0 to 1 equals pi.
@@ -189,7 +189,7 @@ Note the computed value of pi and the execution time.
 
 ---
 
-### Exercise 2: Add OpenMP Parallelism (Core)
+### Exercise 2: Add OpenMP Parallelism
 
 Now open the template with TODO markers:
 
