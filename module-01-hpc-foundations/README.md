@@ -90,7 +90,7 @@ For this tutorial, we'll have access to the following resources:
 
 ### The Software Stack: Environment Modules
 
-HPC clusters use **environment modules** to manage software. Instead of installing
+HPC clusters often use **environment modules** to manage software. Instead of installing
 packages globally (like on a laptop), you load and unload modules to make specific
 software versions available.
 
