@@ -174,7 +174,7 @@ Inside Aider, type questions in plain English. By default the agent runs in
 **ask mode**: it reads the files you give it and explains what to do, but it
 does not edit them -- understanding and writing the code is your job. After starting 
 Aider, add files or directories to your context with the `/read` command (e.g. run
-`/read module-03-slurm` to get Aider to read its contents so it can answers questions
+`/read module-03-slurm` to get Aider to read its contents so it can answer questions
 about it). Type
 `/help` to see commands, `/exit` to quit.
 
