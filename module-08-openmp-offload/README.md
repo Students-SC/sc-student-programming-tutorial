@@ -123,7 +123,7 @@ against a BLAS reference (`-lopenblas`).
 First, navigate to the exercises directory for this module:
 
 ```bash
-cd openmp-offload/exercises
+cd module-08-openmp-offload/exercises
 module load rocm openblas
 ```
 
@@ -185,10 +185,10 @@ There are **2 TODOs**, both on the loop nest:
 
 1. **TODO 1**: Add `#pragma omp target` with `map` clauses -- `map(to:...)` for
    the read-only inputs `A` and `B`, and `map(tofrom:...)` for the result `C`.
-2. **TODO 2**: Add `teams distribute parallel for collapse(2)` so the work is
+2. **TODO 2**: Apply what you learned about `teams` so the work is
    spread across the GPU instead of running on one thread.
 
-See "Splitting the work across the GPU" above for the exact pattern.
+See "Splitting the work across the GPU" for help. 
 
 After filling in the TODOs, compile:
 
@@ -225,7 +225,7 @@ Try each of these and re-run, noting the effect on the loop time and
 correctness:
 
 - Remove `collapse(2)` -- how much does parallelizing only the outer loop cost?
-- Change `map(to:...)` on `C` to `map(tofrom:...)` back and forth, or drop a
+- Change `map(tofrom:...)` on `C` to `map(to:...)` back and forth, or drop a
   `map` clause entirely -- what happens to correctness?
 - Increase `N` (e.g. 2048, 4096) and see how the GPU speedup grows relative to
   the serial loop.

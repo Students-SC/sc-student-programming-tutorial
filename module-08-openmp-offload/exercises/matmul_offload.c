@@ -51,17 +51,13 @@ int main(void) {
      *   - A and B are only READ on the GPU  -> map them "to" the device
      *   - C is read AND written on the GPU   -> map it "tofrom" the device
      *
-     *   #pragma omp target map(to:A[:N*N],B[:N*N]) map(tofrom:C[:N*N])
-     *
      * TODO 2: On the SAME line (or a continuation), also split the work
      * across the GPU's thread hierarchy so it does not run on a single
-     * thread. Add:
+     * thread. Apply what you learned about the OpenMP Offload `teams`
+     * concept here.
      *
-     *   teams distribute parallel for collapse(2)
-     *
-     * The "collapse(2)" fuses the outer two loops into one bigger iteration
-     * space so there is more parallel work to distribute. See the README's
-     * "Splitting the work across the GPU" section for the full explanation.
+     * Clue:  See the README's "Splitting the work across the GPU" section for
+     * the full explanation.
      */
     for (int row = 0; row < N; row++) {
         for (int col = 0; col < N; col++) {
