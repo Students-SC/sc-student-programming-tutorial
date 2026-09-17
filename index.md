@@ -30,7 +30,6 @@ help-channel details will be added before the tutorial.
 | [6](module-06-ai-inference-finetuning/README.md) | AI on HPC | Run inference and fine-tune models using GPU-backed batch jobs. |
 | [7](module-07-ai-agents/README.md) | AI Agents | Build a tool-using agent and pull the day's HPC skills together. |
 | [8](module-08-openmp-offload/README.md) | (Bonus) OpenMP | Use OpenMP directives to write programs for the GPU |
-| [Reference](commands-reference.md) | Commands Reference | Find common shell, Slurm, OpenMP, MPI, HIP, Python, and agent commands. |
 
 ```{toctree}
 :hidden:

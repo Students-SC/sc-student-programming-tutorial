@@ -39,7 +39,6 @@ system and splitting the work across them.
 │                            │                                │
 │               ┌────────────┼────────────┐                   │
 │               │     High-Speed Network  │                   │
-│               │      (InfiniBand)       │                   │
 │               └──┬─────┬─────┬───────┬──┘                   │
 │                  │     │     │       │                      │
 │              ┌───▼┐ ┌──▼┐ ┌──▼─┐ ┌───▼┐                     │
@@ -47,10 +46,12 @@ system and splitting the work across them.
 │              │ 1  │ │   │ │    │ │ N  │    (CPUs + GPUs)    │
 │              └────┘ └───┘ └────┘ └────┘                     │
 │                  │     │     │     │                        │
-│              ┌───┴─────┴─────┴─────┴───┐                    │
-│              │    Shared Storage       │                    │
-│              │  (Parallel Filesystem)  │                    │
-│              └─────────────────────────┘                    │
+│       ┌──────────┴─────┴─────┴─────┴────────────────┐       │
+│       │     Shared storage visible to all nodes     │       │
+│       ├──────────────────────┬──────────────────────┤       │
+│       │ $HOME                │ $WORK (/work1)       │       │
+│       │ Home filesystem      │ Parallel filesystem  │       │
+│       └──────────────────────┴──────────────────────┘       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -63,11 +64,12 @@ system and splitting the work across them.
 - The compute nodes we'll be using in this cluster have 16 CPU cores + 1 AMD MI210 GPU
 - You access them by submitting **jobs** through the Slurm scheduler (Module 2)
 
-**High-speed network** (InfiniBand, RoCEv2) connects nodes so they can communicate fast --
-critical for MPI programs (Module 4).
+**High-speed network** connects nodes so they can communicate fast --
+critical for HPC and AI applications.
 
-**Shared storage** means your files in `$HOME` and `/work1` are visible from every node.
-You don't need to copy files to each node.
+**Shared storage** means your files are visible from every node, so you don't need
+to copy them to each node. `$HOME` is your smaller home filesystem, while `$WORK`
+points to your larger project area on the `/work1` parallel filesystem.
 
 ### Our Cluster: The AUP AI & HPC Cluster
 
@@ -88,7 +90,7 @@ For this tutorial, we'll have access to the following resources:
 
 ### The Software Stack: Environment Modules
 
-HPC clusters use **environment modules** to manage software. Instead of installing
+HPC clusters often use **environment modules** to manage software. Instead of installing
 packages globally (like on a laptop), you load and unload modules to make specific
 software versions available.
 
@@ -118,7 +120,7 @@ You'll learn all three today!
 
 ## Hands-On Exercises (~10 min)
 
-### Core: Explore the Cluster
+### Exercise 1: Explore the Cluster
 
 First, navigate to the exercises directory for this module:
 
@@ -203,15 +205,16 @@ squeue                      # Show the current job queue across the cluster.
    get anything wrong?
 
    ````{tip}
-   After completing Getting Started Step 4, launch the tutorial-provided coding
-   agent (aider) from this directory:
+   If you installed the tutorial-provided coding agent during Getting Started,
+   launch Aider from any directory:
 
    ```bash
-   bash ../../setup/launch_aider.sh
+   bash "$HOME/sc-student-programming-tutorial/setup/launch_aider.sh"
    ```
 
-   Inside aider, paste the `rocminfo` output and ask for an explanation. Type
-   `/exit` when done. See the top-level README for more on the agent.
+   Inside Aider, paste the `rocminfo` output and ask for an explanation. Type
+   `/exit` when done. See [Using AI Assistants](../README.md#using-ai-assistants)
+   for more on the agent.
    ````
 
 ---
@@ -232,4 +235,3 @@ squeue                      # Show the current job queue across the cluster.
 ---
 
 **Next up:** [Module 2 -- Job Scheduling with Slurm](../module-02-slurm/README.md)
-```

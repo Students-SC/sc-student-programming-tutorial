@@ -134,7 +134,9 @@ First, navigate to the exercises directory for this module:
 cd module-05-hip/exercises
 ```
 
-### Step 0: Look at the Example
+### Exercise 1: Run HIP Vector Addition
+
+#### Step 1: Examine the Program
 
 Examine the complete vector addition program:
 
@@ -142,12 +144,19 @@ Examine the complete vector addition program:
 cat ../examples/vector_add.cpp
 ```
 
-Compile and run it:
+#### Step 2: Compile the Program
 
 ```bash
 hipcc -O2 -o vector_add ../examples/vector_add.cpp
+```
+
+#### Step 3: Run on a Compute Node
+
+```bash
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_add
 ```
+
+#### Step 4: Study the HIP Workflow
 
 Study the code carefully. Note the pattern:
 1. Allocate host arrays and initialize them
@@ -159,7 +168,9 @@ Study the code carefully. Note the pattern:
 
 ---
 
-### Exercise 1: Vector Scale (Core)
+### Exercise 2: Vector Scale
+
+#### Step 1: Open the Template
 
 Open the exercise template:
 
@@ -170,6 +181,8 @@ cat vector_scale.cpp
 This program should multiply every element of a vector by a constant:
 `result[i] = alpha * input[i]`
 
+#### Step 2: Complete the TODOs
+
 There are **4 TODOs** to fill in:
 
 1. **TODO 1**: Write the kernel function
@@ -177,14 +190,19 @@ There are **4 TODOs** to fill in:
 3. **TODO 3**: Calculate grid dimensions and launch the kernel
 4. **TODO 4**: Copy results from device back to host
 
-After filling in the TODOs, compile and run:
+#### Step 3: Compile the Program
 
 ```bash
 hipcc -O2 -o vector_scale vector_scale.cpp
+```
+
+#### Step 4: Submit the Batch Job
+
+```bash
 sbatch submit_hip.sh
 ```
 
-Check the output:
+#### Step 5: Examine the Output
 
 ```bash
 cat hip-exercise_<JOBID>.out
@@ -195,10 +213,14 @@ correct, you'll see "PASSED".
 
 ---
 
-### Exercise 2: Experiment with Block Sizes (Core)
+### Exercise 3: Experiment with Block Sizes
+
+#### Step 1: Choose Block Sizes
 
 Modify `vector_scale.cpp` (or the solution) to try different block sizes.
-Edit the `BLOCK_SIZE` define and recompile:
+Edit the `BLOCK_SIZE` define before compiling each version.
+
+#### Step 2: Compile and Run the Experiments
 
 ```bash
 # Try block sizes: 64, 128, 256, 512

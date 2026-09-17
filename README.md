@@ -94,7 +94,7 @@ catch up.
 
 ### 5. Install the AI Agent
 
-The coding agent (aider) lives in its own small environment, separate from the
+The coding agent (Aider) lives in its own small environment, separate from the
 AI/ML venv above. This install is quick and runs right on the login node (no
 Slurm job needed):
 
@@ -150,10 +150,10 @@ Let the AI help you write code, debug errors, and explain concepts -- but make
 sure *you* understand what the code does before moving on. Exercises are
 designed so you need to verify and reason about the AI's output.
 
-### The tutorial agent: aider + a self-hosted coding model
+### The tutorial agent: Aider + a self-hosted coding model
 
 We provide a CLI coding agent for you to use throughout the day -- no accounts,
-no API keys, no cost. It's [aider](https://aider.chat) (a popular open-source
+no API keys, no cost. It's [Aider](https://aider.chat) (a popular open-source
 coding agent) pointed at **Qwen3-Coder-30B-A3B-Instruct**, served on a
 dedicated MI300X compute node by your instructors. Exercises that say *"ask
 your AI agent..."* refer to this tool.
@@ -166,15 +166,15 @@ Launch it from inside the repo after completing the setup steps above:
 cd ~/sc-student-programming-tutorial
 
 
-# Launch aider (uses the agent you installed in Step 5, pointed at the local model)
+# Launch aider (uses the agent you installed during Getting Started, pointed at the local model)
 bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
 ```
 
-Inside aider, type questions in plain English. By default the agent runs in
+Inside Aider, type questions in plain English. By default the agent runs in
 **ask mode**: it reads the files you give it and explains what to do, but it
 does not edit them -- understanding and writing the code is your job. After starting 
-aider, add files or directories to your context with the `/read` command (e.g. run
-`/read module-03-slurm` to get aider to read its contents so it can answers questions
+Aider, add files or directories to your context with the `/read` command (e.g. run
+`/read module-03-slurm` to get Aider to read its contents so it can answer questions
 about it). Type
 `/help` to see commands, `/exit` to quit.
 

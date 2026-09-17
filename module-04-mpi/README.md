@@ -115,7 +115,9 @@ First, navigate to the exercises directory for this module:
 cd module-04-mpi/exercises
 ```
 
-### Step 0: Look at the Example
+### Exercise 1: Run an MPI Hello World
+
+#### Step 1: Examine the Program
 
 Examine the MPI hello-world program:
 
@@ -123,12 +125,21 @@ Examine the MPI hello-world program:
 cat ../examples/mpi_hello.c
 ```
 
-Compile and run it on a compute node with 4 ranks:
+#### Step 2: Compile the Program
 
 ```bash
 mpicc -O2 -o mpi_hello ../examples/mpi_hello.c
+```
+
+#### Step 3: Run with Four Ranks
+
+Run the program on a compute node with four ranks:
+
+```bash
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./mpi_hello
 ```
+
+#### Step 4: Experiment with Rank Counts
 
 Try running with 1, 4, 8, and 16 ranks. Notice that each rank reports a
 different ID, but they may print in any order (that's normal for parallel
@@ -136,7 +147,9 @@ programs).
 
 ---
 
-### Exercise 1: Parallel Sum with MPI_Reduce (Core)
+### Exercise 2: Parallel Sum with MPI_Reduce
+
+#### Step 1: Open the Template
 
 Open the exercise template:
 
@@ -147,6 +160,8 @@ cat parallel_sum.c
 The program divides a large array across ranks: each rank computes the sum of
 its portion, then `MPI_Reduce` combines the partial sums into a global total.
 
+#### Step 2: Complete the TODOs
+
 There are **4 TODOs** to fill in:
 
 1. **TODO 1**: Initialize MPI
@@ -154,19 +169,21 @@ There are **4 TODOs** to fill in:
 3. **TODO 3**: Use `MPI_Reduce` to sum the partial results
 4. **TODO 4**: Finalize MPI
 
-After filling in the TODOs, compile and run:
+#### Step 3: Compile the Program
+
+After filling in the TODOs, compile the program:
 
 ```bash
 mpicc -O2 -o parallel_sum parallel_sum.c -lm
 ```
 
-Submit the batch script:
+#### Step 4: Submit the Batch Job
 
 ```bash
 sbatch submit_mpi.sh
 ```
 
-Check the output:
+#### Step 5: Examine the Output
 
 ```bash
 cat mpi-sum_<JOBID>.out
@@ -180,12 +197,19 @@ cat mpi-sum_<JOBID>.out
 
 ---
 
-### Exercise 2: Interactive MPI (Core)
+### Exercise 3: Run MPI Interactively
 
-Try running with different rank counts directly:
+#### Step 1: Compile the Program
 
 ```bash
 mpicc -O2 -o parallel_sum parallel_sum.c -lm
+```
+
+#### Step 2: Try Different Rank Counts
+
+Run the program directly with several rank counts:
+
+```bash
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=2  ./parallel_sum
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=8  ./parallel_sum
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=16 ./parallel_sum
