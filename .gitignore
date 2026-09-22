@@ -9,3 +9,4 @@ _build/
 # Agent-facing working docs, kept local for now
 AGENTS.md
 PLAN.md
+.aider*
