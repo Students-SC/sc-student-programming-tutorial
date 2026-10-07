@@ -46,4 +46,5 @@ module-06-ai-inference-finetuning/README
 module-07-ai-agents/README
 module-07-ai-agents/exercises/capstone
 commands-reference
+challenges/README
 ```
