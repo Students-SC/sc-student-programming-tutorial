@@ -260,34 +260,13 @@ cat openmp-pi_<JOBID>.out
 
 ---
 
-### Challenge A: Find the Race Condition
+### Additional Challenges
 
-The file `pi_race.c` has a **deliberate bug** -- a
-race condition. Compile and run it:
+After you complete the rest of the main modules, checkout the [Challenges directory](../challenges#Module 3 - OpenMP) for additional OpenMP exercises that you can try.
 
-```bash
-gcc -fopenmp -O2 -o pi_race pi_race.c -lm
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
-  bash -c 'export OMP_NUM_THREADS=8; ./pi_race'
-```
+### Advanced: OpenMP Offload
 
-Run it several times. Notice the answer changes each time! Can you spot and fix
-the bug? (Hint: compare it to your working `pi_openmp.c`.)
-
-Try asking your AI agent: *"This OpenMP code gives wrong answers. Can you find
-the race condition?"* Does it identify the problem correctly?
-
-### Challenge B: Matrix-Vector Multiply
-
-Parallelize a matrix-vector multiplication using OpenMP. A template is at:
-
-```bash
-cat matvec_openmp.c
-```
-
-The outer loop over rows is embarrassingly parallel -- each row of the output
-can be computed independently. Add the appropriate OpenMP directive and compare
-performance with the serial version.
+OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, visit the [OpenMP Offload bonus module in the challenges directory](../challenges/bonus-openmp-offload) to learn about how to additional OpenMP directives that can be used to accomplish tasks on the GPU.
 
 
 
