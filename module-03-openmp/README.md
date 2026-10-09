@@ -262,7 +262,7 @@ cat openmp-pi_<JOBID>.out
 
 ### Additional Challenges
 
-After you complete the rest of the main modules, checkout the [Challenges directory](../challenges#Module-3---OpenMP) for additional OpenMP exercises that you can try.
+After you complete the rest of the main modules, checkout the [Challenges directory](../challenges#module-3---openmp-challenges) for additional OpenMP exercises that you can try.
 
 ### Advanced: OpenMP Offload
 
