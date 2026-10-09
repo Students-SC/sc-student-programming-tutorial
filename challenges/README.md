@@ -47,3 +47,9 @@ If you look at the [OpenMP API spec for `pragma for`](https://www.openmp.org/spe
 
 1. Could you apply the `collapse` clause for the `matvec_openmp.c` exercise? Does that still produce the correct output? If not, why?
 2. Could you apply the `schedule` clause for the `pi_race.c` and for `matvec_openmp.c`? Is there any difference in execution time between using `schedule(static)` and `schedule(dynamic)` for `omp parallel for`?
+
+# Bonus Modules
+
+## OpenMP Offload
+
+This bonus module covers OpenMP directives for GPU programming. This requires completing [Module 3 OpenMP](../module-03-openmp/README.md) and [Module 5 HIP](../module-05-hip/README.md). [Click here to get started](./bonus-openmp-offload/README).
