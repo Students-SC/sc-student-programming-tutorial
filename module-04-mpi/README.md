@@ -7,8 +7,8 @@
 By the end of this module, you will be able to:
 
 - Explain the message-passing model and how it differs from shared memory
-- Write an MPI program that distributes work across multiple processes (ranks)
-- Use point-to-point communication (`MPI_Send` / `MPI_Recv`)
+- Write an MPI program that distributes work across multiple processes (ranks) on one node
+- Explain point-to-point communication (`MPI_Send` / `MPI_Recv`)
 - Use collective operations (`MPI_Reduce`)
 
 ---
@@ -17,21 +17,24 @@ By the end of this module, you will be able to:
 
 ### Why MPI?
 
-OpenMP threads share memory within a single node, but what if you need more
-compute power than one node provides? **MPI (Message Passing Interface)**
-lets you run a program across **multiple processes** -- on the same node or
-across many nodes -- that communicate by **sending and receiving messages**.
+OpenMP threads share memory. **MPI (Message Passing Interface)** uses
+**multiple processes** that communicate by **sending and receiving messages**.
+In this module, we run 1 to 16 MPI processes on the CPU cores of one compute
+node.
 
 ```
-    Node 0                  Node 1
-  ┌──────────┐           ┌──────────┐
-  │ Rank 0   │◄─────────►│ Rank 2   │
-  │ Rank 1   │  messages  │ Rank 3   │
-  └──────────┘  (network) └──────────┘
+  One compute node
+  ┌───────────────────────────────────────────────────┐
+  │ ┌────────┐   ┌────────┐   ┌────────┐   ┌────────┐ │
+  │ │ Rank 0 │◄─►│ Rank 1 │◄─►│ Rank 2 │◄─►│ Rank 3 │ │
+  │ └────────┘   └────────┘   └────────┘   └────────┘ │
+  │               messages between ranks              │
+  └───────────────────────────────────────────────────┘
 ```
 
-Each process is called a **rank** and has its own private memory. Ranks
-coordinate by explicitly sending and receiving data.
+Each process is called a **rank** and has its own private memory, even though
+all ranks run on the same node. Ranks coordinate by explicitly sending and
+receiving data.
 
 ### MPI Basics
 
@@ -59,7 +62,7 @@ its rank number to do different work.
 
 ### Point-to-Point Communication
 
-Send a message from one rank to another:
+Send a message from one rank to another. This example requires at least two ranks:
 
 ```c
 if (rank == 0) {
@@ -97,19 +100,27 @@ if (rank == 0)
 
 ### Compiling and Running
 
+Compile these small programs on the login node with `mpicc`, then use `srun`
+to execute them on a compute node:
+
 ```bash
-mpicc -O2 -o program program.c      # Compile with MPI
-srun --ntasks=4 ./program            # Run with 4 ranks
+mpicc -O2 -o program program.c
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program
 ```
 
-On our cluster, `srun` automatically launches one copy of your program per
-rank, configured via `--ntasks`.
+`--nodes=1` places all ranks on one compute node. `--ntasks=4` tells `srun`
+to launch four ranks, each running one copy of your program. Use up to 16
+ranks to explore the node's 16 CPU cores.
 
 ---
 
 ## Hands-On Exercises (~35 min)
 
-First, navigate to the exercises directory for this module:
+Suggested pacing: about 8 minutes for Hello World, 20 minutes for Parallel Sum,
+and 7 minutes for interactive MPI. Complete the main exercises before trying
+the optional challenges.
+
+From the repository root on the login node, navigate to this module's exercises:
 
 ```bash
 cd module-04-mpi/exercises
@@ -125,7 +136,7 @@ Examine the MPI hello-world program:
 cat ../examples/mpi_hello.c
 ```
 
-#### Step 2: Compile the Program
+#### Step 2: Compile on the Login Node
 
 ```bash
 mpicc -O2 -o mpi_hello ../examples/mpi_hello.c
@@ -141,9 +152,9 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./mpi_hello
 
 #### Step 4: Experiment with Rank Counts
 
-Try running with 1, 4, 8, and 16 ranks. Notice that each rank reports a
-different ID, but they may print in any order (that's normal for parallel
-programs).
+Repeat the command with `--ntasks=1` and compare it with the four-rank output.
+Each rank reports a different ID, but the ranks may print in any order (that's
+normal for parallel programs). If time permits, also try 8 and 16 ranks.
 
 ---
 
@@ -151,14 +162,20 @@ programs).
 
 #### Step 1: Open the Template
 
-Open the exercise template:
+Open the exercise template in an editor on the login node:
 
 ```bash
-cat parallel_sum.c
+vim parallel_sum.c
 ```
 
-The program divides a large array across ranks: each rank computes the sum of
-its portion, then `MPI_Reduce` combines the partial sums into a global total.
+In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
+`:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
+or an existing VS Code Remote SSH connection.
+
+The program divides an index range across ranks. Each rank computes
+`sqrt(i)` for the indices in its range and adds those values locally, then
+`MPI_Reduce` combines the partial sums into a global total. No array is stored
+or distributed.
 
 #### Step 2: Complete the TODOs
 
@@ -169,7 +186,11 @@ There are **4 TODOs** to fill in:
 3. **TODO 3**: Use `MPI_Reduce` to sum the partial results
 4. **TODO 4**: Finalize MPI
 
-#### Step 3: Compile the Program
+Replace the placeholder rank/size setup instead of adding a second declaration.
+Place the reduction after the declaration of `global_sum` and outside the
+rank-0 printing condition so every rank participates.
+
+#### Step 3: Compile on the Login Node
 
 After filling in the TODOs, compile the program:
 
@@ -179,18 +200,37 @@ mpicc -O2 -o parallel_sum parallel_sum.c -lm
 
 #### Step 4: Submit the Batch Job
 
+The batch script runs your completed program with 1, 2, 4, 8, and 16 ranks on
+one compute node:
+
 ```bash
 sbatch submit_mpi.sh
 ```
 
+Note the job ID printed by `sbatch` and wait for the job to finish. You can
+check its status with `squeue -u $USER`.
+
 #### Step 5: Examine the Output
+
+Replace `<JOBID>` with your job ID:
 
 ```bash
 cat mpi-sum_<JOBID>.out
 ```
 
+With the default 100 million terms, expect a positive sum of approximately
+`6.67e11`. Check this magnitude first, then use the one-rank global sum as a
+consistency baseline for other rank counts. They should agree closely,
+although floating-point addition can produce small differences in the last
+digits when the order of addition changes.
+
+The reported time covers rank 0's local calculation and reduction interval;
+it excludes job startup. Use it to explore scaling. Reliable benchmarking
+would need repeated measurements and coordinated timing across ranks.
+
 **Questions:**
-- Does the parallel result match the serial reference?
+- Does the sum have the expected magnitude?
+- Do the global sums at 2, 4, 8, and 16 ranks agree with the one-rank baseline?
 - How does the time change from 1 rank to 16 ranks?
 - What would happen if you forgot the `MPI_Reduce` and just printed each
   rank's partial sum?
@@ -201,6 +241,9 @@ cat mpi-sum_<JOBID>.out
 
 #### Step 1: Compile the Program
 
+Use the completed `parallel_sum.c` from Exercise 2. If you have changed it,
+recompile it on the login node:
+
 ```bash
 mpicc -O2 -o parallel_sum parallel_sum.c -lm
 ```
@@ -210,49 +253,22 @@ mpicc -O2 -o parallel_sum parallel_sum.c -lm
 Run the program directly with several rank counts:
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=2  ./parallel_sum
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=3  ./parallel_sum
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=8  ./parallel_sum
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=16 ./parallel_sum
 ```
 
+The three-rank case checks the remainder handling: 100 million is not divisible
+by three, so the last rank computes one extra term. Its global sum should
+still agree closely with the one-rank baseline.
+
 ---
 
-### Challenge A: Ring Communication
+### Additional Challenges
 
-In a ring pattern, each rank sends data to the next rank and receives from the
-previous rank, forming a circle:
-
-```
-  Rank 0 → Rank 1 → Rank 2 → Rank 3
-    ▲                               │
-    └───────────────────────────────┘
-```
-
-Open the template:
-
-```bash
-cat ring.c
-```
-
-Fill in the TODOs to implement the ring using `MPI_Send` and `MPI_Recv`. Each
-rank sends its rank number to the next; after going around the ring, rank 0
-should have received `size - 1` (the last rank's number).
-
-```{tip}
-Think carefully about who sends first to avoid **deadlock** (all ranks waiting
-to receive before anyone sends).
-```
-
-### Challenge B: Ask the Agent
-
-Describe this problem to your AI agent: *"Write an MPI program in C where each
-rank generates a random number, and rank 0 prints the minimum, maximum, and
-average across all ranks."* Review the generated code for:
-
-- Does it call `MPI_Init` and `MPI_Finalize`?
-- Does it use the right MPI datatypes?
-- Could it deadlock?
-- Does rank 0 print the correct results?
+After completing the main modules, try the
+[MPI Ring Communication challenge](../challenges/README.md#module-4-mpi-challenges)
+to practice point-to-point communication and reason about deadlock.
 
 ---
 

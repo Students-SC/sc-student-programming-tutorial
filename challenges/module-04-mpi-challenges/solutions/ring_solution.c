@@ -1,8 +1,9 @@
 /*
  * ring_solution.c -- Solution: ring communication with MPI_Sendrecv
  *
- * Compile:  mpicc -O2 -o ring ring_solution.c
- * Run:      srun --ntasks=4 ./ring
+ * From the challenge directory:
+ *   mpicc -O2 -o ring_solution solutions/ring_solution.c
+ *   srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring_solution
  */
 
 #include <stdio.h>
