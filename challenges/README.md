@@ -10,9 +10,9 @@ of the curriculum.
 
 ### Ring Communication
 
-In a ring pattern, each rank sends its rank number to the next rank and
-receives the previous rank's number. Each value moves one hop. The last rank
-sends back to rank 0:
+Run all ranks on one compute node. In a ring pattern, each rank sends its
+rank number to the next rank and receives the previous rank's number. Each
+value moves one hop. The last rank sends back to rank 0:
 
 ```text
   Rank 0 → Rank 1 → Rank 2 → Rank 3

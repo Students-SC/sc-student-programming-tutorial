@@ -2,7 +2,7 @@
  * parallel_sum_solution.c -- Solution: parallel sum with MPI_Reduce
  *
  * Compile:  mpicc -O2 -o parallel_sum parallel_sum_solution.c -lm
- * Run:      srun --ntasks=4 ./parallel_sum
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./parallel_sum
  */
 
 #include <stdio.h>

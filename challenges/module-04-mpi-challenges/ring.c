@@ -6,7 +6,7 @@
  * last rank (size - 1).
  *
  * Compile:  mpicc -O2 -o ring ring.c
- * Run:      srun --ntasks=4 ./ring
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring
  */
 
 #include <stdio.h>

@@ -7,7 +7,7 @@
 By the end of this module, you will be able to:
 
 - Explain the message-passing model and how it differs from shared memory
-- Write an MPI program that distributes work across multiple processes (ranks)
+- Write an MPI program that distributes work across multiple processes (ranks) on one node
 - Explain point-to-point communication (`MPI_Send` / `MPI_Recv`)
 - Use collective operations (`MPI_Reduce`)
 
@@ -17,21 +17,24 @@ By the end of this module, you will be able to:
 
 ### Why MPI?
 
-OpenMP threads share memory within a single node, but what if you need more
-compute power than one node provides? **MPI (Message Passing Interface)**
-lets you run a program across **multiple processes** -- on the same node or
-across many nodes -- that communicate by **sending and receiving messages**.
+OpenMP threads share memory. **MPI (Message Passing Interface)** uses
+**multiple processes** that communicate by **sending and receiving messages**.
+In this module, we run 1 to 16 MPI processes on the CPU cores of one compute
+node.
 
 ```
-    Node 0                  Node 1
-  ┌──────────┐           ┌──────────┐
-  │ Rank 0   │◄─────────►│ Rank 2   │
-  │ Rank 1   │  messages  │ Rank 3   │
-  └──────────┘  (network) └──────────┘
+  One compute node
+  ┌───────────────────────────────────────────────────┐
+  │ ┌────────┐   ┌────────┐   ┌────────┐   ┌────────┐ │
+  │ │ Rank 0 │◄─►│ Rank 1 │◄─►│ Rank 2 │◄─►│ Rank 3 │ │
+  │ └────────┘   └────────┘   └────────┘   └────────┘ │
+  │               messages between ranks              │
+  └───────────────────────────────────────────────────┘
 ```
 
-Each process is called a **rank** and has its own private memory. Ranks
-coordinate by explicitly sending and receiving data.
+Each process is called a **rank** and has its own private memory, even though
+all ranks run on the same node. Ranks coordinate by explicitly sending and
+receiving data.
 
 ### MPI Basics
 
@@ -105,16 +108,9 @@ mpicc -O2 -o program program.c
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program
 ```
 
-On our cluster, `srun` automatically launches one copy of your program per
-rank, configured via `--ntasks`.
-
-```{note}
-The current [cluster queue policy](https://amdresearch.github.io/hpcfund/jobs.html#table-queues)
-limits `mi2101x` jobs to one virtual node. The commands below use multiple MPI
-processes on that node, each with its own private memory. Testing across
-multiple nodes requires an administrator-approved exception or an approved
-alternative partition.
-```
+`--nodes=1` places all ranks on one compute node. `--ntasks=4` tells `srun`
+to launch four ranks, each running one copy of your program. Use up to 16
+ranks to explore the node's 16 CPU cores.
 
 ---
 
