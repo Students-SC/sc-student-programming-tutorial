@@ -11,7 +11,8 @@ of the curriculum.
 ### Ring Communication
 
 In a ring pattern, each rank sends its rank number to the next rank and
-receives the previous rank's number. The last rank sends back to rank 0:
+receives the previous rank's number. Each value moves one hop. The last rank
+sends back to rank 0:
 
 ```text
   Rank 0 → Rank 1 → Rank 2 → Rank 3
@@ -62,6 +63,10 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring
 Each rank should receive the previous rank's number. With four ranks, rank 0
 should receive `3` from rank 3 and report that ring communication succeeded.
 The output lines may appear in any order.
+
+Check every rank's source, destination, and received value. The success banner
+checks only rank 0; the program exits with status 0 even when it prints a
+failed value check.
 
 Try again with eight ranks by changing `--ntasks=4` to `--ntasks=8`. Rank 0
 should now receive `7`. In general, rank 0 receives `size - 1`.

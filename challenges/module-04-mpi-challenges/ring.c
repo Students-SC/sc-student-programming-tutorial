@@ -2,7 +2,7 @@
  * ring.c -- Ring communication pattern
  *
  * CHALLENGE: Each rank sends its rank number to the next rank in a ring.
- * After one full pass, rank 0 should have received the value from the
+ * Each value moves one hop. Rank 0 receives the rank number from the
  * last rank (size - 1).
  *
  * Compile:  mpicc -O2 -o ring ring.c

@@ -108,6 +108,14 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program
 On our cluster, `srun` automatically launches one copy of your program per
 rank, configured via `--ntasks`.
 
+```{note}
+The current [cluster queue policy](https://amdresearch.github.io/hpcfund/jobs.html#table-queues)
+limits `mi2101x` jobs to one virtual node. The commands below use multiple MPI
+processes on that node, each with its own private memory. Testing across
+multiple nodes requires an administrator-approved exception or an approved
+alternative partition.
+```
+
 ---
 
 ## Hands-On Exercises (~35 min)
@@ -168,8 +176,10 @@ In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
 `:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
 or an existing VS Code Remote SSH connection.
 
-The program divides a large array across ranks: each rank computes the sum of
-its portion, then `MPI_Reduce` combines the partial sums into a global total.
+The program divides an index range across ranks. Each rank computes
+`sqrt(i)` for the indices in its range and adds those values locally, then
+`MPI_Reduce` combines the partial sums into a global total. No array is stored
+or distributed.
 
 #### Step 2: Complete the TODOs
 
@@ -179,6 +189,10 @@ There are **4 TODOs** to fill in:
 2. **TODO 2**: Get the rank and size
 3. **TODO 3**: Use `MPI_Reduce` to sum the partial results
 4. **TODO 4**: Finalize MPI
+
+Replace the placeholder rank/size setup instead of adding a second declaration.
+Place the reduction after the declaration of `global_sum` and outside the
+rank-0 printing condition so every rank participates.
 
 #### Step 3: Compile on the Login Node
 
@@ -208,11 +222,18 @@ Replace `<JOBID>` with your job ID:
 cat mpi-sum_<JOBID>.out
 ```
 
-Use the one-rank global sum as the baseline for comparing the results at other
-rank counts. They should agree closely, although floating-point addition can
-produce small differences in the last digits when the order of addition changes.
+With the default 100 million terms, expect a positive sum of approximately
+`6.67e11`. Check this magnitude first, then use the one-rank global sum as a
+consistency baseline for other rank counts. They should agree closely,
+although floating-point addition can produce small differences in the last
+digits when the order of addition changes.
+
+The reported time covers rank 0's local calculation and reduction interval;
+it excludes job startup. Use it to explore scaling. Reliable benchmarking
+would need repeated measurements and coordinated timing across ranks.
 
 **Questions:**
+- Does the sum have the expected magnitude?
 - Do the global sums at 2, 4, 8, and 16 ranks agree with the one-rank baseline?
 - How does the time change from 1 rank to 16 ranks?
 - What would happen if you forgot the `MPI_Reduce` and just printed each
@@ -236,10 +257,14 @@ mpicc -O2 -o parallel_sum parallel_sum.c -lm
 Run the program directly with several rank counts:
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=2  ./parallel_sum
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=3  ./parallel_sum
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=8  ./parallel_sum
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=16 ./parallel_sum
 ```
+
+The three-rank case checks the remainder handling: 100 million is not divisible
+by three, so the last rank computes one extra term. Its global sum should
+still agree closely with the one-rank baseline.
 
 ---
 
