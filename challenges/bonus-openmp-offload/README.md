@@ -230,13 +230,6 @@ correctness:
 - Increase `N` (e.g. 2048, 4096) and see how the GPU speedup grows relative to
   the serial loop.
 
-### Challenge B: Ask the Agent
-
-Ask your AI agent: *"I have a serial C matrix-multiply loop. How would I offload
-it to a GPU using OpenMP target directives, and what data do I need to map?"*
-Compare its suggestion to what you wrote. Does it get the `map` directions right
-(`to` for inputs, `tofrom` for the result)? Does it remember `teams distribute
-parallel for`?)
 
 ---
 

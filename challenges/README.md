@@ -24,8 +24,6 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
 Run it several times. Notice the answer changes each time! Can you spot and fix
 the bug? (Hint: compare it to your working `pi_openmp.c`.)
 
-Try asking your AI agent: *"This OpenMP code gives wrong answers. Can you find
-the race condition?"* Does it identify the problem correctly?
 
 ### Challenge B: Matrix-Vector Multiply
 
