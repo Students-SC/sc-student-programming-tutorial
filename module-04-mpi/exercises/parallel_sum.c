@@ -3,11 +3,11 @@
  *
  * EXERCISE: Fill in the 4 TODOs to make this program work with MPI.
  *
- * The program divides a large array across ranks. Each rank sums its
- * portion, then MPI_Reduce combines the partial sums on rank 0.
+ * The program divides an index range across ranks. Each rank sums sqrt(i)
+ * over its range, then MPI_Reduce combines the partial sums on rank 0.
  *
  * Compile:  mpicc -O2 -o parallel_sum parallel_sum.c -lm
- * Run:      srun --ntasks=4 ./parallel_sum
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./parallel_sum
  */
 
 #include <stdio.h>

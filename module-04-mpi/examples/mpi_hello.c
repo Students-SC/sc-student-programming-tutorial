@@ -4,7 +4,7 @@
  * Each rank prints its ID and the total number of ranks.
  *
  * Compile:  mpicc -O2 -o mpi_hello mpi_hello.c
- * Run:      srun --ntasks=4 ./mpi_hello
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./mpi_hello
  */
 
 #include <stdio.h>
