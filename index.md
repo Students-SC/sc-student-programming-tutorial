@@ -47,4 +47,5 @@ module-07-ai-agents/README
 module-07-ai-agents/exercises/capstone
 commands-reference
 challenges/README
+challenges/bonus-openmp-offload/README
 ```
