@@ -33,6 +33,9 @@ When your problem involves applying the same math to millions of data points
 (vector operations, matrix multiply, neural network layers), GPUs can be
 10-100x faster than CPUs.
 
+TODO: insert more clear diagram showing how CPU and GPU are different in the number of cores they have
+TODO: how else is GPU different from CPU. Why is GPU not general purpose? 
+
 ### The AMD MI210
 
 Our compute nodes each have an **AMD Instinct MI210** GPU:
@@ -45,11 +48,15 @@ Our compute nodes each have an **AMD Instinct MI210** GPU:
 | Memory Bandwidth | 1.6 TB/s |
 | Architecture | CDNA2 (gfx90a) |
 
+TODO: what do these mean? What is a compute unit, stream processor, memory, memory bandwidth (why is memory bandwidth important)? 
+
 ### HIP: Portable GPU Programming
 
 **HIP (Heterogeneous-compute Interface for Portability)** is AMD's GPU
 programming framework. It's designed to be nearly identical to NVIDIA's CUDA,
 so code is portable across AMD and NVIDIA GPUs.
+
+TODO: what does a GPU assembly code look like? How does that compare to HIP code and why is that easier to understand?
 
 ### The Programming Model
 
@@ -68,6 +75,8 @@ A HIP program has two parts:
   5. Free GPU memory            
 ```
 
+TODO: explain host and device more
+
 ### Threads, Blocks, and Grids
 
 When you launch a kernel, you specify how many threads to create, organized
@@ -81,11 +90,16 @@ into a hierarchy:
   └── ...
 ```
 
+
+TODO: better diagram for displaying a grid
+
 Each thread computes its **global index** to know which data element to process:
 
 ```cpp
 int i = blockIdx.x * blockDim.x + threadIdx.x;
 ```
+TODO: walk through this calculation for a specific thread, pointing to where it is on a grid diagram
+
 
 | Variable | Meaning |
 |----------|---------|
@@ -93,6 +107,7 @@ int i = blockIdx.x * blockDim.x + threadIdx.x;
 | `blockIdx.x` | Block index within the grid |
 | `blockDim.x` | Number of threads per block |
 | `gridDim.x` | Number of blocks in the grid |
+
 
 ### Kernel Syntax
 
@@ -111,7 +126,13 @@ int blocks = (n + threads_per_block - 1) / threads_per_block;
 add_vectors<<<blocks, threads_per_block>>>(d_a, d_b, d_c, n);
 ```
 
+TODO: add diagram showing a blow up of a specific thread in a grid diagram, showing that thread doing the addition
+
 ### Memory Management
+
+TODO: what is memory management? why are we transferring to and from CPU memory? Why should we try to minimize that (because it is a bottleneck, you're spending
+more time moving data around than computing)?
+TODO: maybe talk about memory bound and compute bound?
 
 | Function | Purpose |
 |----------|---------|
@@ -126,7 +147,7 @@ Copy directions:
 
 ---
 
-## Hands-On Exercises (~40 min)
+## Hands-On Exercises 
 
 First, navigate to the exercises directory for this module:
 
@@ -235,37 +256,7 @@ Does the block size affect performance or correctness?
 
 ---
 
-### Challenge A: Matrix-Vector Multiply on the GPU
 
-Open the challenge template:
-
-```bash
-cat matvec_hip.cpp
-```
-
-Implement a HIP kernel for matrix-vector multiplication: `y[i] = sum_j(A[i][j] * x[j])`
-
-Each thread computes one element of the output vector y. This means each
-thread must iterate over an entire row of the matrix.
-
-### Challenge B: Ask the Agent
-
-Give your AI agent this serial C loop and ask it to convert it to a HIP
-kernel:
-
-```c
-for (int i = 0; i < n; i++) {
-    y[i] = 0.0;
-    for (int j = 0; j < n; j++) {
-        y[i] += A[i * n + j] * x[j];
-    }
-}
-```
-
-Review the generated code. Does the thread indexing make sense? Did it handle
-the `if (i < n)` bounds check?
-
----
 
 ## Quick Reference
 

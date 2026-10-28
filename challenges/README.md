@@ -123,6 +123,25 @@ mpicc -O2 -o ring_solution solutions/ring_solution.c
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring_solution
 ```
 
+## Module 05 - HIP
+
+
+### Challenge A: Matrix-Vector Multiply on the GPU
+
+Open the challenge template:
+
+```bash
+cat matvec_hip.cpp
+```
+
+Implement a HIP kernel for matrix-vector multiplication: `y[i] = sum_j(A[i][j] * x[j])`
+
+Each thread computes one element of the output vector y. This means each
+thread must iterate over an entire row of the matrix.
+
+### TODO: Add a Challenge B
+
+
 # Bonus Modules
 
 ## OpenMP Offload
