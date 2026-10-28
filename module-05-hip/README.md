@@ -19,22 +19,24 @@ By the end of this module, you will be able to:
 
 A CPU has a few powerful cores optimized for complex, sequential tasks. A GPU
 has **thousands of simpler cores** optimized for doing the same operation on
-many data elements at once.
+many data elements at once. And because of that, if you can break up a problem into small
+calculations that can be done in parallel, a GPU is much much faster.
 
-```
-  CPU: 16 powerful cores              GPU: thousands of lightweight cores
-  ┌──┐┌──┐┌──┐┌──┐                   ┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐
-  │  ││  ││  ││  │   ... (16)        │ ││ ││ ││ ││ ││ ││ ││ ││ ││ │ ...
-  └──┘└──┘└──┘└──┘                   └─┘└─┘└─┘└─┘└─┘└─┘└─┘└─┘└─┘└─┘
-                                      (thousands)
-```
+
+
+CPU:
+![topology of a 16 core CPU](./lstopooutput.png)
+
+GPU:
+![topology of a A100 GPU](./gpudiagram.png)
+
 
 When your problem involves applying the same math to millions of data points
 (vector operations, matrix multiply, neural network layers), GPUs can be
 10-100x faster than CPUs.
+However, a GPU cannot do more specialized tasks like managing IO, network communication[^1], interacting
+with other devices. You still need a CPU for that.
 
-TODO: insert more clear diagram showing how CPU and GPU are different in the number of cores they have
-TODO: how else is GPU different from CPU. Why is GPU not general purpose? 
 
 ### The AMD MI210
 
@@ -49,6 +51,48 @@ Our compute nodes each have an **AMD Instinct MI210** GPU:
 | Architecture | CDNA2 (gfx90a) |
 
 TODO: what do these mean? What is a compute unit, stream processor, memory, memory bandwidth (why is memory bandwidth important)? 
+
+What do these terms mean? 
+
+#### Stream Processor
+
+Stream processor is a term used to reference any individual arithmatic unit present in a GPU. Nvidia
+GPUs, they might be called CUDA cores. You can think of them as equivalent to a "core" on a CPU in
+which a thread can run.
+
+
+#### Compute Unit
+A compute unit looks something like this (TODO insert diagram)
+
+A compute unit is a collection of these stream processors or cores or whatever, along with other
+infrastructure that they need. For example, here is a diagram of a compute unit from an AMD MI250X
+GPU.
+
+![block diagram of AMD MI250X compute unit](./computeunit.png)
+
+
+TODO: update the above two sections after having read programming massively parallel processors
+
+#### Memory and Memory Bandwidth
+
+A GPU obviously needs to operate on some data, and this data needs to live somewhere. Every computer
+has RAM, but that is too far away and would be too slow to access. So a GPU usually comes with with
+its own RAM. Because usually GPUs are meant for high throughput computing, it is useful for the GPUs
+RAM to be large enough to store a large amount of data to avoid having to reach out to the CPU
+memory frequently. And also because computational parts of GPUs are able to churn through a large amount of data 
+quickly, the GPU should not be bottlenecked by how much data can be read from the GPU memory at a
+time.
+
+
+#### Architecture
+
+Architecture refers to the overall design of the GPU. The individual decisions and compromises that are made to
+allow the GPU to do what it does efficiently. Architectures are always iterated on and improved
+between different generations of GPUs, based on the lessons learned in previous generations and to
+move with the times of how GPUs are being used.
+
+e.g. TODO moving from fp32 and fp64 to more ML focused so need more native support for lower precision
+
 
 ### HIP: Portable GPU Programming
 
@@ -284,3 +328,8 @@ Does the block size affect performance or correctness?
 ---
 
 **Next up:** [Module 6 -- AI on HPC: Inference & Fine-Tuning](../module-06-ai-inference-finetuning/README.md)
+
+[^1]: with some nuances. Some GPUs can be directly connected to the network rather than having to
+    pass their data to the CPU first before communicating with another node. This speeds up some
+    massive applications that need to be split across hundreds of nodes, by taking away the extra
+    step of copying data to the CPU first before doing network communication.
