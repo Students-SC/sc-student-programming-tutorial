@@ -1,0 +1,455 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Thread Index Visualizer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: control strip on top, live formula readout, then the grid drawn as stacked block rows of thread cells */
+:root {
+  --bg: #f3f5f4;
+  --panel: #ffffff;
+  --fg: #17201d;
+  --muted: #5d6a65;
+  --line: #d3dbd8;
+  --cell: #e2e9e6;
+  --cell-alt: #d4ddd9;
+  --block-sel: #cfe7e0;
+  --accent: #0b7a64;
+  --accent-fg: #ffffff;
+  --warn: #b4441f;
+  --warn-bg: #f8e3da;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111715; --panel: #18201d; --fg: #e3ebe7; --muted: #92a19b; --line: #2c3833;
+    --cell: #24302b; --cell-alt: #2d3a35; --block-sel: #1c3d34; --accent: #3fc9a6; --accent-fg: #0b1512; --warn: #ff8a62; --warn-bg: #3a2219;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111715; --panel: #18201d; --fg: #e3ebe7; --muted: #92a19b; --line: #2c3833;
+  --cell: #24302b; --cell-alt: #2d3a35; --block-sel: #1c3d34; --accent: #3fc9a6; --accent-fg: #0b1512; --warn: #ff8a62; --warn-bg: #3a2219;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); line-height: 1.45; }
+.wrap {
+  max-width: 1100px; margin: 0 auto;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 20px;
+}
+h1 { margin: 0; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--muted); max-width: 65ch; }
+code, .mono { font-family: var(--font-mono); }
+
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+fieldset {
+  margin: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+  padding: 14px 16px 16px; display: flex; flex-wrap: wrap; gap: 12px 16px; min-width: 0;
+}
+legend { padding: 0 6px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); flex: 1 1 100px; min-width: 0; }
+label span.mono { color: var(--fg); font-size: 0.85rem; }
+input[type=number], select {
+  font: 500 1rem var(--font-mono); color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; box-sizing: border-box;
+}
+input:focus-visible, select:focus-visible, .cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input.bad { border-color: var(--warn); }
+
+.readout {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0;
+}
+.formula { font-family: var(--font-mono); font-size: 1rem; overflow-x: auto; white-space: nowrap; padding-bottom: 2px; }
+.formula .k { color: var(--muted); }
+.formula .v { color: var(--accent); font-weight: 600; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 0.85rem; color: var(--muted); }
+.stats b { color: var(--fg); font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+.msg { color: var(--warn); font-size: 0.85rem; min-height: 1.2em; margin: 0; }
+
+.legend-row { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.8rem; color: var(--muted); align-items: center; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -2px; margin-right: 6px; }
+
+.grid { display: flex; flex-direction: column; gap: 6px; }
+.block {
+  display: grid; grid-template-columns: 84px 1fr; gap: 10px; align-items: start;
+  padding: 6px 8px; border-radius: 6px; border: 1px solid transparent;
+}
+.block.sel { background: var(--block-sel); border-color: var(--accent); }
+.blabel { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); padding-top: 2px; line-height: 1.3; }
+.blabel b { color: var(--fg); font-weight: 600; display: block; }
+.threads { display: flex; flex-wrap: wrap; gap: 2px; min-width: 0; }
+.cell {
+  width: var(--cs); height: var(--cs); border-radius: 2px; background: var(--cell);
+  font: 500 calc(var(--cs) * 0.42) var(--font-mono); color: var(--muted);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  border: 0; padding: 0; font-variant-numeric: tabular-nums;
+}
+.cell.w { background: var(--cell-alt); }
+.cell.idle { background: repeating-linear-gradient(135deg, var(--line) 0 2px, var(--bg) 2px 5px); color: var(--muted); }
+.cell:hover { outline: 1px solid var(--muted); }
+.cell.on { background: var(--accent); color: var(--accent-fg); font-weight: 600; outline: 2px solid var(--fg); outline-offset: 1px; position: relative; z-index: 1; }
+.cell.on.idle { background: var(--warn); color: var(--accent-fg); }
+.note { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.note:empty { display: none; }
+
+.kernel { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+.kernel > * { min-width: 0; }
+.kpanel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.khead { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; margin: 0; }
+.kcode { margin: 0; font: 0.85rem/1.65 var(--font-mono); overflow-x: auto; }
+.ln { display: block; white-space: pre; padding: 0 8px; border-left: 3px solid transparent; }
+.ln.hit { background: var(--block-sel); border-left-color: var(--accent); }
+.ln.fail { background: var(--warn-bg); border-left-color: var(--warn); }
+.ln.skip { color: var(--muted); text-decoration: line-through; }
+.kw { color: var(--accent); }
+.ln.fail .cm { color: var(--warn); }
+.cm { color: var(--muted); }
+.pill { align-self: flex-start; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 999px; }
+.pill.ok { background: var(--accent); color: var(--accent-fg); }
+.pill.no { background: var(--warn); color: var(--accent-fg); }
+.exec h2 { margin: 0; font: 600 1.3rem var(--font-mono); }
+.exec p { margin: 0; max-width: 65ch; }
+.where { color: var(--muted); font-size: 0.85rem; }
+.ops { margin: 0; display: flex; flex-direction: column; gap: 6px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.ops div { display: grid; grid-template-columns: 7.5em 1fr; gap: 8px; align-items: baseline; }
+.ops dt { color: var(--muted); }
+.ops dd { margin: 0; font-size: 1.05rem; }
+.ops .sum { border-top: 1px solid var(--line); padding-top: 6px; }
+.ops .sum dd { color: var(--accent); font-weight: 600; }
+.arrays-panel { grid-column: 1 / -1; }
+.tablewrap { overflow-x: auto; }
+.arr { border-collapse: collapse; font: 0.85rem var(--font-mono); font-variant-numeric: tabular-nums; }
+.arr th, .arr td { border: 1px solid var(--line); padding: 5px 8px; text-align: center; min-width: 2.8em; }
+.arr th[scope=row] { color: var(--muted); text-align: left; background: var(--bg); font-weight: 500; }
+.arr thead th { color: var(--muted); font-weight: 400; font-size: 0.75rem; }
+.arr .pick { background: var(--block-sel); color: var(--fg); font-weight: 600; box-shadow: inset 0 0 0 2px var(--accent); }
+.arr .oob { background: var(--warn-bg); color: var(--warn); }
+.arr .gap { border-top: none; border-bottom: none; color: var(--muted); min-width: 1.5em; }
+@media (max-width: 760px) { .kernel { grid-template-columns: minmax(0, 1fr); } }
+.hint { font-size: 0.8rem; color: var(--muted); margin: 0; }
+.tip { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); min-height: 1.3em; margin: 0; }
+
+@media (max-width: 520px) {
+  .block { grid-template-columns: 1fr; gap: 4px; }
+  .blabel b { display: inline; margin-right: 8px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cell, .block { transition: background-color 120ms ease; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Thread Index Visualizer</h1>
+    <p class="sub">A 1D launch <code>kernel&lt;&lt;&lt;gridDim, blockDim&gt;&gt;&gt;</code> drawn as rows of blocks. Each square is one thread. Pick a block and thread to see which global index <code>i</code> it computes, and what that thread does in a vector-add kernel over <code>n</code> elements.</p>
+  </header>
+
+  <div class="controls">
+    <fieldset>
+      <legend>Launch configuration</legend>
+      <label for="gridDim"><span class="mono">gridDim.x</span>blocks in the grid
+        <input id="gridDim" type="number" min="1" max="256" value="4">
+      </label>
+      <label for="blockDim"><span class="mono">blockDim.x</span>threads per block
+        <input id="blockDim" type="number" min="1" max="1024" value="64">
+      </label>
+      <label for="n"><span class="mono">n</span>array length
+        <input id="n" type="number" min="1" max="10000000" value="200">
+      </label>
+    </fieldset>
+    <fieldset>
+      <legend>Select a thread</legend>
+      <label for="blockIdx"><span class="mono">blockIdx.x</span>which block
+        <input id="blockIdx" type="number" min="0" value="2">
+      </label>
+      <label for="threadIdx"><span class="mono">threadIdx.x</span>which thread in it
+        <input id="threadIdx" type="number" min="0" value="13">
+      </label>
+    </fieldset>
+    <fieldset>
+      <legend>Display</legend>
+      <label for="warp">Shade groups of
+        <select id="warp">
+          <option value="32">32 (CUDA warp)</option>
+          <option value="64">64 (AMD wavefront)</option>
+          <option value="0">no shading</option>
+        </select>
+      </label>
+      <label for="globalIdx"><span class="mono">i</span>or jump to a global index
+        <input id="globalIdx" type="number" min="0" value="141">
+      </label>
+    </fieldset>
+  </div>
+
+  <section class="readout" aria-live="polite">
+    <div class="formula" id="formula"></div>
+    <div class="stats" id="stats"></div>
+    <p class="note" id="note"></p>
+    <p class="msg" id="msg"></p>
+  </section>
+
+  <section class="kernel">
+    <div class="kpanel">
+      <p class="khead">Kernel, as run by the selected thread</p>
+      <pre class="kcode" id="kcode"></pre>
+    </div>
+    <div class="kpanel exec" id="exec" aria-live="polite"></div>
+    <div class="kpanel arrays-panel">
+      <p class="khead">Arrays near the selected element · a[i] = b[i] = i + 1</p>
+      <div class="tablewrap" id="arrays"></div>
+    </div>
+  </section>
+
+  <div class="legend-row">
+    <span><i class="sw" style="background:var(--accent)"></i>selected thread</span>
+    <span><i class="sw" style="background:var(--block-sel);outline:1px solid var(--accent)"></i>its block</span>
+    <span><i class="sw" style="background:repeating-linear-gradient(135deg,var(--line) 0 2px,var(--bg) 2px 5px);outline:1px solid var(--line)"></i>no-op thread (i ≥ n)</span>
+    <span id="warpLegend"><i class="sw" style="background:var(--cell-alt)"></i>alternate warps</span>
+    <span>Click any square to select it.</span>
+  </div>
+  <p class="tip" id="tip">&nbsp;</p>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const gridIn = $('gridDim'), blockIn = $('blockDim'), bIn = $('blockIdx'), tIn = $('threadIdx'),
+        warpIn = $('warp'), gIn = $('globalIdx'), nIn = $('n');
+  const gridEl = $('grid'), formula = $('formula'), stats = $('stats'), msg = $('msg'), tip = $('tip'),
+        note = $('note'), kcode = $('kcode'), execEl = $('exec'), arraysEl = $('arrays');
+  const LIMITS = { grid: 256, block: 1024, n: 10000000 };
+
+  let cells = [];   // cells[b][t]
+  let blocks = [];
+  let lastShape = '';
+  let lastIdle = '';
+
+  const fmt = v => v.toLocaleString('en-US');
+  const A = k => k + 1;   // a[k] and b[k] both hold 1, 2, 3, ...
+
+  function line(code, cls, comment) {
+    return '<span class="ln' + (cls ? ' ' + cls : '') + '">' + (code || ' ') +
+      (comment ? '<span class="cm">  // ' + comment + '</span>' : '') + '</span>';
+  }
+
+  function renderKernel(sel, n, G, B) {
+    const active = sel && sel.i < n;
+    const v = sel ? A(sel.i) : 0;
+    const L = [
+      line('<span class="kw">__global__ void</span> vecAdd(<span class="kw">const int</span> *a, <span class="kw">const int</span> *b, <span class="kw">int</span> *c, <span class="kw">int</span> n) {'),
+      line('    <span class="kw">int</span> i = blockIdx.x * blockDim.x + threadIdx.x;', sel ? 'hit' : '',
+           sel ? sel.b + ' * ' + B + ' + ' + sel.t + ' = ' + sel.i : ''),
+      line('    <span class="kw">if</span> (i &lt; n) {', sel ? (active ? 'hit' : 'fail') : '',
+           sel ? sel.i + ' &lt; ' + n + ' is ' + (active ? 'true' : 'false') : ''),
+      line('        c[i] = a[i] + b[i];', sel ? (active ? 'hit' : 'skip') : '',
+           sel ? (active ? 'c[' + sel.i + '] = ' + v + ' + ' + v + ' = ' + (2 * v) : 'skipped') : ''),
+      line('    }'),
+      line('}'),
+      line(''),
+      line('vecAdd&lt;&lt;&lt;' + G + ', ' + B + '&gt;&gt;&gt;(a, b, c, n);', '', 'n = ' + fmt(n) + ', ' + fmt(G * B) + ' threads launched')
+    ];
+    kcode.innerHTML = L.join('');
+
+    if (!sel) {
+      execEl.innerHTML = '<p class="khead">This thread</p><p class="where">Pick a valid block and thread to see what it does.</p>';
+      arraysEl.innerHTML = '';
+      return;
+    }
+    const where = '<p class="where">blockIdx.x = ' + sel.b + ', threadIdx.x = ' + sel.t + '</p>';
+    if (active) {
+      execEl.innerHTML = '<p class="khead">This thread</p><span class="pill ok">computes</span>' +
+        '<h2>i = ' + fmt(sel.i) + '</h2>' + where +
+        '<dl class="ops">' +
+        '<div><dt>a[' + sel.i + ']</dt><dd>' + fmt(v) + '</dd></div>' +
+        '<div><dt>b[' + sel.i + ']</dt><dd>' + fmt(v) + '</dd></div>' +
+        '<div class="sum"><dt>c[' + sel.i + ']</dt><dd>' + fmt(v) + ' + ' + fmt(v) + ' = ' + fmt(2 * v) + '</dd></div>' +
+        '</dl>';
+    } else {
+      execEl.innerHTML = '<p class="khead">This thread</p><span class="pill no">no-op</span>' +
+        '<h2>i = ' + fmt(sel.i) + '</h2>' + where +
+        '<p>i = ' + fmt(sel.i) + ' is not less than n = ' + fmt(n) + ', so the <code>if</code> test fails. ' +
+        'This thread skips the addition. It reads nothing from <code>a</code> or <code>b</code> and writes nothing to <code>c</code>.</p>' +
+        '<p class="where">Without the bounds check it would access a[' + sel.i + '], which is past the end of the array (last valid index is ' + fmt(n - 1) + ').</p>';
+    }
+
+    // Build a window of columns: numbers are element indices; 'gap' is an ellipsis.
+    const cols = [];
+    if (active) {
+      const start = Math.max(0, Math.min(sel.i - 5, n - 11));
+      const end = Math.min(n, start + 11);
+      if (start > 0) cols.push('gap');
+      for (let k = start; k < end; k++) cols.push(k);
+      if (end < n) cols.push('gap');
+    } else {
+      const start = Math.max(0, n - 6);
+      if (start > 0) cols.push('gap');
+      for (let k = start; k < n; k++) cols.push(k);
+      if (sel.i > n) cols.push('gap');
+      cols.push(sel.i);
+    }
+    const cell = (k, val) => {
+      if (k === 'gap') return '<td class="gap">…</td>';
+      if (k >= n) return '<td class="oob">—</td>';
+      return '<td' + (k === sel.i ? ' class="pick"' : '') + '>' + fmt(val(k)) + '</td>';
+    };
+    const head = cols.map(k => k === 'gap' ? '<th class="gap"></th>' :
+      '<th scope="col"' + (k === sel.i ? ' class="' + (k >= n ? 'oob' : 'pick') + '"' : '') + '>' + (k >= n ? k + ' (past end)' : k) + '</th>').join('');
+    const row = (name, val) => '<tr><th scope="row">' + name + '</th>' + cols.map(k => cell(k, val)).join('') + '</tr>';
+    arraysEl.innerHTML = '<table class="arr"><thead><tr><th scope="row">index</th>' + head + '</tr></thead><tbody>' +
+      row('a', A) + row('b', A) + row('c (after)', k => 2 * A(k)) + '</tbody></table>';
+  }
+
+  function intVal(el, lo, hi) {
+    const v = Number(el.value);
+    const ok = el.value.trim() !== '' && Number.isInteger(v) && v >= lo && v <= hi;
+    el.classList.toggle('bad', !ok);
+    return ok ? v : null;
+  }
+
+  function cellSize(n) {
+    if (n <= 32) return 26;
+    if (n <= 64) return 22;
+    if (n <= 128) return 16;
+    if (n <= 256) return 12;
+    return 9;
+  }
+
+  function build(G, B, warp) {
+    const shape = G + 'x' + B + 'w' + warp;
+    if (shape === lastShape) return;
+    lastShape = shape;
+    gridEl.innerHTML = '';
+    cells = []; blocks = [];
+    const cs = cellSize(B);
+    const showNums = B <= 64;
+    const frag = document.createDocumentFragment();
+    for (let b = 0; b < G; b++) {
+      const row = document.createElement('div');
+      row.className = 'block';
+      const lab = document.createElement('div');
+      lab.className = 'blabel';
+      lab.innerHTML = '<b>block ' + b + '</b>i ' + (b * B) + '–' + (b * B + B - 1);
+      const th = document.createElement('div');
+      th.className = 'threads';
+      th.style.setProperty('--cs', cs + 'px');
+      const rowCells = [];
+      for (let t = 0; t < B; t++) {
+        const c = document.createElement('button');
+        c.type = 'button';
+        c.className = 'cell' + (warp && Math.floor(t / warp) % 2 === 1 ? ' w' : '');
+        c.dataset.b = b; c.dataset.t = t;
+        c.setAttribute('aria-label', 'block ' + b + ' thread ' + t + ', i = ' + (b * B + t));
+        if (showNums) c.textContent = t;
+        rowCells.push(c);
+        th.appendChild(c);
+      }
+      row.append(lab, th);
+      frag.appendChild(row);
+      cells.push(rowCells); blocks.push(row);
+    }
+    gridEl.appendChild(frag);
+  }
+
+  function render(from) {
+    const G = intVal(gridIn, 1, LIMITS.grid);
+    const B = intVal(blockIn, 1, LIMITS.block);
+    const warp = Number(warpIn.value);
+    $('warpLegend').hidden = !warp;
+    if (G === null || B === null) {
+      msg.textContent = 'gridDim.x must be 1–' + LIMITS.grid + ' and blockDim.x must be 1–' + LIMITS.block + ' (the CUDA/HIP per-block limit).';
+      return;
+    }
+    build(G, B, warp);
+    const n = intVal(nIn, 1, LIMITS.n);
+    if (n === null) {
+      msg.textContent = 'n must be a whole number from 1 to ' + fmt(LIMITS.n) + '.';
+      return;
+    }
+    const idleKey = lastShape + 'n' + n;
+    if (idleKey !== lastIdle) {
+      lastIdle = idleKey;
+      for (let bb = 0; bb < G; bb++) for (let tt = 0; tt < B; tt++) cells[bb][tt].classList.toggle('idle', bb * B + tt >= n);
+    }
+    bIn.max = G - 1; tIn.max = B - 1; gIn.max = G * B - 1;
+
+    let b, t;
+    if (from === 'global') {
+      const i = intVal(gIn, 0, G * B - 1);
+      if (i !== null) { b = Math.floor(i / B); t = i % B; bIn.value = b; tIn.value = t; bIn.classList.remove('bad'); tIn.classList.remove('bad'); }
+    }
+    b = intVal(bIn, 0, G - 1);
+    t = intVal(tIn, 0, B - 1);
+
+    document.querySelectorAll('.cell.on').forEach(c => c.classList.remove('on'));
+    document.querySelectorAll('.block.sel').forEach(r => r.classList.remove('sel'));
+
+    const total = G * B;
+    stats.innerHTML =
+      '<span>blocks <b>' + G + '</b></span>' +
+      '<span>threads per block <b>' + B + '</b></span>' +
+      '<span>total threads <b>' + total.toLocaleString() + '</b></span>' +
+      '<span>threads doing work <b>' + fmt(Math.min(n, total)) + '</b></span>' +
+      '<span>no-op threads <b>' + fmt(Math.max(0, total - n)) + '</b></span>' +
+      (warp ? '<span>' + (warp === 32 ? 'warps' : 'wavefronts') + ' per block <b>' + Math.ceil(B / warp) + '</b></span>' : '');
+
+    note.textContent = n > total
+      ? 'n is larger than the grid: elements ' + fmt(total) + ' to ' + fmt(n - 1) + ' never get a thread, so c is left unfinished there. Launch at least ' + fmt(Math.ceil(n / B)) + ' blocks, i.e. (n + blockDim.x - 1) / blockDim.x.'
+      : '';
+
+    if (b === null || t === null) {
+      renderKernel(null, n, G, B);
+      formula.innerHTML = '<span class="k">int i = blockIdx.x * blockDim.x + threadIdx.x;</span>';
+      const parts = [];
+      if (b === null) parts.push('blockIdx.x must be 0–' + (G - 1));
+      if (t === null) parts.push('threadIdx.x must be 0–' + (B - 1));
+      msg.textContent = parts.join('; ') + '.';
+      return;
+    }
+    msg.textContent = '';
+    const i = b * B + t;
+    if (from !== 'global') { gIn.value = i; gIn.classList.remove('bad'); }
+    formula.innerHTML =
+      '<span class="k">int i = </span><span class="v">' + b + '</span><span class="k"> * </span><span class="v">' + B +
+      '</span><span class="k"> + </span><span class="v">' + t + '</span><span class="k"> = </span><span class="v">' + i + '</span>' +
+      '<span class="k">;   // blockIdx.x * blockDim.x + threadIdx.x</span>';
+    if (warp) {
+      stats.innerHTML += '<span>selected thread is in ' + (warp === 32 ? 'warp' : 'wavefront') + ' <b>' + Math.floor(t / warp) + '</b>, lane <b>' + (t % warp) + '</b></span>';
+    }
+    const c = cells[b][t];
+    c.classList.add('on');
+    blocks[b].classList.add('sel');
+    renderKernel({ b, t, i }, n, G, B);
+  }
+
+  gridEl.addEventListener('click', e => {
+    const c = e.target.closest('.cell');
+    if (!c) return;
+    bIn.value = c.dataset.b; tIn.value = c.dataset.t;
+    render();
+  });
+  gridEl.addEventListener('mouseover', e => {
+    const c = e.target.closest('.cell');
+    if (!c) return;
+    const B = Number(blockIn.value);
+    const i = c.dataset.b * B + Number(c.dataset.t);
+    const n = Number(nIn.value);
+    tip.textContent = 'blockIdx.x = ' + c.dataset.b + ', threadIdx.x = ' + c.dataset.t + '  →  i = ' + i +
+      (i < n ? '  →  c[' + i + '] = ' + A(i) + ' + ' + A(i) : '  →  no-op (i ≥ n)');
+  });
+  gridEl.addEventListener('mouseleave', () => { tip.innerHTML = '&nbsp;'; });
+
+  [gridIn, blockIn, nIn, bIn, tIn, warpIn].forEach(el => el.addEventListener('input', () => render()));
+  gIn.addEventListener('input', () => render('global'));
+
+  render();
+})();
+</script>
+
+</body></html>

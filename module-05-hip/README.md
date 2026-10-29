@@ -183,7 +183,7 @@ Each thread computes its **global index** to know which data element to process:
 int i = blockIdx.x * blockDim.x + threadIdx.x;
 ```
 
-Let's try to visualize with a visualization. [Click here](./static/thread_index_visualizer.html).
+<a href="/_static/thread_index_visualizer.html">Let's try to visualize with a visualization.</a>
 
 This `i` now effectively identifies the thread differentiating it from all the threads in the grid. So in your kernel,
 if you have the operation 
@@ -196,7 +196,7 @@ c[i] = a[i] + b[i];
 The 'i'th thread performs this operation for the 'i'th elements of a,b, and c.
 
 
-[Let's see the visualization again, this time with the array addition.](./static/thread_index_with_vecadd_visualizer.html)
+<a href="/_static/thread_index_with_vecadd_visualizer.html">Let's see the visualization again, this time with the array addition</a>.
 
 | Variable | Meaning |
 |----------|---------|
