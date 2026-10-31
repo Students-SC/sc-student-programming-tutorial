@@ -238,7 +238,8 @@ TODO: add diagram showing a blow up of a specific thread in a grid diagram, show
 
 We talked about the computing part of this array addition so far. But what about the data. Obviously
 that has to come from somewhere. How does that data get to the GPU? We talked earlier that GPUs have
-their own RAM. So any data that exists on disk or in CPU RAM needs to copied over to the GPU RAM.
+their own RAM as it is faster for GPUs to access and use RAM integrated onto their device instead of
+needing to go to a different device. So any data that exists on disk or in CPU RAM needs to copied over to the GPU RAM.
 And just like CPU RAM, we need to allocate space on the GPU RAM first before we can copy anything to
 it.
 
@@ -266,9 +267,13 @@ add_vectors<<<blocks, threads_per_block>>>(d_a, d_b, d_c, n);
 HIP_CHECK(hipMemcpy(h_c, d_c, bytes, hipMemcpyDeviceToHost));
 ```
 
-TODO: what is memory management? why are we transferring to and from CPU memory? Why should we try to minimize that (because it is a bottleneck, you're spending
-more time moving data around than computing)?
-TODO: maybe talk about memory bound and compute bound?
+There are some advances with modern GPUs. Some are able to transparently copy data from CPU memory
+and cache it on GPU memory whenever you try to access something in the CPU memory from the GPU,
+saving you the need to explicitly allocate memory and copy data. Some devices are combine a CPU and
+GPU in one device and share the same RAM between both of them (called "unified memory"), so there is
+no difference between a CPU reading and writing to a memory location and a GPU doing it. But it is
+still valuable to understand the data movement behavior even if you might not
+explicitly be using it in your code.
 
 | Function | Purpose |
 |----------|---------|

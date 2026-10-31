@@ -49,6 +49,7 @@ If you look at the [OpenMP API spec for `pragma for`](https://www.openmp.org/spe
 
 ## Module 4: MPI Challenges
 
+The files for these challenges are located in `module-04-mpi-challenges` directory. 
 ### Ring Communication
 
 Run all ranks on one compute node. In a ring pattern, each rank sends its
@@ -125,13 +126,14 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring_solution
 
 ## Module 05 - HIP
 
+The files for these challenges are located in `module-05-hip-challenges`. directory.
 
 ### Challenge A: Matrix-Vector Multiply on the GPU
 
-Open the challenge template:
+Open the challenge template in a text editor:
 
 ```bash
-cat matvec_hip.cpp
+vim matvec_hip.cpp
 ```
 
 Implement a HIP kernel for matrix-vector multiplication: `y[i] = sum_j(A[i][j] * x[j])`
@@ -139,7 +141,16 @@ Implement a HIP kernel for matrix-vector multiplication: `y[i] = sum_j(A[i][j] *
 Each thread computes one element of the output vector y. This means each
 thread must iterate over an entire row of the matrix.
 
-### TODO: Add a Challenge B
+### Challenge B: Matrix-Matrix Multiply on the GPU
+
+Open the challenge template:
+
+```bash
+vim matmat_hip.cpp
+```
+
+Implement a HIP kernel for the matrix-matrix multiplication. It follows a similar format to the previous challenge of matrix vector
+multiplication. But here we are using a 2D arrangement of blocks and threads instead of 1D.
 
 
 # Bonus Modules
