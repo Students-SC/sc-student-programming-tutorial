@@ -13,7 +13,18 @@ By the end of this module, you will be able to:
 
 ---
 
+TODO: explain what threads are. Explain why plain thread programming is a little unwieldy. How c we
+need something more ergonomic. 
+TODO: point out CPUs especially in servers can have dozens of cores and sometimes multiple CPUs. Writing a program that only
+operates serially is a waste of resources. You can take advantage of these additional cores.
+
+TODO: explain how a thread is different from a process. (or I think we can skip that. There's no
+real need to worry about it in the context of just openmp).
+
+TODO: voila openmp directives. We'll focus on the simple stuff, parallelizing a for loop.  
+
 ## Key Concepts
+
 
 ### Threads vs. Processes
 
@@ -41,6 +52,8 @@ understands) to mark regions of code for parallel execution.
                         └── Thread 3 ──┘
 ```
 
+TODO: create visualization showing this. 
+
 This is called **fork-join** parallelism: the program forks into multiple
 threads, they do work in parallel, then they join back into one.
 
@@ -55,6 +68,10 @@ threads, they do work in parallel, then they join back into one.
 }
 ```
 
+TODO: add more written material here leading into talking about making a region parallel.
+
+TODO: where is parallelism most useful? breaking up a long sequential task into parts.
+
 **Distribute loop iterations** across threads:
 
 ```c
@@ -63,6 +80,9 @@ for (int i = 0; i < N; i++) {
     a[i] = b[i] + c[i];
 }
 ```
+
+TODO: well that's great we split up a loop. But what happens when we need one answer not multiple
+parts of answers. Reduction! 
 
 **Reduction** -- safely combine a value across threads:
 
