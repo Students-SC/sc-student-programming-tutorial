@@ -29,24 +29,28 @@
 
 set -euo pipefail
 
-# Create the URL file group-writable and group-only (no "other" access) so any
-# member of the sc26dev group can read it and the next instructor can replace
-# it. This pairs with the setgid bit on $SC26_SHARED_DIR, which makes new files
-# inherit the group.
+# Create new files group-writable and group-only (no "other" access) so any
+# member of the sc26dev group can manage them. This pairs with the setgid bit
+# on $AGENT_DIR, which makes new files inherit the sc26dev group. The URL file
+# is the one exception: students must read it, so it is published with "other"
+# read permission (see "Publish the URL" below).
 umask 0007
 
 # --- Configuration ----------------------------------------------------------
-# All shared tutorial resources -- container SIF, model cache, and the server
-# URL file that students read -- live under $SC26_SHARED_DIR. The default is
-# the tutorial project's shared directory; override SC26_SHARED_DIR to test
-# against a different location.
-SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
+# Shared tutorial resources live under $SC26_SHARED_DIR, which only the
+# proj_sc26students group (students and instructors) can enter. The agent
+# server's files -- container SIF, model cache, and the URL file -- live in its
+# sc26_agent/ subdirectory, which is writable by the sc26dev group so any
+# instructor can restart the server. Override SC26_SHARED_DIR to test against
+# a different location.
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
+AGENT_DIR="$SC26_SHARED_DIR/sc26_agent"
 
-SIF_FILE="$SC26_SHARED_DIR/sc26_containers/vllm-openai-rocm.sif"
+SIF_FILE="$AGENT_DIR/sc26_containers/vllm-openai-rocm.sif"
 MODEL_NAME="Qwen/Qwen3-Coder-30B-A3B-Instruct"
-CACHE_DIR="$SC26_SHARED_DIR/sc26_model_cache"
+CACHE_DIR="$AGENT_DIR/sc26_model_cache"
 PORT=8321
-URL_FILE="$SC26_SHARED_DIR/sc26_agent_server_url"
+URL_FILE="$AGENT_DIR/sc26_agent_server_url"
 READY_TIMEOUT=900   # max seconds to wait for vLLM to become ready
 
 # --- Helpers ----------------------------------------------------------------
@@ -142,7 +146,10 @@ while true; do
 done
 
 # --- Publish the URL --------------------------------------------------------
-echo "$SERVER_URL" > "$URL_FILE"
+# Students are not in sc26dev, so they read this file through its "other"
+# permission bits. Nobody outside proj_sc26students can reach it, because
+# $SC26_SHARED_DIR grants no "other" access.
+(umask 0002; echo "$SERVER_URL" > "$URL_FILE")
 log "[READY] Server URL written to $URL_FILE"
 log "[READY] Server reachable at $SERVER_URL"
 log ""

@@ -19,17 +19,20 @@
 set -euo pipefail
 
 # Create new files group-writable and group-only (no "other" access) so any
-# member of the sc26dev group can manage the shared artifacts. This pairs with
-# the setgid bit on $SC26_SHARED_DIR, which makes new files inherit the group.
+# member of the sc26dev group can manage the shared artifacts and students
+# cannot read them. This pairs with the setgid bit on $AGENT_DIR, which makes
+# new files inherit the sc26dev group.
 umask 0007
 
 # Shared tutorial resources live under $SC26_SHARED_DIR so all instructors
 # share a single pre-pulled SIF (and so start_server.sh, which lives elsewhere
-# in this repo, can find it). Override SC26_SHARED_DIR to test in a different
-# location.
-SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
+# in this repo, can find it). The agent server's files are in the sc26_agent/
+# subdirectory, which the sc26dev group can write. Override SC26_SHARED_DIR to
+# test in a different location.
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
+AGENT_DIR="$SC26_SHARED_DIR/sc26_agent"
 
-SIF_DIR="$SC26_SHARED_DIR/sc26_containers"
+SIF_DIR="$AGENT_DIR/sc26_containers"
 SIF_FILE="$SIF_DIR/vllm-openai-rocm.sif"
 
 mkdir -p "$SIF_DIR"
