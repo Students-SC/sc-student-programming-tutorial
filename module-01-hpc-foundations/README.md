@@ -87,6 +87,28 @@ critical for HPC and AI applications.
 to copy them to each node. `$HOME` is your smaller home filesystem, while `$WORK`
 points to your larger project area on the `/work1` parallel filesystem.
 
+### Inside a Compute Node
+
+A compute node is a complete computer, built for throughput rather than for a
+desk:
+
+- **CPUs** in one or more **sockets**, each CPU with many **cores** (the EPYC
+  7V13 in our login node has 64 cores per socket)
+- **Memory (DRAM)** shared by all the cores in the node
+- **GPUs**, each with its own fast memory (**HBM**, high-bandwidth memory). Data
+  has to be copied between CPU memory and GPU memory, as you'll see in Module 5.
+- A **network card** that connects the node to the high-speed network
+
+**Our compute nodes are virtual.** So that more users can each have their own
+GPU, the physical servers in our partition are divided into slices. Each slice
+is a **virtual node** (a virtual machine) with 16 CPU cores, 64 GB of memory, and
+one MI210, and Slurm schedules it as if it were a whole computer. The node
+names show this: `k006-004-v3` through `k006-004-v8` are slices of the same
+physical server, `k006-004`.
+
+One side effect: inside a virtual node, `lscpu` reports 16 "sockets" with one
+core each. Count the total `CPU(s)`, not the sockets.
+
 ### Our Cluster: The AUP AI & HPC Cluster
 
 The AUP AI & HPC Cluster has nodes containing multiple generations of AMD Instinct GPUs.
