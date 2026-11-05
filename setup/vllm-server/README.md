@@ -211,6 +211,51 @@ curl $(cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_
 tail -f vllm-server_<JOBID>.out
 ```
 
+### If the server goes down during the tutorial
+
+Any instructor in `sc26dev` can restart the server; only step 2 needs the
+job's owner or a Slurm administrator. Once the node is free, a restart takes
+about 3 minutes.
+
+1. **Check the state of the job and the URL file.**
+   ```bash
+   squeue --name=vllm-server        # server jobs from all users
+   URL_FILE="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url"
+   ls -l "$URL_FILE" && curl -sf "$(cat "$URL_FILE")/models" >/dev/null && echo healthy
+   ```
+2. **Job still running, but the server doesn't respond:** the job must be
+   cancelled before a replacement can use the reserved node. Only its owner or
+   a Slurm administrator can do this (`scancel --name=vllm-server` only cancels
+   your own jobs):
+   ```bash
+   scancel <JOBID>
+   ```
+3. **Job gone, but the URL file is still there:** the node went down before
+   the cleanup trap could run. Remove the stale file, or `start_server.sh` will
+   refuse to start:
+   ```bash
+   rm "$URL_FILE"
+   ```
+4. **Start a replacement.** If the failed job was the first of the two
+   chained jobs, the second starts automatically once it is gone; queue
+   another behind it so the server lasts until the end of the day:
+   ```bash
+   sbatch --reservation=sc26agent --dependency=afterany:<second job ID> setup/vllm-server/start_server.sh
+   ```
+   Otherwise, submit one yourself. Its time limit (4 hours at most) must end
+   before the reservation does (17:30):
+   ```bash
+   sbatch --reservation=sc26agent setup/vllm-server/start_server.sh                 # before 13:30
+   sbatch --reservation=sc26agent --time=3:00:00 setup/vllm-server/start_server.sh  # e.g., at 14:00
+   ```
+   If the reserved node itself is down, ask a Slurm administrator to replace
+   it in the reservation, or submit without `--reservation` if another
+   `mi3001x` node is idle.
+5. **Tell students to restart Aider** (`/exit`, then run `launch_aider.sh`
+   again). Aider reads the URL only when it starts, and the new server may be
+   on a different node. Module 7 batch jobs read the URL when they start, so
+   students only need to resubmit jobs that failed.
+
 ### Shut down after the tutorial
 
 ```bash
@@ -234,7 +279,7 @@ The URL file will be cleaned up automatically by the trap.
 
 | Problem | Solution |
 |---------|----------|
-| "URL file already exists" | A server is already running. `scancel --name=vllm-server` first. If you're sure none is running, `rm "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url"`. |
+| "URL file already exists" | A server is already running. `scancel --name=vllm-server` first. If you're sure none is running (for example, after a node crash), `rm "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url"`. See [If the server goes down during the tutorial](#if-the-server-goes-down-during-the-tutorial). |
 | URL file appears but `curl` gives `Connection refused` | Shouldn't happen with the new lifecycle. If it does, the server crashed between the readiness check and accepting your request -- check the `.out` log. |
 | Job is running but no URL file yet | vLLM is still loading the model. Watch `tail -f vllm-server_<JOBID>.out` -- look for `[READY]`. First load takes ~60-120s; cached loads are faster. |
 | Server OOM during startup | Reduce `--max-model-len` in `start_server.sh` (currently 32768). |
