@@ -7,6 +7,8 @@
 By the end of this module, you will be able to:
 
 - Explain why HPC exists and what problems it solves
+- Explain why performance now comes from parallelism, and what limits the
+  speedup you can get
 - Describe the major components of an HPC cluster
 - Navigate the cluster filesystem and use environment modules
 - Inspect hardware resources using command-line tools
@@ -153,6 +155,26 @@ remove this base.
 | HIP | GPU threads (thousands) | `kernel<<<blocks, threads>>>()` | 5 |
 
 You'll learn all three today!
+
+### How Much Faster? Amdahl's Law
+
+Parallelism speeds up only the part of a program that can run in parallel. If a
+fraction *p* of the run time can be split across *N* cores and the rest stays
+serial, the best possible speedup is:
+
+```text
+                    1
+speedup(N) = ---------------
+             (1 - p) + p / N
+```
+
+For example, if 95% of a program parallelizes perfectly (*p* = 0.95), 16 cores
+give at most 1 / (0.05 + 0.95 / 16) ≈ **9.1x**, not 16x. Even unlimited cores
+can't beat 1 / 0.05 = **20x**: the serial 5% becomes the bottleneck.
+
+You'll measure real speedups in Module 3 (OpenMP threads) and Module 4 (MPI
+ranks). When they fall short of perfect, Amdahl's law is one reason; overheads
+such as starting threads and passing messages are others.
 
 ---
 
