@@ -334,6 +334,12 @@ cat sweep_compute.py        # The Python script (TODO: add the loop)
 Fill in the TODO sections in **both** files and submit the batch script. You
 should see timing results for each value of N, showing how compute time grows.
 
+**In practice:** for sweeps over many independent values, HPC users usually
+submit a **job array** instead of a loop. Adding `#SBATCH --array=0-3` runs
+four copies of the script as separate jobs, which can run on different nodes at
+the same time, and each copy reads its own index from `$SLURM_ARRAY_TASK_ID`.
+We use a loop today so that 80+ students don't flood the queue.
+
 #### Challenge B: Explore Resource Requests
 
 Experiment with different Slurm directives and observe their effect:
