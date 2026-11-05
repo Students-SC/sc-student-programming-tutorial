@@ -192,6 +192,14 @@ sinfo -p mi2101x -N -l      # Show node-level details just for the mi2101x parti
 squeue -p mi2101x           # Show the job queue for our partition (plain 'squeue' lists every job on the cluster).
 ```
 
+```{note}
+`sinfo` lists every partition on the cluster, but this tutorial uses only
+`mi2101x`. The `*` after a partition name marks the cluster's *default*
+partition, where jobs go if they don't name one. That is why every command in
+this tutorial includes `--partition=mi2101x`. Nodes set aside for this
+tutorial show the state `resv` (reserved) while they are idle.
+```
+
 ### Challenge
 
 1. **Summarize the cluster.** Based on what you found, write a short paragraph (3-4
