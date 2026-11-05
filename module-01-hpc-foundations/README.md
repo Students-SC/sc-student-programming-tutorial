@@ -179,9 +179,9 @@ rocminfo | grep -E "Marketing Name|Device Type"   # List the CPUs and GPUs that 
 device.
 
 ```{note}
-The login node may or may not have GPUs. The compute nodes in the `mi2101x`
-partition definitely do. You'll see the full GPU information when you run jobs
-in Module 2.
+This login node has two MI210 GPUs of its own, so GPU programs *will* run here
+if you skip Slurm. Don't: every user on the cluster shares the login node.
+Starting in Module 2, each of your jobs gets its own MI210 on a compute node.
 ```
 
 #### Step 6: Look at the Cluster
