@@ -122,14 +122,9 @@ You'll learn all three today!
 
 ### Exercise 1: Explore the Cluster
 
-First, navigate to the exercises directory for this module:
-
-```bash
-cd module-01-hpc-foundations/exercises
-```
-
-Work through the steps below, typing each command yourself and reading the output
-before moving on.
+This module has no files to work with, so you can run these commands from any
+directory. Work through the steps below, typing each command yourself and
+reading the output before moving on.
 
 
 #### Step 1: Where Are You?
