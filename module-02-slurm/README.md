@@ -153,7 +153,7 @@ Submit it again and let it finish. Then read the output:
 
 ```bash
 sbatch first_job.sh
-# Wait ~70 seconds for it to complete...
+# Once it starts, it runs for about 50 seconds (it may wait in the queue first)
 squeue -u $USER                     # Should disappear when done
 cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 ```
