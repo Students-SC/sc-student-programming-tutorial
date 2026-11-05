@@ -215,7 +215,7 @@ cat omp-offload_<JOBID>.out
 - How does it compare to the BLAS library time?
 
 A completed version is available at
-[`solutions/matmul_offload_solution.c`](solutions/matmul_offload_solution.c).
+[`solutions/matmul_offload_solution.c`](exercises/solutions/matmul_offload_solution.c).
 
 ---
 
