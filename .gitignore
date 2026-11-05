@@ -9,3 +9,6 @@ _build/
 # Agent-facing working docs, kept local for now
 AGENTS.md
 PLAN.md
+
+# Binaries students compile in the exercises
+module-02-slurm/exercises/hello_compute
