@@ -123,7 +123,7 @@ against a BLAS reference (`-lopenblas`).
 First, navigate to the exercises directory for this module:
 
 ```bash
-cd module-08-openmp-offload/exercises
+cd challenges/bonus-openmp-offload/exercises
 module load rocm openblas
 ```
 
