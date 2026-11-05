@@ -145,17 +145,39 @@ URL file automatically.
 
 ### Start the server (morning, before Module 1)
 
+The site's job-submission filter caps `mi3001x` jobs at 4 hours, so the
+server runs as two chained jobs in the instructor reservation (`sc26agent`,
+one `mi3001x` node, 06:30 to 17:30). At about 08:15, submit both:
+
 ```bash
-sbatch setup/vllm-server/start_server.sh
-tail -f vllm-server_<JOBID>.out   # wait for "[READY]"
+JOB1=$(sbatch --parsable --reservation=sc26agent setup/vllm-server/start_server.sh)
+sbatch --reservation=sc26agent --dependency=afterany:$JOB1 setup/vllm-server/start_server.sh
+tail -f vllm-server_${JOB1}.out   # wait for "[READY]"
 ```
 
-The job:
+| Job | Runs | Covers |
+|-----|------|--------|
+| First | ~08:15 to 12:15 | Welcome through Module 4 |
+| Second | ~12:18 to 16:18 | Module 5 through Wrap-Up |
 
-1. Allocates a dedicated `mi3001x` node
+The first job hits its time limit during lunch. Slurm sends it SIGTERM, its
+cleanup trap removes the URL file, and the second job starts automatically on
+the same reserved node. It is ready about 3 minutes later at the same URL, so
+students only see Aider requests fail during that window. Both jobs end well
+before the reservation does; Slurm kills running jobs when a reservation ends
+(`ResvOverRun` is 0 on this cluster).
+
+If the first job ends early, the second starts right away and ends 4 hours
+later, before the tutorial does. Queue a third job behind it the same way,
+with `--dependency=afterany:<second job ID>`.
+
+Each job:
+
+1. Allocates the reserved `mi3001x` node
 2. Launches the vLLM ROCm container via Apptainer
-3. Polls vLLM until it's ready, then writes the URL file
-4. Runs for up to 8 hours (covers the full tutorial day)
+3. Polls vLLM until it's ready (about 2-3 minutes with a cached model), then
+   writes the URL file
+4. Runs for up to 4 hours
 5. On exit, automatically removes the URL file
 
 ### Tell students the URL

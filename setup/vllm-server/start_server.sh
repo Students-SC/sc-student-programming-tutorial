@@ -14,6 +14,14 @@
 #   4. Removes the URL file on exit (success, scancel, timeout, or error)
 #      via a trap.
 #
+# The site's job-submission filter caps mi3001x jobs at 4 hours, so on tutorial
+# day the server runs as two chained jobs in the instructor reservation, with
+# the second starting automatically when the first ends over lunch (see
+# README.md, "Tutorial Day"):
+#
+#   JOB1=$(sbatch --parsable --reservation=sc26agent setup/vllm-server/start_server.sh)
+#   sbatch --reservation=sc26agent --dependency=afterany:$JOB1 setup/vllm-server/start_server.sh
+#
 # Submit:  sbatch setup/vllm-server/start_server.sh
 # Watch:   tail -f vllm-server_<JOBID>.out
 # Stop:    scancel --name=vllm-server
@@ -153,7 +161,8 @@ done
 log "[READY] Server URL written to $URL_FILE"
 log "[READY] Server reachable at $SERVER_URL"
 log ""
-log "Server will run until the job ends (max walltime ${SBATCH_TIMELIMIT:-8h})."
+TIME_LIMIT=$(squeue -h -j "${SLURM_JOB_ID:-}" -o %l 2>/dev/null || true)
+log "Server will run until the job ends (time limit: ${TIME_LIMIT:-unknown})."
 log "To stop early: scancel --name=vllm-server"
 log ""
 
