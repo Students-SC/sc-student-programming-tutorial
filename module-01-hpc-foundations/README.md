@@ -149,7 +149,7 @@ remove this base.
 | Model | Parallelism Level | Example | Module |
 |-------|------------------|---------|--------|
 | OpenMP | Threads within a single node | `#pragma omp parallel` | 3 |
-| MPI | Processes across multiple nodes | `MPI_Send` / `MPI_Recv` | 4 |
+| MPI | Processes on one or many nodes (today: one node) | `MPI_Send` / `MPI_Recv` | 4 |
 | HIP | GPU threads (thousands) | `kernel<<<blocks, threads>>>()` | 5 |
 
 You'll learn all three today!
