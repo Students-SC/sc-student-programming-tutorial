@@ -124,7 +124,7 @@ separated from each other.
 
 | Resource | Details |
 |----------|---------|
-| CPU | AMD EPYC (16 cores per virtual node) |
+| CPU | AMD EPYC 7V13 (16 cores per virtual node) |
 | GPU | 1x AMD Instinct MI210 (64 GB HBM2e) per virtual node |
 | RAM | 64 GB system DRAM per virtual node |
 | Partition | `mi2101x` |

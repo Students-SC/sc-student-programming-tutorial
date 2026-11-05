@@ -79,7 +79,7 @@ For this tutorial, we'll have access to the following resources:
 | Component | Details |
 |-----------|---------|
 | Login node CPUs | AMD EPYC 7V13 64-Core (2 sockets, 128 cores total) |
-| Compute node CPUs | AMD EPYC (16 cores per virtual node) |
+| Compute node CPUs | AMD EPYC 7V13 (16 cores per virtual node) |
 | Compute node GPUs | 1x AMD Instinct MI210 (64 GB HBM2e) |
 | Compute node RAM | 64 GB |
 | GPU software | ROCm 7.2.0 |
