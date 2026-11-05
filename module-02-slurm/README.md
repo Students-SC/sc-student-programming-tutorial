@@ -73,6 +73,10 @@ echo "Hello from $(hostname) at $(date)"
 | `--time` | Maximum run time. **Required on this cluster.** Keep short (5--10 min) to share nodes fairly. |
 | `--output` / `--error` | Where stdout/stderr go. `%j` is replaced with the job ID. |
 
+When your job runs, Slurm also sets environment variables that describe it,
+such as `SLURM_JOB_ID`, `SLURM_JOB_NODELIST`, and `SLURM_CPUS_ON_NODE`. Scripts
+and programs can read them; the programs in Exercises 1 and 2 print several.
+
 ### The Job Lifecycle
 
 ```
