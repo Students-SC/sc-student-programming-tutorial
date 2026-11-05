@@ -37,8 +37,8 @@ if [[ -z "${WORK:-}" ]]; then
     exit 1
 fi
 
-SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
-URL_FILE="$SC26_SHARED_DIR/sc26_agent_server_url"
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
+URL_FILE="$SC26_SHARED_DIR/sc26_agent/sc26_agent_server_url"
 if [[ ! -f "$URL_FILE" ]]; then
     echo "ERROR: vLLM server URL file not found at $URL_FILE" >&2
     echo "       The agent backend isn't running. Ask an instructor for help." >&2

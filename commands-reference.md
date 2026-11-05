@@ -185,8 +185,8 @@ fine-tuning details.
 
 | I want to... | Command |
 |--------------|---------|
-| Show the shared agent server URL | `cat "$WORK/sc26_agent_server_url"` |
-| Export the agent server URL for interactive testing | `export AGENT_API_URL=$(cat "$WORK/sc26_agent_server_url")` |
+| Show the shared agent server URL | `cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url"` |
+| Export the agent server URL for interactive testing | `export AGENT_API_URL=$(cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url")` |
 | Run the agent exercise | `sbatch submit_agent.sh` |
 | Launch the tutorial-provided CLI agent | `bash ../../setup/launch_aider.sh` |
 | Launch Aider from an arbitrary working directory | `bash <repo-path>/setup/launch_aider.sh` |

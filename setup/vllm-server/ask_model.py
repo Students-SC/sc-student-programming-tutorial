@@ -30,8 +30,8 @@ Examples:
 URL discovery order:
     1. --url command-line flag
     2. AGENT_API_URL environment variable
-    3. --url-file (default: $SC26_SHARED_DIR/sc26_agent_server_url, where
-       SC26_SHARED_DIR defaults to /work1/sc26dev/shared)
+    3. --url-file (default: $SC26_SHARED_DIR/sc26_agent/sc26_agent_server_url,
+       where SC26_SHARED_DIR defaults to /work1/proj_sc26students/shared)
 
 Requires only the Python standard library -- no venv activation needed.
 """
@@ -44,8 +44,8 @@ import time
 import urllib.error
 import urllib.request
 
-SC26_SHARED_DIR = os.environ.get("SC26_SHARED_DIR", "/work1/sc26dev/shared")
-DEFAULT_URL_FILE = f"{SC26_SHARED_DIR}/sc26_agent_server_url"
+SC26_SHARED_DIR = os.environ.get("SC26_SHARED_DIR", "/work1/proj_sc26students/shared")
+DEFAULT_URL_FILE = f"{SC26_SHARED_DIR}/sc26_agent/sc26_agent_server_url"
 DEFAULT_SYSTEM = "You are a helpful, concise coding assistant."
 
 
@@ -167,8 +167,8 @@ def main():
                    help="Server base URL. Overrides --url-file and $AGENT_API_URL.")
     p.add_argument("--url-file", default=DEFAULT_URL_FILE,
                    help="File containing the server URL "
-                        "(default: ${SC26_SHARED_DIR:-/work1/sc26dev/shared}/"
-                        "sc26_agent_server_url).")
+                        "(default: ${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/"
+                        "sc26_agent/sc26_agent_server_url).")
     p.add_argument("--no-stream", action="store_true",
                    help="Wait for the full response instead of streaming.")
     p.add_argument("--list-models", action="store_true",
