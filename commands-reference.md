@@ -145,6 +145,7 @@ Useful MPI calls from [Module 4](module-04-mpi/README.md):
 | Check whether `hipcc` is available | `which hipcc` |
 | Show the HIP compiler version | `hipcc --version` |
 | Show ROCm system info | `rocminfo \| head -20` |
+| List the CPUs and GPUs that ROCm can see | `rocminfo \| grep -E "Marketing Name\|Device Type"` |
 | Show GPU memory usage | `rocm-smi --showmeminfo vram` |
 | Compile a HIP program | `hipcc -O2 -o program program.cpp` |
 | Compile with a block-size macro | `hipcc -O2 -DBLOCK_SIZE=256 -o program program.cpp` |

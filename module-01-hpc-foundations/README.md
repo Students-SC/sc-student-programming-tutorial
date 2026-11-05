@@ -172,8 +172,11 @@ This is the LOGIN node. The compute nodes we'll use have 16 cores and 64 GB RAM.
 ```bash
 which hipcc           # Find the path of the HIP compiler (AMD's equivalent of nvcc).
 hipcc --version       # Print the HIP compiler version.
-rocminfo | head -20   # Show ROCm (AMD GPU runtime) info -- piped to 'head' since output is long.
+rocminfo | grep -E "Marketing Name|Device Type"   # List the CPUs and GPUs that ROCm (AMD's GPU software) can see.
 ```
+
+`rocminfo` prints over 300 lines, so `grep` keeps just the lines that name each
+device.
 
 ```{note}
 The login node may or may not have GPUs. The compute nodes in the `mi2101x`
@@ -195,9 +198,17 @@ squeue                      # Show the current job queue across the cluster.
    sentences) describing the cluster: how many nodes are in our partition, how many
    CPUs per node, what GPU each node has, and what software is available.
 
-2. **AI agent check.** Copy the output of `rocminfo` and ask your AI coding assistant
-   to explain it. Does the agent correctly identify the CPU model? The GPU? Does it
-   get anything wrong?
+2. **AI agent check.** Run this command, which adds each device's number of
+   compute units to the Step 5 output:
+
+   ```bash
+   rocminfo | grep -E "Marketing Name|Device Type|Compute Unit"
+   ```
+
+   Copy the output and ask your AI coding assistant to explain each line. Does
+   the agent correctly identify the CPU model? The GPU? What does it say a
+   "compute unit" is for the CPU, and for the GPU? Check its answer against the
+   cluster table above. Does it get anything wrong?
 
    ````{tip}
    If you installed the tutorial-provided coding agent during Getting Started,
