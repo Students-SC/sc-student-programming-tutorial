@@ -1,0 +1,334 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>OpenMP Loop Visualizer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: controls, then the code, then the thread team row, then the iteration space as a strip of cells, then two detail panels */
+:root {
+  --bg: #f4f4f7;
+  --panel: #ffffff;
+  --fg: #1b1b26;
+  --muted: #62627a;
+  --line: #d7d7e2;
+  --cell: #e6e6ee;
+  --tint: #dcdcf7;
+  --accent: #4b45c4;
+  --accent-fg: #ffffff;
+  --warn: #b4441f;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121219; --panel: #1a1a24; --fg: #e5e5ef; --muted: #9a9ab2; --line: #2e2e3d;
+    --cell: #262633; --tint: #2c2a5a; --accent: #9d98ff; --accent-fg: #121219; --warn: #ff8a62;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121219; --panel: #1a1a24; --fg: #e5e5ef; --muted: #9a9ab2; --line: #2e2e3d;
+  --cell: #262633; --tint: #2c2a5a; --accent: #9d98ff; --accent-fg: #121219; --warn: #ff8a62;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); line-height: 1.45; }
+.wrap {
+  max-width: 1100px; margin: 0 auto;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 20px;
+}
+h1 { margin: 0; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--muted); max-width: 65ch; }
+code, .mono { font-family: var(--font-mono); }
+
+.top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; }
+.top > * { min-width: 0; }
+fieldset {
+  margin: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+  padding: 14px 16px 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; min-width: 0;
+}
+legend { padding: 0 6px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); min-width: 0; }
+label span.mono { color: var(--fg); font-size: 0.85rem; }
+input[type=number] {
+  font: 500 1rem var(--font-mono); color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; box-sizing: border-box;
+}
+input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input.bad { border-color: var(--warn); }
+.msg { grid-column: 1 / -1; color: var(--warn); font-size: 0.85rem; margin: 0; }
+.msg:empty { display: none; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.khead { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; margin: 0; }
+.kcode { margin: 0; font: 0.85rem/1.65 var(--font-mono); overflow-x: auto; }
+.ln { display: block; white-space: pre; padding: 0 8px; border-left: 3px solid transparent; }
+.ln.hit { background: var(--tint); border-left-color: var(--accent); }
+.kw { color: var(--accent); }
+.cm { color: var(--muted); }
+
+.section { display: flex; flex-direction: column; gap: 8px; }
+.shead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; align-items: baseline; }
+.shead p { margin: 0; font-size: 0.8rem; color: var(--muted); }
+.team, .strip { display: flex; flex-wrap: wrap; gap: 3px; }
+.tchip {
+  font: 500 0.8rem var(--font-mono); color: var(--fg); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.tchip:hover { border-color: var(--accent); }
+.tchip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.tchip.idle { color: var(--muted); border-style: dashed; }
+.cell {
+  width: var(--cs); height: var(--cs); border-radius: 2px; background: var(--cell); border: 0; padding: 0;
+  font: 500 calc(var(--cs) * 0.38) var(--font-mono); color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums;
+}
+.cell:hover { outline: 1px solid var(--muted); }
+.cell.cstart { margin-left: 7px; }
+.cell.mine { background: var(--tint); color: var(--fg); }
+.cell.on { background: var(--accent); color: var(--accent-fg); font-weight: 600; outline: 2px solid var(--fg); outline-offset: 1px; position: relative; z-index: 1; }
+.tip { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); min-height: 1.3em; margin: 0; }
+
+.details { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; }
+.details > * { min-width: 0; }
+.panel h2 { margin: 0; font: 600 1.25rem var(--font-mono); }
+.panel p { margin: 0; max-width: 65ch; }
+.where { color: var(--muted); font-size: 0.85rem; }
+.ilist { display: flex; flex-wrap: wrap; gap: 4px; max-height: 220px; overflow-y: auto; }
+.ichip {
+  font: 500 0.8rem var(--font-mono); background: var(--bg); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 4px; padding: 2px 7px; cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.ichip:hover { border-color: var(--accent); }
+.ichip.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.ops { margin: 0; display: flex; flex-direction: column; gap: 6px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.ops div { display: grid; grid-template-columns: 7.5em 1fr; gap: 8px; align-items: baseline; }
+.ops dt { color: var(--muted); }
+.ops dd { margin: 0; font-size: 1.05rem; }
+.ops .sum { border-top: 1px solid var(--line); padding-top: 6px; }
+.ops .sum dd { color: var(--accent); font-weight: 600; }
+
+@media (max-width: 760px) {
+  .top, .details { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cell, .tchip, .ichip { transition: background-color 120ms ease; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>OpenMP Loop Visualizer</h1>
+    <p class="sub">A team of threads splits the iterations of a <code>parallel for</code> loop. With the default static schedule, each thread gets one contiguous chunk of about <code>N / OMP_NUM_THREADS</code> iterations. When it doesn't divide evenly, the first <code>N % OMP_NUM_THREADS</code> threads take one extra.</p>
+  </header>
+
+  <div class="top">
+    <fieldset>
+      <legend>Settings</legend>
+      <label for="nt"><span class="mono">OMP_NUM_THREADS</span>threads in the team
+        <input id="nt" type="number" min="1" max="256" value="4">
+      </label>
+      <label for="N"><span class="mono">N</span>loop length
+        <input id="N" type="number" min="1" max="5000" value="30">
+      </label>
+      <label for="tsel"><span class="mono">thread</span>omp_get_thread_num()
+        <input id="tsel" type="number" min="0" value="1">
+      </label>
+      <label for="isel"><span class="mono">i</span>iteration
+        <input id="isel" type="number" min="0" value="9">
+      </label>
+      <p class="msg" id="msg"></p>
+    </fieldset>
+    <div class="panel">
+      <p class="khead">Code, as seen by the selected thread</p>
+      <pre class="kcode" id="kcode"></pre>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="shead"><p class="khead">Thread team</p><p>Click a thread to see its iterations.</p></div>
+    <div class="team" id="team"></div>
+  </section>
+
+  <section class="section">
+    <div class="shead"><p class="khead">Iterations 0 to N − 1</p><p>Gaps mark where one thread's chunk ends and the next begins. Tinted cells belong to the selected thread. Click any cell to see its addition.</p></div>
+    <div class="strip" id="strip"></div>
+    <p class="tip" id="tip">&nbsp;</p>
+  </section>
+
+  <section class="details">
+    <div class="panel" id="tpanel" aria-live="polite"></div>
+    <div class="panel" id="ipanel" aria-live="polite"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const ntIn = $('nt'), NIn = $('N'), tIn = $('tsel'), iIn = $('isel');
+  const team = $('team'), strip = $('strip'), tpanel = $('tpanel'), ipanel = $('ipanel'),
+        kcode = $('kcode'), msg = $('msg'), tip = $('tip');
+  const LIM = { T: 256, N: 5000 };
+  const fmt = v => v.toLocaleString('en-US');
+  const A = k => k + 1;   // a[k] and b[k] both hold 1, 2, 3, ..., N
+
+  let cells = [], chips = [], shape = '';
+  let state = { T: 4, N: 30, t: 1, i: 9 };
+
+  function intVal(el, lo, hi) {
+    const v = Number(el.value);
+    const ok = el.value.trim() !== '' && Number.isInteger(v) && v >= lo && v <= hi;
+    el.classList.toggle('bad', !ok);
+    return ok ? v : null;
+  }
+  // Static schedule without a chunk size (as in libgomp and LLVM):
+  // q = floor(N / T), r = N % T; threads 0..r-1 get q + 1 iterations, the rest get q.
+  const countFor = (t, T, N) => Math.floor(N / T) + (t < N % T ? 1 : 0);
+  const startFor = (t, T, N) => t * Math.floor(N / T) + Math.min(t, N % T);
+  function ownerOf(i, T, N) {
+    const q = Math.floor(N / T), r = N % T, big = r * (q + 1);
+    return i < big ? Math.floor(i / (q + 1)) : r + Math.floor((i - big) / q);
+  }
+
+  function build(T, N) {
+    const key = T + 'x' + N;
+    if (key === shape) return;
+    shape = key;
+    team.innerHTML = ''; strip.innerHTML = '';
+    chips = []; cells = [];
+    for (let t = 0; t < T; t++) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tchip' + (countFor(t, T, N) === 0 ? ' idle' : '');
+      b.dataset.t = t; b.textContent = 'T' + t;
+      b.setAttribute('aria-label', 'thread ' + t + ', ' + countFor(t, T, N) + ' iterations');
+      chips.push(b); team.appendChild(b);
+    }
+    const cs = N <= 64 ? 30 : N <= 200 ? 24 : N <= 1000 ? 14 : 9;
+    strip.style.setProperty('--cs', cs + 'px');
+    const nums = N <= 200;
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < N; i++) {
+      const c = document.createElement('button');
+      const own = ownerOf(i, T, N);
+      c.type = 'button'; c.className = 'cell' + (i > 0 && startFor(own, T, N) === i ? ' cstart' : ''); c.dataset.i = i;
+      c.setAttribute('aria-label', 'iteration ' + i + ', thread ' + own);
+      if (nums) c.textContent = i;
+      cells.push(c); frag.appendChild(c);
+    }
+    strip.appendChild(frag);
+  }
+
+  function line(code, cls, comment) {
+    return '<span class="ln' + (cls ? ' ' + cls : '') + '">' + (code || ' ') +
+      (comment ? '<span class="cm">  // ' + comment + '</span>' : '') + '</span>';
+  }
+
+  function render(from) {
+    const T = intVal(ntIn, 1, LIM.T), N = intVal(NIn, 1, LIM.N);
+    if (T === null || N === null) {
+      msg.textContent = 'OMP_NUM_THREADS must be 1 to ' + LIM.T + ' and N must be 1 to ' + fmt(LIM.N) + '.';
+      return;
+    }
+    build(T, N);
+    tIn.max = T - 1; iIn.max = N - 1;
+
+    if (from === 'i') {
+      const i = intVal(iIn, 0, N - 1);
+      if (i !== null) { tIn.value = ownerOf(i, T, N); tIn.classList.remove('bad'); }
+    }
+    let t = intVal(tIn, 0, T - 1);
+    let i = intVal(iIn, 0, N - 1);
+    if (from === 't' && t !== null && (i === null || ownerOf(i, T, N) !== t) && countFor(t, T, N) > 0) {
+      i = startFor(t, T, N); iIn.value = i; iIn.classList.remove('bad');   // jump to the thread's first iteration
+    }
+    const errs = [];
+    if (t === null) errs.push('thread must be 0 to ' + (T - 1));
+    if (i === null) errs.push('i must be 0 to ' + (N - 1));
+    msg.textContent = errs.length ? errs.join('; ') + '.' : '';
+
+    chips.forEach((c, k) => c.classList.toggle('on', k === t));
+    cells.forEach((c, k) => {
+      c.classList.toggle('mine', t !== null && ownerOf(k, T, N) === t);
+      c.classList.toggle('on', k === i);
+    });
+
+    // Code panel
+    const hasIter = t !== null && i !== null && ownerOf(i, T, N) === t;
+    const v = i !== null ? A(i) : 0;
+    kcode.innerHTML = [
+      line('<span class="cm">// export OMP_NUM_THREADS=' + T + '</span>'),
+      line('<span class="kw">#pragma omp parallel for</span>', '', 'default static schedule: contiguous chunks'),
+      line('<span class="kw">for</span> (<span class="kw">int</span> i = 0; i &lt; N; i++) {', t !== null ? 'hit' : '',
+           t !== null ? 'N = ' + N + (hasIter ? ', thread ' + t + ' runs i = ' + i : '') : 'N = ' + N),
+      line('    c[i] = a[i] + b[i];', hasIter ? 'hit' : '', hasIter ? 'c[' + i + '] = ' + v + ' + ' + v + ' = ' + (2 * v) : ''),
+      line('}')
+    ].join('');
+
+    // Thread panel
+    if (t === null) {
+      tpanel.innerHTML = '<p class="khead">Selected thread</p><p class="where">Pick a thread from 0 to ' + (T - 1) + '.</p>';
+    } else {
+      const n = countFor(t, T, N);
+      let html = '<p class="khead">Selected thread</p><h2>thread ' + t + '</h2>';
+      if (n === 0) {
+        html += '<p>This thread gets no iterations. There are more threads (' + T + ') than iterations (' + N +
+          '), so threads ' + N + ' to ' + (T - 1) + ' sit idle until the loop ends.</p>';
+      } else {
+        const s = startFor(t, T, N);
+        html += '<p class="where">' + n + ' iteration' + (n === 1 ? '' : 's') + ': i = ' + s +
+          (n > 1 ? ' to ' + (s + n - 1) : '') + ', one contiguous chunk</p><div class="ilist">';
+        for (let k = s; k < s + n; k++) {
+          html += '<button type="button" class="ichip' + (k === i ? ' on' : '') + '" data-i="' + k + '">' + k + '</button>';
+        }
+        html += '</div>';
+      }
+      tpanel.innerHTML = html;
+    }
+
+    // Iteration panel
+    if (i === null) {
+      ipanel.innerHTML = '<p class="khead">Selected iteration</p><p class="where">Pick an index from 0 to ' + (N - 1) + '.</p>';
+    } else {
+      const owner = ownerOf(i, T, N), s = startFor(owner, T, N), n = countFor(owner, T, N);
+      ipanel.innerHTML = '<p class="khead">Selected iteration</p><h2>i = ' + fmt(i) + '</h2>' +
+        '<p class="where">Run by thread ' + owner + ' (its chunk is ' + s + (n > 1 ? ' to ' + (s + n - 1) : '') +
+        '), as its iteration #' + (i - s) + '</p>' +
+        '<dl class="ops">' +
+        '<div><dt>a[' + i + ']</dt><dd>' + fmt(v) + '</dd></div>' +
+        '<div><dt>b[' + i + ']</dt><dd>' + fmt(v) + '</dd></div>' +
+        '<div class="sum"><dt>c[' + i + ']</dt><dd>' + fmt(v) + ' + ' + fmt(v) + ' = ' + fmt(2 * v) + '</dd></div>' +
+        '</dl>';
+    }
+  }
+
+  team.addEventListener('click', e => {
+    const c = e.target.closest('.tchip'); if (!c) return;
+    tIn.value = c.dataset.t; render('t');
+  });
+  strip.addEventListener('click', e => {
+    const c = e.target.closest('.cell'); if (!c) return;
+    iIn.value = c.dataset.i; render('i');
+  });
+  tpanel.addEventListener('click', e => {
+    const c = e.target.closest('.ichip'); if (!c) return;
+    iIn.value = c.dataset.i; render('i');
+  });
+  strip.addEventListener('mouseover', e => {
+    const c = e.target.closest('.cell'); if (!c) return;
+    const i = Number(c.dataset.i), T = Number(ntIn.value), N = Number(NIn.value);
+    tip.textContent = 'i = ' + i + '  →  thread ' + ownerOf(i, T, N) + '  →  c[' + i + '] = ' + A(i) + ' + ' + A(i) + ' = ' + 2 * A(i);
+  });
+  strip.addEventListener('mouseleave', () => { tip.innerHTML = '&nbsp;'; });
+
+  ntIn.addEventListener('input', () => render());
+  NIn.addEventListener('input', () => render());
+  tIn.addEventListener('input', () => render('t'));
+  iIn.addEventListener('input', () => render('i'));
+
+  render();
+})();
+</script>
+
+</body></html>
