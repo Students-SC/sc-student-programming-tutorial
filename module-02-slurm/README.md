@@ -249,6 +249,13 @@ Your compute node has one of each.
 busy, you may wait a moment.
 ```
 
+```{important}
+Every job, even a one-line `srun`, gets a whole compute node to itself until it
+finishes. That makes `srun` great for quick commands, but please don't start
+an interactive shell on a compute node today (for example, `srun --pty bash`):
+an idle shell holds a node that five of your classmates could be using.
+```
+
 ---
 
 ### Exercise 4: Python Environment Checkpoint
