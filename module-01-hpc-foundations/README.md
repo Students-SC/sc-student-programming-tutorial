@@ -35,6 +35,14 @@ you'll learn today is a way to use one of these kinds of parallelism.
 HPC clusters solve this by combining many computers (called **nodes**) into a single
 system and splitting the work across them.
 
+You're at the right conference to see this at scale. The
+[TOP500](https://www.top500.org) list of the world's fastest supercomputers is
+published twice a year, and the November edition is announced here at SC.
+Several recent leaders are built on AMD hardware: Frontier pairs AMD EPYC CPUs
+with AMD Instinct MI250X GPUs, and El Capitan uses AMD Instinct MI300A chips
+that combine CPU and GPU cores. The MI210 you'll program today uses the same
+GPU architecture (CDNA 2) as Frontier's MI250X.
+
 ### Anatomy of an HPC Cluster
 
 ```
