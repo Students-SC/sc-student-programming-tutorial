@@ -83,6 +83,17 @@ sbatch submit → PENDING (waiting for nodes) → RUNNING (on a node) → COMPLE
 
 You can also cancel at any stage with `scancel`.
 
+While a job is `PENDING`, the last column of `squeue` (`NODELIST(REASON)`)
+says why it is waiting:
+
+| Reason | Meaning |
+|--------|---------|
+| `Resources` | Waiting for a node to become free |
+| `Priority` | Other jobs are ahead of it in the queue |
+
+With 80+ students sharing about 20 nodes, expect to see these today. Waiting
+is normal: Slurm starts your job as soon as a node is free.
+
 ---
 
 ## Hands-On Exercises (~30 min)
