@@ -189,7 +189,7 @@ Starting in Module 2, each of your jobs gets its own MI210 on a compute node.
 ```bash
 sinfo                       # Show all Slurm partitions and the state of their nodes.
 sinfo -p mi2101x -N -l      # Show node-level details just for the mi2101x partition (the one we'll use).
-squeue                      # Show the current job queue across the cluster.
+squeue -p mi2101x           # Show the job queue for our partition (plain 'squeue' lists every job on the cluster).
 ```
 
 ### Challenge
@@ -236,7 +236,7 @@ squeue                      # Show the current job queue across the cluster.
 | `module avail` | List all available modules |
 | `module show <name>` | Show what a module does |
 | `sinfo` | Show cluster partition and node information |
-| `squeue` | Show the job queue |
+| `squeue -p mi2101x` | Show the job queue for our partition |
 
 ---
 
