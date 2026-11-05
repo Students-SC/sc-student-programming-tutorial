@@ -24,6 +24,14 @@ Some problems are too large or too slow for a single computer:
 - **AI training**: Adjusting billions of model parameters over terabytes of data
 - **Physics simulations**: Modeling molecular dynamics, fluid flow, or cosmological structure
 
+Why not just build a faster computer? For decades, processors got faster mainly
+by raising their clock speed. Around the mid-2000s that stopped: faster clocks
+made chips draw too much power and run too hot, so clock speeds have stayed at a
+few gigahertz ever since. Chips kept gaining transistors, though, so performance
+now comes from **parallelism**: more cores per CPU, GPUs with thousands of
+simpler cores, and many computers working together. Each programming model
+you'll learn today is a way to use one of these kinds of parallelism.
+
 HPC clusters solve this by combining many computers (called **nodes**) into a single
 system and splitting the work across them.
 
