@@ -173,6 +173,16 @@ cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 `ls -lt *.out | head` shows the most recent output files.
 ```
 
+`squeue` lists only jobs that are pending or running. To look up jobs that have
+finished, including the one you cancelled in Step 4, use `sacct`:
+
+```bash
+sacct -X -j <JOBID> --format=JobID,JobName%15,State,Elapsed   # Try both job IDs from this exercise
+```
+
+`-X` shows one line per job. `State` shows `COMPLETED` or `CANCELLED`, and
+`Elapsed` shows how long the job ran.
+
 ---
 
 ### Exercise 2: Compile and Run on a Compute Node
