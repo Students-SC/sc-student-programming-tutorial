@@ -6,26 +6,19 @@
 
 By the end of this module, you will be able to:
 
-- Explain the difference between threads and processes
+- Understand what threads are and how that relates to OpenMP
 - Add OpenMP directives to parallelize a serial C program
 - Control the number of threads and measure speedup
 - Identify and fix race conditions in shared-memory code
 
 ---
 
-TODO: explain what threads are. Explain why plain thread programming is a little unwieldy. How c we
-need something more ergonomic. 
-TODO: point out CPUs especially in servers can have dozens of cores and sometimes multiple CPUs. Writing a program that only
-operates serially is a waste of resources. You can take advantage of these additional cores.
-
-TODO: explain how a thread is different from a process. (or I think we can skip that. There's no
-real need to worry about it in the context of just openmp).
-
-TODO: voila openmp directives. We'll focus on the simple stuff, parallelizing a for loop.  
 
 CPUs stopped getting "faster" a while ago i.e. the number of instructions it can execute per second has
 plateaud. Most consumer CPUs tend to be between 2-4 GHz, which indicates the number of instructions
 it can execute per second. 
+For many years, programs got faster automatically as CPU clock speeds increased. Today, clock speeds improve much more slowly, and most CPUs tend to stay
+between 2-4 GHz. 
 
 So how can we get more work done if the CPUs can't get faster. We do that by performing tasks in
 parallel. CPUs have gotten better by increasing the number of "cores" they have, where each core can
@@ -36,7 +29,7 @@ the cores and then (if needed) combine the individual results into a final answe
 
 You can see below for example a simplified block diagram showing 2 64-core AMD EPYC 9534 CPUs, from
 the Riker cluster at Oak Ridge National Laboratory. You can see that each CPU has 64 cores, and
-there's 2 CPUs per node availing a total of 128 cores per node. That's a lot of cores!
+there are 2 CPUs per node availing a total of 128 cores per node. That's a lot of cores!
 
 ![Riker CPU node](/_static/Riker_CPU_node.jpg)
 
@@ -45,7 +38,7 @@ thousands of individual tasks and coordinate them?
 
 ### Threads
 
-The basic way we can run program parallel tasks is with **threads**. These are lightweight workers that all share the same memory
+The basic way we can program parallel tasks is with **threads**. These are lightweight workers that all share the same memory
 space within a single node. 
 
 For example, in C, if I launch two threads that each perform a certain task (one thread adds a
@@ -92,16 +85,17 @@ gcc -o ./threadexample threadexample.c -lpthread
 ```
 
 We're not going to see more of pthreads, but you can see how this can be used to potentially build
-up much more complex programs. But you can also see how this can get hard to manage. We could
+up much more complex programs. But you can also see how this can get cumbersome. In pthreads, the programmer is responsible for creating threads, dividing the work, waiting for threads to finish, and avoiding bugs from shared data access. We could
 benefit from an easier to understand model of writing parallel programs.
-
+ 
 
 ### The OpenMP Model
 
-OpenMP uses **compiler directives** (special comments that the compiler
-understands) to mark regions of code for parallel execution. It is up to the compiler then to figure
-how best to convert these directives into an application that can run that region of code in
-parallel.
+OpenMP uses **compiler directives** (special comments that the compiler understands) to mark regions
+of code for parallel execution. OpenMP keeps the same shared-memory model as threads, but lets you
+express common patterns like “run this loop in parallel” much more simply. The compiler
+then to uses these directives to identify how parallelism should happen and how the work should be divided
+among threads. 
 
 OpenMP uses **fork-join** parallelism: the program forks into multiple
 threads, they do work in parallel, then they join back into one.
@@ -125,6 +119,9 @@ threads, they do work in parallel, then they join back into one.
     printf("Hello from thread %d\n", omp_get_thread_num());
 } // join here, go back to just one thread
 ```
+
+(Note: To use OpenMP library functions such as `omp_get_thread_num()` and `omp_get_num_threads()`,
+include `#include <omp.h>` header). 
 
 So each thread will do the same `printf` task. So if we started 4 OpenMP threads (we'll see how to
 specify the number of threads later) we may see an output like
@@ -156,8 +153,10 @@ for (int i = 0; i < N; i++) {
 
 <a href="/_static/openmp_thread_visualizer.html">Let's visualize this!</a>
 
-So this is great when all the iterations of the loop are independent of each other. But what if
-there is a case there is one value coming from a loop instead of an array of values. For that, we have 
+So this is great when all the iterations of the loop are independent of each other. But if one
+iteration depends on the result of another iteration, the loop may not be safe to parallelize with
+`omp parallel for`. There are ways to handle this. For example, what if the loop is producing a
+single accumulated value rather than an array of independent outputs? For that, we have
 **reduction**.
 
 **Reduction** can safely combine a value across threads:
@@ -172,9 +171,11 @@ for (int i = 0; i < N; i++) {
 
 Without `reduction`, multiple threads writing to `sum` simultaneously would
 cause a **race condition** -- a bug where the result depends on unpredictable
-timing. Because multiple threads all operate at the same time and share the same memory, different
-threads can end up overwriting each other when updating `sum`. So the final answer of `sum` might be incorrect because
-all the values in `a` array weren't properly summed because of this overwriting.
+timing. The update `sum += a[i]` is not one indivisible action: it involves reading sum, adding to
+it, and writing it back. If two threads do that at the same time, one update can be lost. Because
+multiple threads all operate at the same time and share the same memory, this kind of thing can
+happen a lot. So the final answer of `sum` might be incorrect because
+all the values in `a` array weren't properly summed because of this.
 
 
 The `reduction` clause instructs the compiler about this situation and makes sure that the final
@@ -194,7 +195,7 @@ convenience:
 for (...) { ... }
 ```
 
-is exactly equivalent to:
+is equivalent to:
 
 ```c
 #pragma omp parallel
@@ -230,9 +231,9 @@ Why split it? `omp_get_num_threads()` only returns the team size when called
 **inside a parallel region**. Outside any parallel region it always returns 1,
 so there's no place to call it cleanly with the combined `parallel for`.
 
-Every thread writes the same value to the shared `nthreads`, which is safe
-because they all write the same value. (`#pragma omp single` is the strictly
-canonical "do this once" idiom -- optional for a benign assignment like this.)
+To avoid multiple threads writing the same shared variable, an OpenMP pattern is to use `#pragma omp single` which ensures only one thread from among the team of OpenMP threads performs that action.
+
+By default, OpenMP waits for all threads at the end of a for loop and at the end of a parallel region before continuing.
 
 ### Compiling and Running
 
@@ -372,7 +373,7 @@ After you complete the rest of the main modules, checkout the [Challenges direct
 
 ### Advanced: OpenMP Offload
 
-OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, visit the [OpenMP Offload bonus module in the challenges directory](../challenges/bonus-openmp-offload) to learn about how to additional OpenMP directives that can be used to accomplish tasks on the GPU.
+OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, visit the [OpenMP Offload bonus module in the challenges directory](../challenges/bonus-openmp-offload) to learn about additional OpenMP directives that can be used to accomplish tasks on the GPU.
 
 
 
@@ -386,7 +387,6 @@ OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, 
 | `#pragma omp for` | Distribute loop iterations across threads |
 | `#pragma omp parallel for` | Combined: fork + distribute |
 | `reduction(+:var)` | Safely sum `var` across threads |
-| `private(var)` | Each thread gets its own copy of `var` |
 | `omp_get_thread_num()` | Get current thread's ID (0-based) |
 | `omp_get_num_threads()` | Get team size (must be called inside a parallel region; returns 1 outside) |
 
