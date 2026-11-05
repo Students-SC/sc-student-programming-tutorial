@@ -227,8 +227,11 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 hostname
 
 ```bash
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 lscpu | grep "Model name"
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | head -30
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | grep -E "Marketing Name|Device Type"
 ```
+
+On the login node, the same `rocminfo` command lists two CPUs and two GPUs.
+Your compute node has one of each.
 
 ```{note}
 `srun` waits for a node, runs the command, and returns. If the partition is
