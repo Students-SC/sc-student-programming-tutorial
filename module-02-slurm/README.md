@@ -112,6 +112,13 @@ sbatch first_job.sh
 
 Slurm will print something like `Submitted batch job 12345`. Note the **job ID**.
 
+```{note}
+Before that line, you'll see a block of checks from the cluster's
+job-submission filter (lines starting with `-->`). That's normal, and you'll
+see it for every `sbatch` and `srun`. If the filter rejects a job, the block
+says why, for example `runtime limit is required` when a job has no `--time`.
+```
+
 #### Step 3: Check the Queue
 
 ```bash
