@@ -23,26 +23,88 @@ real need to worry about it in the context of just openmp).
 
 TODO: voila openmp directives. We'll focus on the simple stuff, parallelizing a for loop.  
 
-## Key Concepts
+CPUs stopped getting "faster" a while ago i.e. the number of instructions it can execute per second has
+plateaud. Most consumer CPUs tend to be between 2-4 GHz, which indicates the number of instructions
+it can execute per second. 
 
+So how can we get more work done if the CPUs can't get faster. We do that by performing tasks in
+parallel. CPUs have gotten better by increasing the number of "cores" they have, where each core can
+independently execute instructions. CPUs that run on servers or HPC nodes can have dozens of cores,
+which if you can program it right can accomplish a large amount of tasks in parallel. This is useful
+in the HPC world where you can break up a problem into smaller tasks that you can divide up among
+the cores and then (if needed) combine the individual results into a final answer.
 
-### Threads vs. Processes
+You can see below for example a simplified block diagram showing 2 64-core AMD EPYC 9534 CPUs, from
+the Riker cluster at Oak Ridge National Laboratory. You can see that each CPU has 64 cores, and
+there's 2 CPUs per node availing a total of 128 cores per node. That's a lot of cores!
 
-| | Processes | Threads |
-|---|---|---|
-| Memory | Separate (private) | Shared |
-| Communication | Message passing (MPI) | Read/write shared variables |
-| Creation cost | Higher | Lower |
-| Best for | Multi-node | Single node |
+![Riker CPU node](/_static/Riker_CPU_node.jpg)
 
-**OpenMP** uses **threads** -- lightweight workers that all share the same memory
-space within a single node. This makes it easy to parallelize loops: all threads
-can see the same arrays and variables.
+But how do you program such a CPU? How do you write a program that can launch dozens or hundreds or
+thousands of individual tasks and coordinate them?
+
+### Threads
+
+The basic way we can run program parallel tasks is with **threads**. These are lightweight workers that all share the same memory
+space within a single node. 
+
+For example, in C, if I launch two threads that each perform a certain task (one thread adds a
+number, another multiplies) and report the result, it might look something like this.
+
+```c
+#include <stdio.h>
+#include <pthread.h>
+
+int a = 5;   // initial value of a
+
+void *add_thread(void *arg) {
+    int b;
+    b = a + 10;
+    printf("Add thread: b = %d\n", b);
+    return NULL;
+}
+
+void *multiply_thread(void *arg) {
+    int b;
+    b = a * 10;
+    printf("Multiply thread: b = %d\n", b);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+
+    pthread_create(&t1, NULL, add_thread, NULL);
+    pthread_create(&t2, NULL, multiply_thread, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    return 0;
+}
+```
+
+Try copying the above into a file named `threadexample.c` and compile and run it with 
+
+```
+gcc -o ./threadexample threadexample.c -lpthread
+./threadexample
+```
+
+We're not going to see more of pthreads, but you can see how this can be used to potentially build
+up much more complex programs. But you can also see how this can get hard to manage. We could
+benefit from an easier to understand model of writing parallel programs.
+
 
 ### The OpenMP Model
 
 OpenMP uses **compiler directives** (special comments that the compiler
-understands) to mark regions of code for parallel execution.
+understands) to mark regions of code for parallel execution. It is up to the compiler then to figure
+how best to convert these directives into an application that can run that region of code in
+parallel.
+
+OpenMP uses **fork-join** parallelism: the program forks into multiple
+threads, they do work in parallel, then they join back into one.
 
 ```
           Serial            Parallel (fork)           Serial (join)
@@ -52,10 +114,6 @@ understands) to mark regions of code for parallel execution.
                         └── Thread 3 ──┘
 ```
 
-TODO: create visualization showing this. 
-
-This is called **fork-join** parallelism: the program forks into multiple
-threads, they do work in parallel, then they join back into one.
 
 ### Essential Directives
 
@@ -63,16 +121,31 @@ threads, they do work in parallel, then they join back into one.
 
 ```c
 #pragma omp parallel
-{
+{ // fork here, start N threads 
     printf("Hello from thread %d\n", omp_get_thread_num());
-}
+} // join here, go back to just one thread
 ```
 
-TODO: add more written material here leading into talking about making a region parallel.
+So each thread will do the same `printf` task. So if we started 4 OpenMP threads (we'll see how to
+specify the number of threads later) we may see an output like
 
-TODO: where is parallelism most useful? breaking up a long sequential task into parts.
+```
+Hello from thread 1
+Hello from thread 3
+Hello from thread 0
+Hello from thread 2
+```
 
-**Distribute loop iterations** across threads:
+Note that the output is not in order. When you are launching tasks in parallel, unless you
+explicitly do the work to order the threads (like for example, having each thread wait for another
+thread to complete before it runs), the threads can run and complete in any order. 
+
+
+What's a good place parallelism can be useful? For loops are a good one. If you can divide up the iterations of a loop
+into chunks and give each chunk to a thread, you can complete the whole loop faster than if it was
+just one thread processing all the iterations.
+
+With OpenMP, you can **Distribute loop iterations** across threads like so:
 
 ```c
 #pragma omp parallel for
@@ -81,10 +154,13 @@ for (int i = 0; i < N; i++) {
 }
 ```
 
-TODO: well that's great we split up a loop. But what happens when we need one answer not multiple
-parts of answers. Reduction! 
+<a href="/_static/openmp_thread_visualizer.html">Let's visualize this!</a>
 
-**Reduction** -- safely combine a value across threads:
+So this is great when all the iterations of the loop are independent of each other. But what if
+there is a case there is one value coming from a loop instead of an array of values. For that, we have 
+**reduction**.
+
+**Reduction** can safely combine a value across threads:
 
 ```c
 double sum = 0.0;
@@ -96,7 +172,17 @@ for (int i = 0; i < N; i++) {
 
 Without `reduction`, multiple threads writing to `sum` simultaneously would
 cause a **race condition** -- a bug where the result depends on unpredictable
-timing.
+timing. Because multiple threads all operate at the same time and share the same memory, different
+threads can end up overwriting each other when updating `sum`. So the final answer of `sum` might be incorrect because
+all the values in `a` array weren't properly summed because of this overwriting.
+
+
+The `reduction` clause instructs the compiler about this situation and makes sure that the final
+value sum is the correct sum as you would get when it is single threaded. You can think of it as
+each thread maintains its own copy of `sum` and performs its share of iterations on that private
+copy of `sum`. At the end of the loop, the value of `sum` from all the threads are added together to
+get the final value of `sum`.
+
 
 ### Decomposing `parallel for`
 
