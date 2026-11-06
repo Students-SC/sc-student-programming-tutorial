@@ -38,7 +38,7 @@ most widely used scheduler in HPC.
 | `sbatch script.sh` | Submit a batch job | `sbatch my_job.sh` |
 | `squeue` | View the job queue | `squeue -u $USER` |
 | `scancel <jobid>` | Cancel a job | `scancel 12345` |
-| `srun <command>` | Run a command on a compute node | `srun --partition=mi2101x --time=1:00 hostname` |
+| `srun <command>` | Run a command on a compute node | `srun --partition=mi2101x --nodes=1 --time=1:00 hostname` |
 | `sinfo` | View partition/node status | `sinfo -p mi2101x` |
 | `scontrol show job <id>` | Detailed info about a job | `scontrol show job 12345` |
 | `sacct -j <id>` | Accounting info after completion | `sacct -j 12345` |
@@ -67,7 +67,7 @@ echo "Hello from $(hostname) at $(date)"
 | Directive | Meaning |
 |-----------|---------|
 | `--partition` | Target node group. **Required on this cluster.** Use `mi2101x` for this tutorial. |
-| `--nodes` | How many nodes. Use `1` for most exercises. |
+| `--nodes` | How many nodes. **Required on this cluster**, and `1` is the most a job can use here. |
 | `--ntasks` | Number of MPI ranks (processes). Use `1` unless doing MPI. |
 | `--cpus-per-task` | CPU cores per task. Useful for OpenMP threading. |
 | `--time` | Maximum run time. **Required on this cluster.** Keep short (5--10 min) to share nodes fairly. |

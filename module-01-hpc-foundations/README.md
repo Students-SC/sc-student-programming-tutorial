@@ -255,8 +255,9 @@ squeue -p mi2101x           # Show the job queue for our partition (plain 'squeu
 ```{note}
 `sinfo` lists every partition on the cluster, but this tutorial uses only
 `mi2101x`. (The `*` marks the cluster's default partition, but this cluster
-rejects jobs that don't name both a partition and a time limit, so every
-command in this tutorial includes `--partition=mi2101x` and `--time`.) Nodes
+rejects jobs that don't name a partition, a node count, and a time limit, so
+every command in this tutorial includes `--partition=mi2101x`, `--nodes=1`,
+and `--time`.) Nodes
 set aside for this tutorial show the state `resv` (reserved) while they are
 idle.
 ```
