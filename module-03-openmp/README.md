@@ -171,7 +171,16 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
 
 #### Step 3: Experiment with Thread Counts
 
-Try changing the thread count (1, 4, 8, 16) and observe the output.
+Run the program with 1, 4, 8, and 16 threads in a single job and observe the
+output:
+
+```bash
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+  bash -c 'for t in 1 4 8 16; do export OMP_NUM_THREADS=$t; ./openmp_hello; done'
+```
+
+Looping inside one `srun` uses one job instead of four, which keeps the queue
+moving for everyone.
 
 ---
 
