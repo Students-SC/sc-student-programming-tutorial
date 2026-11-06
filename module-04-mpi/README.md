@@ -163,7 +163,8 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./mpi_hello
 
 Repeat the command with `--ntasks=1` and compare it with the four-rank output.
 Each rank reports a different ID, but the ranks may print in any order (that's
-normal for parallel programs). If time permits, also try 8 and 16 ranks.
+normal for parallel programs). You'll run up to 16 ranks in Exercise 2's batch
+job.
 
 ---
 
