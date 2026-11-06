@@ -125,6 +125,11 @@ Everything the exercises need is already installed. If a script reports that
 the environment is missing, ask an instructor.
 ```
 
+The models and the dataset these exercises use are pre-downloaded too, so your
+jobs load them from a shared cache instead of downloading them from Hugging
+Face. The first fine-tuning job you run copies the dataset (128 MB) into your
+`$WORK` directory, because the `datasets` library needs to write next to it.
+
 ---
 
 ### Exercise 2: Run Your First Inference

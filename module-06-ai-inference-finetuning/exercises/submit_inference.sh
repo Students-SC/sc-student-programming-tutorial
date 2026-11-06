@@ -25,6 +25,11 @@ if [[ ! -f "$VENV_DIR/bin/activate" ]]; then
 fi
 source "$VENV_DIR/bin/activate"
 
+# Load models from the shared, read-only Hugging Face cache, without
+# contacting the Hub (see setup/shared-env/README.md).
+export HF_HUB_CACHE="$SC26_SHARED_DIR/sc26_hf_cache/hub"
+export HF_HUB_OFFLINE=1
+
 echo "Python:  $(python3 --version)"
 echo "PyTorch: $(python3 -c 'import torch; print(torch.__version__)')"
 echo "ROCm:    $(python3 -c 'import torch; print(torch.cuda.is_available())')"
