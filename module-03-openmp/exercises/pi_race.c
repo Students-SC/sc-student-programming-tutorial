@@ -1,8 +1,9 @@
 /*
  * pi_race.c -- Pi calculation with a DELIBERATE race condition
  *
- * CHALLENGE: This code has a bug! It gives different (wrong) answers
- * each time you run it with multiple threads. Can you find and fix it?
+ * EXERCISE: This code has a bug! It gives wrong answers when you run it
+ * with multiple threads, sometimes different ones each time. Can you find
+ * and fix it?
  *
  * Compile:  gcc -fopenmp -O2 -o pi_race pi_race.c -lm
  * Run:      OMP_NUM_THREADS=8 ./pi_race
@@ -12,7 +13,7 @@
 #include <math.h>
 #include <omp.h>
 
-#define NUM_STEPS 100000000L
+#define NUM_STEPS 1000000000L
 
 int main(void) {
     double step = 1.0 / (double)NUM_STEPS;
@@ -20,11 +21,6 @@ int main(void) {
 
     double t_start = omp_get_wtime();
 
-    /*
-     * BUG: The parallel for is missing a reduction clause.
-     * Multiple threads are writing to 'sum' simultaneously,
-     * causing a race condition.
-     */
     #pragma omp parallel for
     for (long i = 0; i < NUM_STEPS; i++) {
         double x = (i + 0.5) * step;

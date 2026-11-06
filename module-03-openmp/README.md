@@ -78,6 +78,36 @@ Without `reduction`, multiple threads writing to `sum` simultaneously would
 cause a **race condition** -- a bug where the result depends on unpredictable
 timing.
 
+### Shared and Private Variables
+
+Inside a parallel region, every variable is either **shared** (one copy that
+all threads see) or **private** (each thread has its own copy). By default:
+
+- Variables declared **outside** the parallel region are **shared**.
+- Variables declared **inside** the region, including inside a loop body, are
+  **private**.
+- The loop index of an `omp for` loop is **private**.
+
+In the pi program you'll parallelize below, `sum` and `step` are declared
+before the loop, so they are shared, while `x` is declared inside the loop
+body, so each thread has its own. Many threads can safely *read* a shared
+variable like `step`. When several threads *write* one, like `sum`, you get a
+race condition unless something coordinates the writes. That is what
+`reduction` does: it gives each thread a private copy of `sum` and adds the
+copies together at the end.
+
+You can also make a variable private explicitly with the `private` clause, for
+example if `x` were declared before the loop:
+
+```c
+double x;
+#pragma omp parallel for private(x) reduction(+:sum)
+for (long i = 0; i < NUM_STEPS; i++) {
+    x = (i + 0.5) * step;
+    sum += 4.0 / (1.0 + x * x);
+}
+```
+
 ### Decomposing `parallel for`
 
 The combined `parallel for` is really *two* directives fused together for
@@ -110,7 +140,8 @@ loop. A common use is capturing the team size:
 int nthreads = 1;
 #pragma omp parallel
 {
-    nthreads = omp_get_num_threads();    // Inside parallel: returns team size
+    #pragma omp single
+    nthreads = omp_get_num_threads();    // One thread records the team size
 
     #pragma omp for reduction(+:sum)
     for (...) {
@@ -124,9 +155,10 @@ Why split it? `omp_get_num_threads()` only returns the team size when called
 **inside a parallel region**. Outside any parallel region it always returns 1,
 so there's no place to call it cleanly with the combined `parallel for`.
 
-Every thread writes the same value to the shared `nthreads`, which is safe
-because they all write the same value. (`#pragma omp single` is the strictly
-canonical "do this once" idiom -- optional for a benign assignment like this.)
+`nthreads` is shared (it's declared outside the region), so if every thread
+assigned it, that would be a race, even though they would all write the same
+value. `#pragma omp single` makes exactly one thread run the next statement
+while the others wait for it to finish, so only one thread writes `nthreads`.
 
 ### Compiling and Running
 
@@ -171,7 +203,16 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
 
 #### Step 3: Experiment with Thread Counts
 
-Try changing the thread count (1, 4, 8, 16) and observe the output.
+Run the program with 1, 4, 8, and 16 threads in a single job and observe the
+output:
+
+```bash
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+  bash -c 'for t in 1 4 8 16; do export OMP_NUM_THREADS=$t; ./openmp_hello; done'
+```
+
+Looping inside one `srun` uses one job instead of four, which keeps the queue
+moving for everyone.
 
 ---
 
@@ -222,10 +263,10 @@ There are **2 TODOs** to fill in:
 1. **TODO 1**: Add the OpenMP header include.
 2. **TODO 2**: Parallelize the loop using the **split** form of `parallel for`
    so you can also capture the thread count. Specifically: wrap the for loop
-   in a `#pragma omp parallel` region, set `nthreads = omp_get_num_threads()`
-   inside that region but outside the loop, and put `#pragma omp for
-   reduction(+:sum)` on the loop itself. See "Decomposing `parallel for`"
-   above for the pattern.
+   in a `#pragma omp parallel` region; inside that region but outside the
+   loop, have one thread record `nthreads = omp_get_num_threads()` using
+   `#pragma omp single`; and put `#pragma omp for reduction(+:sum)` on the
+   loop itself. See "Decomposing `parallel for`" above for the pattern.
 
 #### Step 3: Compile the Program
 
@@ -253,16 +294,59 @@ Check the output:
 cat openmp-pi_<JOBID>.out
 ```
 
+Copy this table into your notes and fill it in from the output. Speedup is
+the 1-thread time divided by the N-thread time:
+
+| Threads | Time (s) | Speedup |
+|---------|----------|---------|
+| 1       |          | 1.0     |
+| 2       |          |         |
+| 4       |          |         |
+| 8       |          |         |
+| 16      |          |         |
+
 **Questions:**
 - Does the answer change with different thread counts? (It shouldn't!)
 - How does the time change? What speedup do you get with 16 threads vs. 1?
-- Is the speedup perfect (16x)? Why or why not?
+- Is the speedup perfect (16x)? Why or why not? Think back to
+  [Amdahl's law](../module-01-hpc-foundations/README.md#how-much-faster-amdahls-law)
+  from Module 1: which parts of this program don't run in parallel?
+
+---
+
+### Exercise 4: Find and Fix a Race Condition
+
+#### Step 1: Compile and Run the Program
+
+The file `pi_race.c` has a **deliberate bug** -- a race condition. Compile and
+run it:
+
+```bash
+gcc -fopenmp -O2 -o pi_race pi_race.c -lm
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+  bash -c 'export OMP_NUM_THREADS=8; for run in 1 2 3; do ./pi_race; done'
+```
+
+This runs the program three times in one job. The answer is wrong, and it may
+change from run to run.
+
+#### Step 2: Find and Fix the Bug
+
+Can you spot and fix the bug? (Hint: compare it to your working `pi_openmp.c`.)
+Edit `pi_race.c`, then recompile and run it again with the commands from
+Step 1. When the bug is fixed, the answer matches pi for any thread count.
+
+**Question:** The wrong answers are much smaller than pi. Why? (Hint: think
+about what each thread does with `sum` when it finishes its share of the
+loop.)
+
+A fixed version, with an explanation, is in `solutions/pi_race_solution.c`.
 
 ---
 
 ### Additional Challenges
 
-After you complete the rest of the main modules, check out the [Challenges directory](../challenges/README.md#module-3---openmp-challenges) for additional OpenMP exercises that you can try.
+If you finish the exercises above early, try the [Module 3 challenges](../challenges/README.md#module-3---openmp-challenges): parallelizing a matrix-vector multiply and exploring other `omp for` clauses. You can also come back to them after the tutorial.
 
 ### Advanced: OpenMP Offload
 
