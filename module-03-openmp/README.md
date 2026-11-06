@@ -140,7 +140,8 @@ loop. A common use is capturing the team size:
 int nthreads = 1;
 #pragma omp parallel
 {
-    nthreads = omp_get_num_threads();    // Inside parallel: returns team size
+    #pragma omp single
+    nthreads = omp_get_num_threads();    // One thread records the team size
 
     #pragma omp for reduction(+:sum)
     for (...) {
@@ -154,9 +155,10 @@ Why split it? `omp_get_num_threads()` only returns the team size when called
 **inside a parallel region**. Outside any parallel region it always returns 1,
 so there's no place to call it cleanly with the combined `parallel for`.
 
-Every thread writes the same value to the shared `nthreads`, which is safe
-because they all write the same value. (`#pragma omp single` is the strictly
-canonical "do this once" idiom -- optional for a benign assignment like this.)
+`nthreads` is shared (it's declared outside the region), so if every thread
+assigned it, that would be a race, even though they would all write the same
+value. `#pragma omp single` makes exactly one thread run the next statement
+while the others wait for it to finish, so only one thread writes `nthreads`.
 
 ### Compiling and Running
 
@@ -261,10 +263,10 @@ There are **2 TODOs** to fill in:
 1. **TODO 1**: Add the OpenMP header include.
 2. **TODO 2**: Parallelize the loop using the **split** form of `parallel for`
    so you can also capture the thread count. Specifically: wrap the for loop
-   in a `#pragma omp parallel` region, set `nthreads = omp_get_num_threads()`
-   inside that region but outside the loop, and put `#pragma omp for
-   reduction(+:sum)` on the loop itself. See "Decomposing `parallel for`"
-   above for the pattern.
+   in a `#pragma omp parallel` region; inside that region but outside the
+   loop, have one thread record `nthreads = omp_get_num_threads()` using
+   `#pragma omp single`; and put `#pragma omp for reduction(+:sum)` on the
+   loop itself. See "Decomposing `parallel for`" above for the pattern.
 
 #### Step 3: Compile the Program
 

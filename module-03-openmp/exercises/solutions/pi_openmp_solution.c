@@ -24,6 +24,7 @@ int main(void) {
      * nthreads inside the parallel region but outside the loop. */
     #pragma omp parallel
     {
+        #pragma omp single
         nthreads = omp_get_num_threads();
 
         #pragma omp for reduction(+:sum)

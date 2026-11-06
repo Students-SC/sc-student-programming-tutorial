@@ -37,7 +37,10 @@ int main(void) {
      *            ...
      *        }
      *
-     *   2. Inside that region but OUTSIDE the for loop, set:
+     *   2. Inside that region but OUTSIDE the for loop, have ONE thread
+     *      record the team size (nthreads is shared, so letting every
+     *      thread write it would be a race):
+     *        #pragma omp single
      *        nthreads = omp_get_num_threads();
      *
      *   3. Put a worksharing-for directive on the loop itself, with a
