@@ -242,23 +242,33 @@ memory bandwidth, which you'll compare across block sizes in Exercise 3.
 
 ### Exercise 3: Experiment with Block Sizes
 
-#### Step 1: Choose Block Sizes
+#### Step 1: Compile One Version per Block Size
 
-Modify `vector_scale.cpp` (or the solution) to try different block sizes.
-Edit the `BLOCK_SIZE` define before compiling each version.
-
-#### Step 2: Compile and Run the Experiments
+`vector_scale.cpp` takes `BLOCK_SIZE` from the compiler command line
+(`-DBLOCK_SIZE=...`), so you don't need to edit it. Build one program per
+block size from your completed `vector_scale.cpp`. 1024 is the largest block
+size the MI210 allows.
 
 ```bash
-# Try block sizes: 64, 128, 256, 512
-hipcc -O2 -DBLOCK_SIZE=64  -o vector_scale vector_scale.cpp
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_scale
-
-hipcc -O2 -DBLOCK_SIZE=512 -o vector_scale vector_scale.cpp
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_scale
+for b in 64 128 256 512 1024; do
+  hipcc -O2 -DBLOCK_SIZE=$b -o vector_scale_$b vector_scale.cpp
+done
 ```
 
-Does the block size affect performance or correctness?
+#### Step 2: Run Them All in One Job
+
+```bash
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 \
+  bash -c 'for b in 64 128 256 512 1024; do ./vector_scale_$b; done'
+```
+
+**Questions:**
+- Does the block size affect correctness?
+- Does it affect performance? Which block sizes are fastest?
+- Why might the smallest blocks be slower? (Hint: each compute unit can hold
+  only a limited number of blocks at once. How many threads can it keep busy
+  if every block is a single 64-thread wavefront? See
+  [What Makes GPU Code Fast](#what-makes-gpu-code-fast).)
 
 ---
 
