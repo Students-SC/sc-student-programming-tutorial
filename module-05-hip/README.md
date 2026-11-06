@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Write a HIP kernel that runs on the AMD MI210 GPU
 - Manage data transfers between host (CPU) and device (GPU) memory
 - Choose thread and block dimensions for a kernel launch
+- Measure a kernel's performance and explain what limits it
 
 ---
 
@@ -31,7 +32,10 @@ many data elements at once.
 
 When your problem involves applying the same math to millions of data points
 (vector operations, matrix multiply, neural network layers), GPUs can be
-10-100x faster than CPUs.
+10-100x faster than CPUs, as long as the data is already in GPU memory.
+Copying data between CPU and GPU memory is slow by comparison, so real
+applications copy their data to the GPU once and run many kernels on it.
+You'll measure this in Exercise 1.
 
 ### The AMD MI210
 
@@ -124,6 +128,27 @@ Copy directions:
 - `hipMemcpyHostToDevice` -- CPU to GPU
 - `hipMemcpyDeviceToHost` -- GPU to CPU
 
+### What Makes GPU Code Fast
+
+A few rules of thumb explain most GPU performance results, including the ones
+you'll measure today:
+
+1. **Launch enough threads.** The MI210 has 104 compute units, each running
+   many threads at once. A kernel with only a few thousand threads leaves most
+   of the GPU idle.
+2. **Let neighboring threads read neighboring memory.** When the threads of a
+   wavefront read consecutive addresses, the GPU combines their reads into a
+   few wide memory transactions (**coalescing**). Scattered reads waste memory
+   bandwidth.
+3. **Think in wavefronts.** AMD GPUs run threads in groups of 64 called
+   **wavefronts** (NVIDIA's equivalent, the warp, has 32), so use block sizes
+   that are multiples of 64. The threads of a wavefront execute each
+   instruction together: if some take one side of an `if` and some the other,
+   the two paths run one after the other (**divergence**).
+4. **Minimize host-device copies.** Copying data between CPU and GPU memory is
+   much slower than the GPU's own memory, so keep data on the GPU across as
+   many kernels as you can.
+
 ---
 
 ## Hands-On Exercises (~40 min)
@@ -166,17 +191,31 @@ Study the code carefully. Note the pattern:
 5. Copy results back to host
 6. Verify and free memory
 
+#### Step 5: Compare Copy and Kernel Times
+
+The program times the copies as well as the kernel. In your output, compare
+**Copy to GPU** with **Kernel time**.
+
+**Questions:**
+- How many times longer do the copies take than the kernel?
+- If you only needed to add these two vectors once, would the GPU be worth
+  it? What if you ran many kernels on the same data?
+
 ---
 
 ### Exercise 2: Vector Scale
 
 #### Step 1: Open the Template
 
-Open the exercise template:
+Open the exercise template in an editor on the login node:
 
 ```bash
-cat vector_scale.cpp
+vim vector_scale.cpp
 ```
+
+In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
+`:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
+or an existing VS Code Remote SSH connection.
 
 This program should multiply every element of a vector by a constant:
 `result[i] = alpha * input[i]`
@@ -209,29 +248,40 @@ cat hip-exercise_<JOBID>.out
 ```
 
 The program verifies the results against a CPU reference. If everything is
-correct, you'll see "PASSED".
+correct, you'll see "PASSED". It also reports the kernel's average time and
+memory bandwidth, which you'll compare across block sizes in Exercise 3.
 
 ---
 
 ### Exercise 3: Experiment with Block Sizes
 
-#### Step 1: Choose Block Sizes
+#### Step 1: Compile One Version per Block Size
 
-Modify `vector_scale.cpp` (or the solution) to try different block sizes.
-Edit the `BLOCK_SIZE` define before compiling each version.
-
-#### Step 2: Compile and Run the Experiments
+`vector_scale.cpp` takes `BLOCK_SIZE` from the compiler command line
+(`-DBLOCK_SIZE=...`), so you don't need to edit it. Build one program per
+block size from your completed `vector_scale.cpp`. 1024 is the largest block
+size the MI210 allows.
 
 ```bash
-# Try block sizes: 64, 128, 256, 512
-hipcc -O2 -DBLOCK_SIZE=64  -o vector_scale vector_scale.cpp
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_scale
-
-hipcc -O2 -DBLOCK_SIZE=512 -o vector_scale vector_scale.cpp
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_scale
+for b in 64 128 256 512 1024; do
+  hipcc -O2 -DBLOCK_SIZE=$b -o vector_scale_$b vector_scale.cpp
+done
 ```
 
-Does the block size affect performance or correctness?
+#### Step 2: Run Them All in One Job
+
+```bash
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 \
+  bash -c 'for b in 64 128 256 512 1024; do ./vector_scale_$b; done'
+```
+
+**Questions:**
+- Does the block size affect correctness?
+- Does it affect performance? Which block sizes are fastest?
+- Why might the smallest blocks be slower? (Hint: each compute unit can hold
+  only a limited number of blocks at once. How many threads can it keep busy
+  if every block is a single 64-thread wavefront? See
+  [What Makes GPU Code Fast](#what-makes-gpu-code-fast).)
 
 ---
 
@@ -246,7 +296,30 @@ cat matvec_hip.cpp
 Implement a HIP kernel for matrix-vector multiplication: `y[i] = sum_j(A[i][j] * x[j])`
 
 Each thread computes one element of the output vector y. This means each
-thread must iterate over an entire row of the matrix.
+thread must iterate over an entire row of the matrix. Name the kernel
+`matvec_kernel`, as in the template's TODO. Then compile and run it:
+
+```bash
+hipcc -O2 -o matvec_hip matvec_hip.cpp
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./matvec_hip
+```
+
+**Questions:**
+- Compare the bandwidth with `vector_add`'s from Exercise 1. Why is it so much
+  lower? (Hints: how many blocks does the program launch, and how many compute
+  units does the MI210 have? At each step of the loop, how far apart in memory
+  are the elements that neighboring threads read?)
+
+A completed version is in `solutions/matvec_hip_solution.cpp`.
+
+**Make it faster (optional):** store the matrix transposed, so that element
+(i, j) is at `A[j * M + i]`; update the initialization, the CPU reference, and
+the kernel. Then at each step of the loop, neighboring threads read
+neighboring addresses, and the GPU can combine their reads. How much faster
+is it? A completed version is in
+`solutions/matvec_hip_transposed_solution.cpp`. The other limit, too few
+threads, needs a different design: a whole block per row, combining partial
+sums in shared memory, like the reduction in Module 7's capstone.
 
 ### Challenge B: Ask the Agent
 
@@ -288,7 +361,7 @@ the `if (i < n)` bounds check?
 | Compile & Run | |
 |--------------|---|
 | `hipcc -O2 -o prog prog.cpp` | Compile HIP code |
-| `srun --partition=mi2101x ./prog` | Run on a GPU node |
+| `srun --partition=mi2101x --time=2:00 ./prog` | Run on a GPU node |
 
 ---
 
