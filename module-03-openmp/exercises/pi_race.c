@@ -1,8 +1,9 @@
 /*
  * pi_race.c -- Pi calculation with a DELIBERATE race condition
  *
- * EXERCISE: This code has a bug! It gives different (wrong) answers
- * each time you run it with multiple threads. Can you find and fix it?
+ * EXERCISE: This code has a bug! It gives wrong answers when you run it
+ * with multiple threads, sometimes different ones each time. Can you find
+ * and fix it?
  *
  * Compile:  gcc -fopenmp -O2 -o pi_race pi_race.c -lm
  * Run:      OMP_NUM_THREADS=8 ./pi_race

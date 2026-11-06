@@ -324,10 +324,11 @@ run it:
 ```bash
 gcc -fopenmp -O2 -o pi_race pi_race.c -lm
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
-  bash -c 'export OMP_NUM_THREADS=8; ./pi_race'
+  bash -c 'export OMP_NUM_THREADS=8; for run in 1 2 3; do ./pi_race; done'
 ```
 
-Run it several times. Notice the answer changes each time!
+This runs the program three times in one job. The answer is wrong, and it may
+change from run to run.
 
 #### Step 2: Find and Fix the Bug
 
