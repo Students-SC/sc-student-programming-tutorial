@@ -294,10 +294,23 @@ Check the output:
 cat openmp-pi_<JOBID>.out
 ```
 
+Copy this table into your notes and fill it in from the output. Speedup is
+the 1-thread time divided by the N-thread time:
+
+| Threads | Time (s) | Speedup |
+|---------|----------|---------|
+| 1       |          | 1.0     |
+| 2       |          |         |
+| 4       |          |         |
+| 8       |          |         |
+| 16      |          |         |
+
 **Questions:**
 - Does the answer change with different thread counts? (It shouldn't!)
 - How does the time change? What speedup do you get with 16 threads vs. 1?
-- Is the speedup perfect (16x)? Why or why not?
+- Is the speedup perfect (16x)? Why or why not? Think back to
+  [Amdahl's law](../module-01-hpc-foundations/README.md#how-much-faster-amdahls-law)
+  from Module 1: which parts of this program don't run in parallel?
 
 ---
 
