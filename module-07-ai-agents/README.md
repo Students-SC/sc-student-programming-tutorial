@@ -218,7 +218,7 @@ more tools, careful prompts, and you approving its actions.
 | How the model asks for a tool | JSON in a code block, which your code parses | The model's built-in tool-call format, which vLLM parses |
 | Tool: run a shell command | yes | yes, after you approve it |
 | Tools: read, search, and edit files | no | yes |
-| Context it always starts with | your system prompt | the repository's `QWEN.md` and your `~/.qwen/QWEN.md` |
+| Context it always starts with | your system prompt | the repository's `QWEN.md`, including the notes you added |
 | Approval before acting | no | plan, ask-permissions, and auto-edit modes |
 | Undo | no | `/restore` |
 
@@ -264,10 +264,12 @@ Now put the whole day together the way you would on the job: write down what
 
 #### Step 1: Write Your Acceptance Checks
 
-In a new directory, write down how you will know the program is right:
+Go back to this module's exercises directory, which is inside the repository
+so the agent reads `QWEN.md`, and write down how you will know the program is
+right:
 
 ```bash
-mkdir -p ~/capstone && cd ~/capstone
+cd ~/sc-student-programming-tutorial/module-07-ai-agents/exercises
 cat > spec.md << 'EOF'
 # Dot product: done means
 - Matches a CPU reference, computed in double precision, to a relative error below 1e-4
@@ -278,12 +280,12 @@ EOF
 ```
 
 Add at least one check of your own, for example from the review list in
-`capstone.md` (in the Module 7 exercises directory).
+`capstone.md` (in this directory).
 
 #### Step 2: Hand It to the Agent
 
 ```bash
-bash ~/sc-student-programming-tutorial/setup/launch_qwen.sh
+bash ../../setup/launch_qwen.sh
 ```
 
 Ask it to read `spec.md`, then write, compile, and test `dot_product.cpp`
@@ -312,8 +314,9 @@ Take a few minutes to look back at the day's Agent Practice steps:
 2. What did it get wrong, and which check caught each mistake -- the Slurm
    filter, your own measurements, the `MPI_Ssend` test, the 2048 row, the
    padding warning, your spec?
-3. Open `~/.qwen/QWEN.md`. What did you teach your agent today, and what
-   would you add for your next project?
+3. Read the repository's `QWEN.md` (`cat ../../QWEN.md`). What did you teach
+   your agent today, and what would you put in a `QWEN.md` for your own next
+   project?
 4. Would you have caught those mistakes if you **didn't** understand the
    fundamentals (Slurm, OpenMP, MPI, HIP)?
 

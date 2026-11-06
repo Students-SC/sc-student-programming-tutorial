@@ -195,7 +195,7 @@ fine-tuning details.
 | Switch modes inside Qwen Code (plan, ask permissions, auto-edit) | Shift+Tab |
 | See or undo the agent's changes | `/diff`, `/restore` |
 | See how many tokens your session has used | `/stats model` |
-| Add a fact to your personal agent rules | `echo "- <fact>" >> ~/.qwen/QWEN.md` |
+| Add a fact to the agent's notes for this tutorial | `echo "- <fact>" >> ~/sc-student-programming-tutorial/QWEN.md` |
 | Exit Qwen Code | `/quit` |
 
 See [Module 7](module-07-ai-agents/README.md) for the agent exercises.

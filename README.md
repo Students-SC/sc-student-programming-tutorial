@@ -153,9 +153,10 @@ bash setup/launch_qwen.sh
 
 Type requests in plain English. Unlike a chatbot, Qwen Code reads and searches
 the files in the directory it starts in, and -- when you allow it -- edits files
-and runs commands. It also reads `~/.qwen/QWEN.md`, your own notes about the
-cluster, which you start in Module 1. It has three modes; press **Shift+Tab**
-to switch between them:
+and runs commands. When it starts anywhere in the tutorial repository, it also
+reads `QWEN.md` at the repository's top level: notes for the agent about this
+tutorial, which you add to starting in Module 1. It has three modes; press
+**Shift+Tab** to switch between them:
 
 | Mode | What the agent may do | When to use it |
 |------|-----------------------|----------------|

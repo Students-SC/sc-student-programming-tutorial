@@ -266,13 +266,14 @@ idle.
 ### Agent Practice: Teach Your Agent the Cluster
 
 An AI agent knows only what it was trained on and what it can read. In this
-step you see what that means, and you start a file of notes that the
-tutorial's agent, Qwen Code, reads every time it starts. You will add to it
-all day.
+step you see what that means, and you start adding notes to the file that
+the tutorial's agent, Qwen Code, reads whenever it starts in the tutorial
+repository. You will add to it all day.
 
 #### Step 1: Ask Without Notes
 
-Start Qwen Code in an empty directory, so it has no files to read:
+Start Qwen Code in an empty directory outside the repository, so it has no
+files to read:
 
 ```bash
 mkdir -p ~/agent-scratch && cd ~/agent-scratch
@@ -287,12 +288,19 @@ Note what it says, then type `/quit`.
 
 #### Step 2: Write Down What You Learned
 
-Start your notes file with facts from Exercise 1:
+The tutorial repository has a file for exactly this: `QWEN.md`, at its top
+level. Qwen Code reads it whenever it starts anywhere inside the repository.
+Look at what it already says:
 
 ```bash
-mkdir -p ~/.qwen
-cat >> ~/.qwen/QWEN.md << 'EOF'
-# My notes on the AUP AI & HPC Cluster (SC26 HPC + AI tutorial)
+cd ~/sc-student-programming-tutorial
+cat QWEN.md
+```
+
+Add facts from Exercise 1 under its "Cluster notes" heading:
+
+```bash
+cat >> QWEN.md << 'EOF'
 - This tutorial uses the mi2101x partition: 16 CPU cores, 64 GB of memory, and 1 AMD MI210 GPU per node.
 - AMD GPUs: use rocm-smi and rocminfo, never nvidia-smi.
 - Never run computations on the login node. Use srun or sbatch.
@@ -302,18 +310,23 @@ EOF
 Then add one fact of your own from Exercise 1, for example:
 
 ```bash
-echo "- Large files go in \$WORK, not \$HOME." >> ~/.qwen/QWEN.md
+echo "- Large files go in \$WORK, not \$HOME." >> QWEN.md
 ```
 
-Why `~/.qwen`? Qwen Code reads `~/.qwen/QWEN.md` every time it starts, in any
-directory, so these notes follow you through every module (and into your own
-projects later). Notes about one project go in a `QWEN.md` at that project's
-top level instead, which Qwen Code reads only when it starts inside that
-project. This repository has one, so from Module 2 on, the agent sees both.
+Why here? Facts about one project belong in a `QWEN.md` at that project's top
+level, so every agent session in the project starts from them. Qwen Code also
+reads a personal `~/.qwen/QWEN.md` in every directory; keep that for
+preferences you want in all of your projects, not for facts about one
+cluster or tutorial.
 
 #### Step 3: Ask Again
 
-Start Qwen Code again from `~/agent-scratch` and ask the same question.
+Start Qwen Code from the top of the repository, where it reads `QWEN.md`, and
+ask the same question:
+
+```bash
+bash setup/launch_qwen.sh
+```
 
 **Questions:**
 - What changed in the answer, and why?

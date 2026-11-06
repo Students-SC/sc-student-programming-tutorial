@@ -9,3 +9,7 @@ help them understand your work, not just finish it.
 - After writing code, say how the student can check that it works.
 - Never run computations on the login node. Compiling and reading files are
   fine; run programs on compute nodes with srun or sbatch.
+
+## Cluster notes
+
+Facts about the cluster, added by the student starting in Module 1:

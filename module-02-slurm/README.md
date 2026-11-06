@@ -348,10 +348,12 @@ cat agent-job_<JOBID>.out
   the files in this directory?
 - What did you, or the filter, have to correct?
 
-Add what you learned to your notes, so the agent gets it right next time:
+If you or the filter had to correct anything, add it to the tutorial's agent
+notes so the agent gets it right next time (from this directory, the
+repository's `QWEN.md` is two levels up):
 
 ```bash
-echo "- Every job needs --partition, --nodes=1, and --time." >> ~/.qwen/QWEN.md
+echo "- <what you learned>" >> ../../QWEN.md
 ```
 
 ---
