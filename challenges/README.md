@@ -43,8 +43,8 @@ performance with the serial version.
 
 If you look at the [OpenMP API spec for `pragma for`](https://www.openmp.org/spec-html/5.0/openmpsu41.html#x64-1290002.9.2), you will see it has a number of optional clauses you can use. You've seen one already: `reduction`. Try exploring some of the others. For example:
 
-1. Could you apply the `collapse` clause for the `matvec_openmp.c` exercise? Does that still produce the correct output? If not, why?
-2. Could you apply the `schedule` clause for the `pi_race.c` and for `matvec_openmp.c`? Is there any difference in execution time between using `schedule(static)` and `schedule(dynamic)` for `omp parallel for`?
+1. Could you apply the `collapse` clause to the loops in `matvec_openmp.c`? Does it compile? If not, read the compiler's error message: what does it say about the loops, and why?
+2. Could you apply the `schedule` clause to the loop in your completed `pi_openmp.c` (in `module-03-openmp/exercises/`) and to `matvec_openmp.c`? Is there any difference in execution time between `schedule(static)` and `schedule(dynamic)`? If `dynamic` is much slower, try giving it a chunk size, such as `schedule(dynamic, 100000)`. Why does that help?
 
 
 ## Module 4: MPI Challenges
