@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # submit_inference.sh -- Run LLM inference on a GPU node
 #
-# Submit:  sbatch submit_inference.sh
+# Submit:  sbatch submit_inference.sh [script.py]
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=inference
 #SBATCH --partition=mi2101x
@@ -32,5 +32,14 @@ echo "PyTorch: $(python3 -c 'import torch; print(torch.__version__)')"
 echo "ROCm:    $(python3 -c 'import torch; print(torch.cuda.is_available())')"
 echo ""
 
-# Run the inference script (change to run_inference.py for the exercise)
-python3 ../examples/simple_inference.py
+# The Python script to run is the first argument (default: the example):
+#   sbatch submit_inference.sh                    # Exercise 2
+#   sbatch submit_inference.sh run_inference.py   # Exercise 3
+SCRIPT="${1:-../examples/simple_inference.py}"
+if [[ ! -f "$SCRIPT" ]]; then
+    echo "ERROR: Python script not found: $SCRIPT" >&2
+    exit 1
+fi
+echo "Running: $SCRIPT"
+echo ""
+python3 "$SCRIPT"

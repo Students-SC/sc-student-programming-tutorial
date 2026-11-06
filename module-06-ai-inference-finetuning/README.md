@@ -66,8 +66,10 @@ small trainable "adapter" matrices:
   Effective weight: W + A × B
 ```
 
-For a model with 110M parameters, LoRA might only train ~0.5M parameters --
-a 200x reduction. This means fine-tuning fits on a single GPU and runs fast.
+The DistilBERT model you'll fine-tune has about 67 million parameters. With
+this exercise's LoRA settings, only about 0.74 million (1.1%) are trained --
+about 90x fewer. That is why fine-tuning fits easily on one GPU and finishes
+in seconds.
 
 ### Why GPUs for AI?
 
@@ -76,7 +78,11 @@ massively parallel operation GPUs excel at:
 
 - The MI210 has **6656 stream processors** running in parallel
 - **64 GB HBM2e** with **1.6 TB/s bandwidth** for fast data access
-- This is why GPUs make inference 10-100x faster than CPUs
+- Generating text for one prompt at a time uses only a sliver of that
+  parallelism, so the GPU may be only slightly faster than the CPU (you can
+  measure this in Exercise 3). GPUs pull far ahead when they process many
+  prompts together, which is called **batching** (Challenge C). Batching is
+  how the shared AI server in Module 7 answers a whole classroom at once.
 
 ---
 
@@ -150,6 +156,9 @@ responses to a few prompts. Examine how it:
 sbatch submit_inference.sh
 ```
 
+With no argument, `submit_inference.sh` runs this example. In Exercise 3,
+you'll give it the name of your own script.
+
 #### Step 4: Examine the Output
 
 Check the output when it finishes:
@@ -160,7 +169,8 @@ cat inference_<JOBID>.out
 
 **Questions:**
 - How fast does the model generate text (tokens/sec)?
-- How much GPU memory does the model use?
+- How much GPU memory does the model use after loading, and at its peak while
+  generating?
 - Do the generated responses make sense?
 
 ---
@@ -169,34 +179,55 @@ cat inference_<JOBID>.out
 
 #### Step 1: Open the Exercise
 
-Open the inference exercise:
+Open the inference exercise in an editor on the login node:
 
 ```bash
-cat run_inference.py
+vim run_inference.py
 ```
 
-#### Step 2: Complete the TODOs
+In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
+`:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
+or an existing VS Code Remote SSH connection.
+
+#### Step 2: (Optional) Try the CPU First
+
+Until you complete TODO 1, the template runs the model on the CPU
+(`device = "cpu"`). To get a baseline, submit it once before editing anything:
+
+```bash
+sbatch submit_inference.sh run_inference.py
+```
+
+Note the tokens/sec it reports, so you can compare with the GPU in Step 5.
+
+#### Step 3: Complete the TODOs
 
 There are **3 TODOs**:
 
 1. **TODO 1**: Load the model onto the GPU (choose the right device)
-2. **TODO 2**: Set generation parameters (max tokens, temperature)
+2. **TODO 2**: Choose the generation settings: `max_new_tokens`, and a list of
+   `temperatures` to compare (try `[0.1, 0.7, 1.5]`)
 3. **TODO 3**: Add your own custom prompts to the prompt list
 
-#### Step 3: Submit the Batch Job
+#### Step 4: Submit the Batch Job
 
-Edit the file, add your own prompts, and submit:
+Edit the file, add your own prompts, and submit it by naming the script after
+the batch file:
 
 ```bash
-sbatch submit_inference.sh
+sbatch submit_inference.sh run_inference.py
 ```
 
-#### Step 4: Experiment with Temperature
+#### Step 5: Compare Temperatures
 
-Try varying the `temperature` parameter:
-- `temperature=0.1` -- very focused, repetitive
-- `temperature=0.7` -- balanced creativity
-- `temperature=1.5` -- wild and unpredictable
+Your script runs every prompt at each temperature in `temperatures`, so one
+job gives you a side-by-side comparison. With the suggested values, expect:
+- `0.1` -- very focused, repetitive
+- `0.7` -- balanced creativity
+- `1.5` -- wild and unpredictable
+
+Which temperature gives the most useful answers to your prompts? If you ran
+the CPU baseline in Step 2, how many times faster is the GPU?
 
 ---
 
@@ -205,12 +236,12 @@ Try varying the `temperature` parameter:
 Now let's adapt a pre-trained model to a new task. We'll fine-tune a text
 classification model (DistilBERT) on a sentiment analysis dataset using LoRA.
 
-#### Step 1: Examine the Fine-Tuning Script
+#### Step 1: Open the Fine-Tuning Script
 
-Look at the script:
+Open the script in an editor, as in Exercise 3:
 
 ```bash
-cat finetune_lora.py
+vim finetune_lora.py
 ```
 
 #### Step 2: Complete the TODOs
@@ -238,6 +269,8 @@ cat finetune_<JOBID>.out
 - What accuracy after fine-tuning?
 - How long did training take?
 - How many parameters were actually trained (vs. total)?
+- What was the peak GPU memory during training? Training stores gradients and
+  optimizer state as well as the model, so why is the number still small?
 
 ---
 
@@ -251,19 +284,55 @@ Experiment with different LoRA settings in `finetune_lora.py`:
 
 How do these affect final accuracy and training time?
 
-### Challenge B: GPU Memory Profiling
+### Challenge B: LoRA vs. Full Fine-Tuning
 
-Add `rocm-smi` monitoring to your batch script to see GPU memory usage during
-inference vs. training:
+How much does LoRA actually save? Fine-tune the same model without it:
+
+1. Copy your completed script: `cp finetune_lora.py finetune_full.py`
+2. In `finetune_full.py`, delete the line that wraps the model with
+   `get_peft_model`, so that every weight is trained.
+3. Submit it: `sbatch submit_finetune.sh finetune_full.py`
+
+Compare the two runs: trainable parameters, peak GPU memory during training,
+training time, and accuracy after fine-tuning. How do both peaks compare with
+the peak memory for inference in Exercise 2?
+
+Then change `LEARNING_RATE` in `finetune_full.py` from `2e-4` to `2e-5` and
+run it again. Why does training *all* of the weights need a smaller learning
+rate than training only the LoRA adapters? (Hint: think about how far each
+update moves the pre-trained weights.)
+
+A full fine-tuning solution with the smaller learning rate is in
+`solutions/finetune_full_solution.py`.
+
+### Challenge C: Batch Your Prompts
+
+So far the model answers one prompt at a time. Each step of generation reads
+all of the model's weights from GPU memory, so the GPU does much more useful
+work per step when it generates for many prompts together.
+
+Modify a copy of your `run_inference.py` so it generates responses for all of
+your prompts in a **single** `model.generate()` call:
+
+1. Set `tokenizer.padding_side = "left"`. Prompts have different lengths, so
+   they are padded to the same length, and a text generation model needs the
+   padding on the left because it continues from the end of its input.
+2. Format every prompt with the chat template, then tokenize the whole list
+   at once: `tokenizer(texts, return_tensors="pt", padding=True)`.
+3. Call `model.generate()` once, then decode each row of the output.
+
+Compare the total tokens per second with one-prompt-at-a-time generation. A
+solution that measures both is in `solutions/batch_inference_solution.py`:
 
 ```bash
-# Add to your batch script before and during model loading:
-rocm-smi --showmeminfo vram
-# ... load model ...
-rocm-smi --showmeminfo vram
+sbatch submit_inference.sh solutions/batch_inference_solution.py
 ```
 
-How much GPU memory does the model use during inference vs. fine-tuning?
+**Questions:**
+- How much higher is the batched throughput? Did each individual response
+  arrive faster or slower?
+- The shared AI server in Module 7 answers the whole class at once. How does
+  batching help it?
 
 ---
 
@@ -276,7 +345,7 @@ How much GPU memory does the model use during inference vs. fine-tuning?
 | **Fine-tuning** | Adapting a pre-trained model to a specific task |
 | **LoRA** | Parameter-efficient fine-tuning using low-rank adapters |
 | **Tokenizer** | Converts text to/from numerical tokens the model understands |
-| **Temperature** | Controls randomness in text generation (0 = deterministic, >1 = creative) |
+| **Temperature** | Controls randomness when sampling: lower is more focused, higher (>1) more random. Must be above 0; for deterministic output, turn sampling off with `do_sample=False` |
 
 | PyTorch / HuggingFace | Purpose |
 |-----------------------|---------|

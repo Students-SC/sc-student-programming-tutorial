@@ -170,7 +170,8 @@ Useful HIP calls and syntax from [Module 5](module-05-hip/README.md):
 
 | I want to... | Command |
 |--------------|---------|
-| Run the inference batch script | `sbatch submit_inference.sh` |
+| Run the inference example | `sbatch submit_inference.sh` |
+| Run your inference exercise | `sbatch submit_inference.sh run_inference.py` |
 | Read inference output | `cat inference_<JOBID>.out` |
 | Run the fine-tuning batch script | `sbatch submit_finetune.sh` |
 | Read fine-tuning output | `cat finetune_<JOBID>.out` |
