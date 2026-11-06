@@ -11,6 +11,7 @@ By the end of this module, you will be able to:
 - Manage data transfers between host (CPU) and device (GPU) memory
 - Choose thread and block dimensions for a kernel launch
 - Measure a kernel's performance and explain what limits it
+- Check that an agent's experiment script follows its spec and reports failures
 
 ---
 
@@ -285,6 +286,56 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 \
 
 ---
 
+### Agent Practice: Automate the Experiment, Honestly
+
+A sweep like Exercise 3's is a natural job for an agent. Ask for a slightly
+bigger one -- including a block size you know is too large -- and check that
+the agent's script follows your spec and reports failures honestly.
+
+#### Step 1: Ask for a Sweep Script
+
+Start Qwen Code in ask-permissions mode:
+
+```bash
+bash ../../setup/launch_qwen.sh --approval-mode default
+```
+
+Ask it:
+
+> Write sweep.sh, which compiles vector_scale.cpp with -DBLOCK_SIZE set to 32, 64, 128, 256, 512, 1024, and 2048, runs all of them in a single srun on our partition, and prints a table of block size, bandwidth, and status.
+
+#### Step 2: Review Before Running
+
+Before you approve the script, answer two questions:
+- What should happen at 2048? (See Exercise 3.)
+- How many times will this script call `srun`? You asked for one; each extra
+  `srun` is another wait in the queue.
+
+If the script doesn't match your spec, tell the agent what to fix before you
+approve it.
+
+#### Step 3: Run It and Check
+
+```bash
+bash sweep.sh
+```
+
+The script compiles on the login node and then runs on a compute node. Check
+its table: do the bandwidths match Exercise 3? What does the 2048 row say --
+an error, or a blank or plausible-looking number? A script that hides a
+failure is worse than one that crashes.
+
+**Questions:**
+- What did you have to correct in the agent's script?
+- If you had not known that 1024 is the limit, would its table have told you?
+
+**Finish early?** Check the checker: ask the agent, *"Could vector_scale.cpp
+print PASSED even if the result were never copied back from the GPU?"* Then
+test its answer: comment out the copy back to the host (TODO 4), recompile,
+and run it.
+
+---
+
 ### Challenge A: Matrix-Vector Multiply on the GPU
 
 Open the challenge template:
@@ -361,7 +412,7 @@ the `if (i < n)` bounds check?
 | Compile & Run | |
 |--------------|---|
 | `hipcc -O2 -o prog prog.cpp` | Compile HIP code |
-| `srun --partition=mi2101x --time=2:00 ./prog` | Run on a GPU node |
+| `srun --partition=mi2101x --nodes=1 --time=2:00 ./prog` | Run on a GPU node |
 
 ---
 

@@ -1,5 +1,5 @@
 """
-batch_inference_solution.py -- Solution for Challenge C: batch your prompts
+batch_inference_solution.py -- Solution for the Agent Practice: batch your prompts
 
 Generates responses to the same prompts twice -- one prompt at a time, then
 all prompts in a single batched model.generate() call -- and reports the

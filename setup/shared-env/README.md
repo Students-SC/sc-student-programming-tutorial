@@ -10,6 +10,7 @@ their jobs activate the shared environments directly.
 /work1/proj_sc26students/shared/                  ($SC26_SHARED_DIR)
 ├── sc26_venv -> sc26_venv-<timestamp>/           ML stack for Modules 6-7 (build_venv.sh)
 ├── sc26_aider_venv -> sc26_aider_venv-<timestamp>/   aider CLI agent (build_aider_venv.sh)
+├── sc26_qwen_code -> sc26_qwen_code-<timestamp>/     Qwen Code CLI agent (build_qwen_code.sh)
 ├── sc26_hf_cache/                                Module 6 models and dataset (download_hf_cache.sh)
 │   ├── hub/                                      TinyLlama, DistilBERT, and IMDB's raw files
 │   └── datasets/                                 IMDB, prepared
@@ -63,6 +64,28 @@ It installs exactly the versions in `requirements-sc26-aider-venv.txt`
 produces a 654 MB venv. To upgrade aider, see the comment at the top of that
 file.
 
+## Install Qwen Code
+
+Qwen Code, a CLI coding agent that reads files, runs commands, and edits code
+on its own, ships as a standalone archive with its own Node.js runtime. Run
+this on the login node:
+
+```bash
+bash setup/shared-env/build_qwen_code.sh
+```
+
+It downloads the release pinned in the script (`QWEN_CODE_VERSION`), checks
+its SHA-256 checksum, unpacks it, and copies in `qwen-code-defaults.json`,
+which `setup/launch_qwen.sh` gives Qwen Code as its lowest-precedence
+settings: plan mode by default, only the plan, ask-permissions, and
+auto-edit modes offered, the server's 32K context window, and no
+auto-update, usage statistics, or telemetry. It takes about 20 seconds and
+produces a 324 MB install. Re-run it after changing the version or the
+defaults file.
+
+Qwen Code calls tools natively, so the vLLM server must run with tool
+calling enabled, as `start_server.sh` does.
+
 ## Download Module 6's Models and Dataset
 
 This script uses the shared ML venv, so build that first:
@@ -102,7 +125,8 @@ cd /work1/proj_sc26students/shared
 ln -sfn sc26_venv-<older-timestamp> sc26_venv
 ```
 
-The aider venv works the same way (`sc26_aider_venv-<timestamp>`). Older
+The aider venv and Qwen Code work the same way
+(`sc26_aider_venv-<timestamp>`, `sc26_qwen_code-<timestamp>`). Older
 builds are listed at the end of each build log. Remove them when you no
 longer need them.
 
@@ -118,5 +142,6 @@ python3 -c "import torch, transformers; print(torch.__version__, transformers.__
 touch "$S/sc26_venv/x"          # Permission denied
 deactivate
 "$S/sc26_aider_venv/bin/aider" --version
+"$S/sc26_qwen_code/bin/qwen" --version
 ls "$S/sc26_hf_cache/hub" "$S/sc26_hf_cache/datasets"
 ```

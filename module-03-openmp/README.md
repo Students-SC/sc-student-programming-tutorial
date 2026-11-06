@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Add OpenMP directives to parallelize a serial C program
 - Control the number of threads and measure speedup
 - Identify and fix race conditions in shared-memory code
+- Check an agent's script against results you measured yourself
 
 ---
 
@@ -341,6 +342,45 @@ about what each thread does with `sum` when it finishes its share of the
 loop.)
 
 A fixed version, with an explanation, is in `solutions/pi_race_solution.c`.
+
+---
+
+### Agent Practice: Delegate the Bookkeeping
+
+You filled in the speedup table from Exercise 3 by hand. That's the kind of
+chore developers hand to an agent -- and then check against numbers they
+already know.
+
+#### Step 1: Ask for a Script
+
+Start Qwen Code in ask-permissions mode:
+
+```bash
+bash ../../setup/launch_qwen.sh --approval-mode default
+```
+
+Ask it, using your job ID from Exercise 3:
+
+> Write speedup.py, which reads an output file like openmp-pi_<JOBID>.out (given as a command-line argument) and prints a table of threads, time, and speedup (the 1-thread time divided by the N-thread time).
+
+Read the script before you approve it. Which lines find the thread count and
+the time in the output file?
+
+#### Step 2: Run It and Compare
+
+This script only reads a small text file, so it's fine to run on the login
+node (approve it if the agent offers, or run it yourself):
+
+```bash
+python3 speedup.py openmp-pi_<JOBID>.out
+```
+
+Does it match the table you filled in by hand? If it crashes or prints wrong
+numbers, show the agent the output and ask it to fix the script.
+
+**Questions:**
+- How does the script find the 1-thread time?
+- What would it do if the 1-thread run were missing from the file?
 
 ---
 

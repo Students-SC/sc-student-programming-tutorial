@@ -86,8 +86,8 @@ You should see `Status: PASSED` and the GPU's name. Module 2 includes a
 checkpoint that explains this job and helps anyone who skipped this step catch
 up.
 
-The tutorial's AI coding agent (Aider) is also preinstalled, so it's ready to
-use. See "Using AI Assistants" below.
+The tutorial's AI coding agent (Qwen Code) is also preinstalled, so it's ready
+to use. See "Using AI Assistants" below.
 
 ## Getting Help
 
@@ -124,42 +124,55 @@ the production research and education workloads being run on the system.
 
 ## Using AI Assistants
 
-You are encouraged to use AI coding assistants throughout the tutorial -- just
-as you would in modern development practice. The ground rule:
+You are encouraged to use AI coding agents throughout the tutorial -- just as
+you would in modern development practice. The ground rule:
 
 > **Use the agent, but own the answer.**
 
-Let the AI help you write code, debug errors, and explain concepts -- but make
-sure *you* understand what the code does before moving on. Exercises are
-designed so you need to verify and reason about the AI's output.
+Let the agent help you write code, debug errors, and explain concepts -- but
+make sure *you* understand what the code does before moving on. Each module
+ends with an **Agent Practice** step: after you have done the exercise
+yourself, you hand a related task to the agent, predict what should happen,
+and check its work with the same tests you used on your own code. Agents
+make mistakes; the point is to catch them.
 
-### The tutorial agent: Aider + a self-hosted coding model
+### The tutorial agent: Qwen Code + a self-hosted coding model
 
 We provide a CLI coding agent for you to use throughout the day -- no accounts,
-no API keys, no cost. It's [Aider](https://aider.chat) (a popular open-source
-coding agent) pointed at **Qwen3-Coder-30B-A3B-Instruct**, served on a
-dedicated MI300X compute node by your instructors. Exercises that say *"ask
+no API keys, no cost. It's [Qwen Code](https://github.com/QwenLM/qwen-code), an
+open-source coding agent, pointed at **Qwen3-Coder-30B-A3B-Instruct**, served on
+a dedicated MI300X compute node by your instructors. Exercises that say *"ask
 your AI agent..."* refer to this tool.
 
-It's preinstalled for everyone. Launch it from inside the repo:
-
+It's preinstalled for everyone. Start it in the directory you are working in:
 
 ```bash
-# In a new terminal, navigate to the tutorial directory
 cd ~/sc-student-programming-tutorial
-
-
-# Launch aider (the shared install, pointed at the local model)
-bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
+bash setup/launch_qwen.sh
 ```
 
-Inside Aider, type questions in plain English. By default the agent runs in
-**ask mode**: it reads the files you give it and explains what to do, but it
-does not edit them -- understanding and writing the code is your job. After starting 
-Aider, add files or directories to your context with the `/read` command (e.g. run
-`/read module-03-slurm` to get Aider to read its contents so it can answer questions
-about it). Type
-`/help` to see commands, `/exit` to quit.
+Type requests in plain English. Unlike a chatbot, Qwen Code reads and searches
+the files in the directory it starts in, and -- when you allow it -- edits files
+and runs commands. It also reads `~/.qwen/QWEN.md`, your own notes about the
+cluster, which you start in Module 1. It has three modes; press **Shift+Tab**
+to switch between them:
+
+| Mode | What the agent may do | When to use it |
+|------|-----------------------|----------------|
+| **Plan** (the tutorial's default) | Read files and explain; no edits, no commands | Questions, explanations, reviewing your code |
+| **Ask permissions** | Edit files and run commands, each only after you approve it | Agent Practice steps |
+| **Auto-edit** | Edit files without asking; still asks before every command | Module 7's capstone, if you want fewer interruptions |
+
+To start in ask-permissions mode, pass `--approval-mode default` (Qwen Code's
+name for it): `bash setup/launch_qwen.sh --approval-mode default`.
+
+Read everything before you approve it. Approve an edit only if you understand
+the change, and a command only if you would run it yourself. In particular,
+programs belong on compute nodes (`srun` or `sbatch`), never on the login node;
+compiling and reading files on the login node are fine.
+
+Inside Qwen Code, `/diff` shows the changes it has made, `/restore` undoes them,
+`/stats model` shows how many tokens your session has used, and `/quit` exits.
 
 ```{note}
 If you'd rather use your own coding assistant (Cursor, GitHub Copilot, ChatGPT,

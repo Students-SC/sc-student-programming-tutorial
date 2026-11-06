@@ -11,6 +11,7 @@ By the end of this module, you will be able to:
 - Explain point-to-point communication (`MPI_Send` / `MPI_Recv`)
 - Recognize a deadlock and order messages to avoid it
 - Use collective operations (`MPI_Reduce`)
+- Test an agent's MPI code for a deadlock that a normal run can hide
 
 ---
 
@@ -369,6 +370,50 @@ Compile and run it separately:
 mpicc -O2 -o ring_solution solutions/ring_solution.c
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring_solution
 ```
+
+---
+
+### Agent Practice: Test the Agent's Ring
+
+Code that runs once isn't necessarily correct. In Step 2 you saw a ring that
+deadlocks when messages aren't buffered. Now have the agent write a ring, and
+use the same trick to prove whether its version can deadlock.
+
+#### Step 1: Ask for a Ring
+
+Start Qwen Code in ask-permissions mode:
+
+```bash
+bash ../../setup/launch_qwen.sh --approval-mode default
+```
+
+Ask it:
+
+> Write ring_agent.c: an MPI program in which every rank sends its rank number to the next rank (the last rank sends to rank 0) and receives from the previous rank, then prints a line 'Rank <r> received <v>'. Use MPI_Send and MPI_Recv.
+
+Before you approve the file, read the sends and receives. Predict: would this
+version deadlock if MPI couldn't buffer the messages?
+
+#### Step 2: Test It Without Buffering
+
+Make a copy that uses `MPI_Ssend`, then compile and run it with a short time
+limit:
+
+```bash
+sed 's/MPI_Send(/MPI_Ssend(/g' ring_agent.c > ring_ssend.c
+mpicc -O2 -o ring_ssend ring_ssend.c
+srun --partition=mi2101x --nodes=1 --time=1:00 --ntasks=4 ./ring_ssend
+```
+
+If it hangs, the agent's ordering relies on buffering: press `Ctrl-C` twice,
+tell the agent what happened, and ask it to fix the ordering. When it works,
+run it again with `--ntasks=8` and check every rank's received value.
+
+**Questions:**
+- Which ordering did the agent use? Is it the same idea as yours?
+- Did it follow the instruction to use `MPI_Send` and `MPI_Recv`? If not, did
+  you notice before running it?
+- Why does the `MPI_Ssend` test tell you more than a run that happens to work?
 
 ---
 
