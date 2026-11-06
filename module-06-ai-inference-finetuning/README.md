@@ -78,7 +78,11 @@ massively parallel operation GPUs excel at:
 
 - The MI210 has **6656 stream processors** running in parallel
 - **64 GB HBM2e** with **1.6 TB/s bandwidth** for fast data access
-- This is why GPUs make inference 10-100x faster than CPUs
+- Generating text for one prompt at a time uses only a sliver of that
+  parallelism, so the GPU may be only slightly faster than the CPU (you can
+  measure this in Exercise 3). GPUs pull far ahead when they process many
+  prompts together, which is called **batching** (Challenge C). Batching is
+  how the shared AI server in Module 7 answers a whole classroom at once.
 
 ---
 
@@ -293,6 +297,35 @@ rocm-smi --showmeminfo vram
 ```
 
 How much GPU memory does the model use during inference vs. fine-tuning?
+
+### Challenge C: Batch Your Prompts
+
+So far the model answers one prompt at a time. Each step of generation reads
+all of the model's weights from GPU memory, so the GPU does much more useful
+work per step when it generates for many prompts together.
+
+Modify a copy of your `run_inference.py` so it generates responses for all of
+your prompts in a **single** `model.generate()` call:
+
+1. Set `tokenizer.padding_side = "left"`. Prompts have different lengths, so
+   they are padded to the same length, and a text generation model needs the
+   padding on the left because it continues from the end of its input.
+2. Format every prompt with the chat template, then tokenize the whole list
+   at once: `tokenizer(texts, return_tensors="pt", padding=True)`.
+3. Call `model.generate()` once, then decode each row of the output.
+
+Compare the total tokens per second with one-prompt-at-a-time generation. A
+solution that measures both is in `solutions/batch_inference_solution.py`:
+
+```bash
+sbatch submit_inference.sh solutions/batch_inference_solution.py
+```
+
+**Questions:**
+- How much higher is the batched throughput? Did each individual response
+  arrive faster or slower?
+- The shared AI server in Module 7 answers the whole class at once. How does
+  batching help it?
 
 ---
 
