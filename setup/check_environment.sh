@@ -67,7 +67,7 @@ echo "--- Tutorial Environment ---"
 SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
 check "WORK directory set and present" test -d "${WORK:-/nonexistent}"
 check "Shared Python environment readable" test -r "$SC26_SHARED_DIR/sc26_venv/bin/activate"
-check "Shared AI agent (aider) installed" test -x "$SC26_SHARED_DIR/sc26_aider_venv/bin/aider"
+check "Shared AI agent (Qwen Code) installed" test -x "$SC26_SHARED_DIR/sc26_qwen_code/bin/qwen"
 check "Shared model cache readable" test -r "$SC26_SHARED_DIR/sc26_hf_cache/hub"
 # The agent server may not be running yet, so this is a warning, not a failure.
 if [[ -r "$SC26_SHARED_DIR/sc26_agent/sc26_agent_server_url" ]]; then
