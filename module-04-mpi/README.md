@@ -125,8 +125,9 @@ ranks to explore the node's 16 CPU cores.
 
 ## Hands-On Exercises (~35 min)
 
-Suggested pacing: about 8 minutes for Hello World and 22 minutes for Parallel
-Sum. Complete the main exercises before trying the optional challenges.
+Suggested pacing: about 8 minutes for Hello World, 17 minutes for Parallel Sum,
+and 10 minutes for the ring. Complete the main exercises before trying the
+optional challenges.
 
 From the repository root on the login node, navigate to this module's exercises:
 
@@ -270,11 +271,82 @@ Its global sum should still agree closely with the one-rank baseline.
 
 ---
 
+### Exercise 3: Pass Messages Around a Ring
+
+In a ring pattern, each rank sends its rank number to the next rank and
+receives the previous rank's number. Each value moves one hop. The last rank
+sends back to rank 0:
+
+```text
+  Rank 0 → Rank 1 → Rank 2 → Rank 3
+    ▲                         │
+    └─────────────────────────┘
+```
+
+#### Step 1: Open the Template
+
+Open the template in an editor on the login node:
+
+```bash
+vim ring.c
+```
+
+#### Step 2: Complete the Communication
+
+Fill in the TODO to send `send_val` to `dest` and receive a value from
+`source` into `recv_val`. Use `MPI_Send` and `MPI_Recv`, or explore
+`MPI_Sendrecv` as an alternative.
+
+```{tip}
+Plan the order of the sends and receives. If every rank starts with a blocking
+receive, no rank can send. Starting with blocking sends can also deadlock if
+the messages cannot be buffered. Consider alternating the order for even and
+odd ranks, or use `MPI_Sendrecv` to coordinate the exchange.
+```
+
+#### Step 3: Compile and Run
+
+Compile on the login node:
+
+```bash
+mpicc -O2 -o ring ring.c
+```
+
+Run on a compute node with four ranks:
+
+```bash
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring
+```
+
+Each rank should receive the previous rank's number. With four ranks, rank 0
+should receive `3` from rank 3 and report that ring communication succeeded.
+The output lines may appear in any order.
+
+Check every rank's source, destination, and received value. The success banner
+checks only rank 0; the program exits with status 0 even when it prints a
+failed value check.
+
+Try again with eight ranks by changing `--ntasks=4` to `--ntasks=8`. Rank 0
+should now receive `7`. In general, rank 0 receives `size - 1`.
+
+#### Step 4: Compare with the Solution
+
+After completing your implementation, examine the solution in
+`solutions/ring_solution.c`. It uses `MPI_Sendrecv` to exchange values.
+Compile and run it separately:
+
+```bash
+mpicc -O2 -o ring_solution solutions/ring_solution.c
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring_solution
+```
+
+---
+
 ### Additional Challenges
 
 After completing the main modules, try the
-[MPI Ring Communication challenge](../challenges/README.md#module-4-mpi-challenges)
-to practice point-to-point communication and reason about deadlock.
+[hybrid MPI + OpenMP challenge](../challenges/README.md#module-4-mpi-challenges)
+to combine MPI ranks with OpenMP threads.
 
 ---
 

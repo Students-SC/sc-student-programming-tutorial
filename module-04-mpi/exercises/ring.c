@@ -1,7 +1,7 @@
 /*
  * ring.c -- Ring communication pattern
  *
- * CHALLENGE: Each rank sends its rank number to the next rank in a ring.
+ * EXERCISE: Each rank sends its rank number to the next rank in a ring.
  * Each value moves one hop. Rank 0 receives the rank number from the
  * last rank (size - 1).
  *
