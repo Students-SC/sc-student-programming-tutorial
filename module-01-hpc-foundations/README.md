@@ -12,6 +12,7 @@ By the end of this module, you will be able to:
 - Describe the major components of an HPC cluster
 - Navigate the cluster filesystem and use environment modules
 - Inspect hardware resources using command-line tools
+- Give an AI agent the facts about your cluster that it can't know on its own
 
 ---
 
@@ -262,6 +263,63 @@ set aside for this tutorial show the state `resv` (reserved) while they are
 idle.
 ```
 
+### Agent Practice: Teach Your Agent the Cluster
+
+An AI agent knows only what it was trained on and what it can read. In this
+step you see what that means, and you start a file of notes that the
+tutorial's agent, Qwen Code, reads every time it starts. You will add to it
+all day.
+
+#### Step 1: Ask Without Notes
+
+Start Qwen Code in an empty directory, so it has no files to read:
+
+```bash
+mkdir -p ~/agent-scratch && cd ~/agent-scratch
+bash ~/sc-student-programming-tutorial/setup/launch_qwen.sh
+```
+
+Ask it:
+
+> Give me the srun command to run hostname on a compute node of this tutorial's partition.
+
+Note what it says, then type `/quit`.
+
+#### Step 2: Write Down What You Learned
+
+Start your notes file with facts from Exercise 1:
+
+```bash
+mkdir -p ~/.qwen
+cat >> ~/.qwen/QWEN.md << 'EOF'
+# My notes on the AUP AI & HPC Cluster
+- Our partition is mi2101x: 16 CPU cores, 64 GB of memory, and 1 AMD MI210 GPU per node.
+- AMD GPUs: use rocm-smi and rocminfo, never nvidia-smi.
+- Never run computations on the login node. Use srun or sbatch.
+EOF
+```
+
+Then add one fact of your own from Exercise 1, for example:
+
+```bash
+echo "- Large files go in \$WORK, not \$HOME." >> ~/.qwen/QWEN.md
+```
+
+#### Step 3: Ask Again
+
+Start Qwen Code again from `~/agent-scratch` and ask the same question.
+
+**Questions:**
+- What changed in the answer, and why?
+- Is the new command complete? Compare it with the note under Step 6.
+- What else should your notes say? You will add to them in later modules.
+
+```{tip}
+Teams that use coding agents keep a file like this in every project (often
+called `AGENTS.md`; Qwen Code reads `QWEN.md`), so every session starts from
+the same facts. This repository has one at its top level too.
+```
+
 ### Challenge
 
 1. **Summarize the cluster.** Based on what you found, write a short paragraph (3-4
@@ -275,23 +333,12 @@ idle.
    rocminfo | grep -E "Marketing Name|Device Type|Compute Unit"
    ```
 
-   Copy the output and ask your AI coding assistant to explain each line. Does
-   the agent correctly identify the CPU model? The GPU? What does it say a
-   "compute unit" is for the CPU, and for the GPU? Check its answer against the
-   cluster table above. Does it get anything wrong?
-
-   ````{tip}
-   The tutorial-provided coding agent is preinstalled. Launch Aider from any
-   directory:
-
-   ```bash
-   bash "$HOME/sc-student-programming-tutorial/setup/launch_aider.sh"
-   ```
-
-   Inside Aider, paste the `rocminfo` output and ask for an explanation. Type
-   `/exit` when done. See [Using AI Assistants](../README.md#using-ai-assistants)
-   for more on the agent.
-   ````
+   Start Qwen Code as in Agent Practice, paste the output, and ask it to
+   explain each line. Does the agent correctly identify the CPU model? The
+   GPU? What does it say a "compute unit" is for the CPU, and for the GPU?
+   Check its answer against the cluster table above. Does it get anything
+   wrong? See [Using AI Assistants](../README.md#using-ai-assistants) for more
+   on the agent.
 
 ---
 
