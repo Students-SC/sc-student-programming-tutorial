@@ -172,11 +172,15 @@ Study the code carefully. Note the pattern:
 
 #### Step 1: Open the Template
 
-Open the exercise template:
+Open the exercise template in an editor on the login node:
 
 ```bash
-cat vector_scale.cpp
+vim vector_scale.cpp
 ```
+
+In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
+`:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
+or an existing VS Code Remote SSH connection.
 
 This program should multiply every element of a vector by a constant:
 `result[i] = alpha * input[i]`
