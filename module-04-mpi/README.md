@@ -374,9 +374,10 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring_solution
 
 ### Additional Challenges
 
-After completing the main modules, try the
-[hybrid MPI + OpenMP challenge](../challenges/README.md#module-4-mpi-challenges)
-to combine MPI ranks with OpenMP threads.
+If you finish the exercises above early, try the
+[hybrid MPI + OpenMP challenge](../challenges/README.md#module-4-mpi-challenges):
+combine MPI ranks with OpenMP threads and compare ways of splitting a node's
+cores between them. You can also come back to it after the tutorial.
 
 ---
 
