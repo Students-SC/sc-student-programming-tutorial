@@ -8,7 +8,12 @@ of the curriculum.
 
 ## Module 3 - OpenMP Challenges
 
-The files for these challenges are located in `module-03-openmp-challenges` directory.
+Starting from the tutorial repository's root directory, navigate to the Module
+3 challenges directory:
+
+```bash
+cd challenges/module-03-openmp-challenges
+```
 
 ### Challenge A: Matrix-Vector Multiply
 
@@ -20,7 +25,16 @@ cat matvec_openmp.c
 
 The outer loop over rows is embarrassingly parallel -- each row of the output
 can be computed independently. Add the appropriate OpenMP directive and compare
-performance with the serial version.
+performance with the serial version. Compile and run it with:
+
+```bash
+gcc -fopenmp -O2 -o matvec_openmp matvec_openmp.c -lm
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+  bash -c 'export OMP_NUM_THREADS=16; ./matvec_openmp'
+```
+
+A completed version is in
+[`module-03-openmp/exercises/solutions/matvec_openmp_solution.c`](../module-03-openmp/exercises/solutions/matvec_openmp_solution.c).
 
 
 
