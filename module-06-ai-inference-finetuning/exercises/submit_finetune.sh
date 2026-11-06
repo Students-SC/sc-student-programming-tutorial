@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # submit_finetune.sh -- Run LoRA fine-tuning on a GPU node
 #
-# Submit:  sbatch submit_finetune.sh
+# Submit:  sbatch submit_finetune.sh [script.py]
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=finetune
 #SBATCH --partition=mi2101x
@@ -35,7 +35,15 @@ echo "--- GPU memory before ---"
 rocm-smi --showmeminfo vram 2>/dev/null | head -10
 echo ""
 
-python3 finetune_lora.py
+# The Python script to run is the first argument (default: the exercise)
+SCRIPT="${1:-finetune_lora.py}"
+if [[ ! -f "$SCRIPT" ]]; then
+    echo "ERROR: Python script not found: $SCRIPT" >&2
+    exit 1
+fi
+echo "Running: $SCRIPT"
+echo ""
+python3 "$SCRIPT"
 
 echo ""
 echo "--- GPU memory after ---"

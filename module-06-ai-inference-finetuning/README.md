@@ -150,6 +150,9 @@ responses to a few prompts. Examine how it:
 sbatch submit_inference.sh
 ```
 
+With no argument, `submit_inference.sh` runs this example. In Exercise 3,
+you'll give it the name of your own script.
+
 #### Step 4: Examine the Output
 
 Check the output when it finishes:
@@ -185,10 +188,11 @@ There are **3 TODOs**:
 
 #### Step 3: Submit the Batch Job
 
-Edit the file, add your own prompts, and submit:
+Edit the file, add your own prompts, and submit it by naming the script after
+the batch file:
 
 ```bash
-sbatch submit_inference.sh
+sbatch submit_inference.sh run_inference.py
 ```
 
 #### Step 4: Experiment with Temperature
