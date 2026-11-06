@@ -287,7 +287,7 @@ How much GPU memory does the model use during inference vs. fine-tuning?
 | **Fine-tuning** | Adapting a pre-trained model to a specific task |
 | **LoRA** | Parameter-efficient fine-tuning using low-rank adapters |
 | **Tokenizer** | Converts text to/from numerical tokens the model understands |
-| **Temperature** | Controls randomness in text generation (0 = deterministic, >1 = creative) |
+| **Temperature** | Controls randomness when sampling: lower is more focused, higher (>1) more random. Must be above 0; for deterministic output, turn sampling off with `do_sample=False` |
 
 | PyTorch / HuggingFace | Purpose |
 |-----------------------|---------|
