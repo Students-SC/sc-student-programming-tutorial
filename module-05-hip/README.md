@@ -32,7 +32,10 @@ many data elements at once.
 
 When your problem involves applying the same math to millions of data points
 (vector operations, matrix multiply, neural network layers), GPUs can be
-10-100x faster than CPUs.
+10-100x faster than CPUs, as long as the data is already in GPU memory.
+Copying data between CPU and GPU memory is slow by comparison, so real
+applications copy their data to the GPU once and run many kernels on it.
+You'll measure this in Exercise 1.
 
 ### The AMD MI210
 
@@ -187,6 +190,16 @@ Study the code carefully. Note the pattern:
 4. Launch the kernel with `<<<blocks, threads>>>`
 5. Copy results back to host
 6. Verify and free memory
+
+#### Step 5: Compare Copy and Kernel Times
+
+The program times the copies as well as the kernel. In your output, compare
+**Copy to GPU** with **Kernel time**.
+
+**Questions:**
+- How many times longer do the copies take than the kernel?
+- If you only needed to add these two vectors once, would the GPU be worth
+  it? What if you ran many kernels on the same data?
 
 ---
 
