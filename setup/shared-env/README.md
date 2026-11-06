@@ -9,6 +9,7 @@ their jobs activate the shared environments directly.
 ```
 /work1/proj_sc26students/shared/                  ($SC26_SHARED_DIR)
 ├── sc26_venv -> sc26_venv-<timestamp>/           ML stack for Modules 6-7 (build_venv.sh)
+├── sc26_aider_venv -> sc26_aider_venv-<timestamp>/   aider CLI agent (build_aider_venv.sh)
 └── sc26_agent/                                   agent server files (see ../vllm-server/README.md)
 ```
 
@@ -43,6 +44,22 @@ new build. It takes about 6 minutes and produces a 16 GB venv.
 To change a package version, edit `requirements-sc26-venv.txt` and rebuild.
 Don't `pip install` into the shared venv.
 
+## Build the aider venv
+
+aider, the CLI coding agent, has its own venv, separate from the ML venv,
+because it pins older `openai` and `pydantic` versions than the
+PyTorch/transformers stack. It is a pure `pip` install, so run it on the
+login node:
+
+```bash
+bash setup/shared-env/build_aider_venv.sh
+```
+
+It installs exactly the versions in `requirements-sc26-aider-venv.txt`
+(aider 0.86.2 and all of its dependencies), takes about a minute, and
+produces a 654 MB venv. To upgrade aider, see the comment at the top of that
+file.
+
 ## Rebuilding and Rolling Back
 
 Each build goes into a new timestamped directory, and the symlink is switched
@@ -55,7 +72,8 @@ cd /work1/proj_sc26students/shared
 ln -sfn sc26_venv-<older-timestamp> sc26_venv
 ```
 
-Older builds are listed at the end of each build log. Remove them when you no
+The aider venv works the same way (`sc26_aider_venv-<timestamp>`). Older
+builds are listed at the end of each build log. Remove them when you no
 longer need them.
 
 ## Check It as a Student
@@ -69,4 +87,5 @@ source "$S/sc26_venv/bin/activate"
 python3 -c "import torch, transformers; print(torch.__version__, transformers.__version__)"
 touch "$S/sc26_venv/x"          # Permission denied
 deactivate
+"$S/sc26_aider_venv/bin/aider" --version
 ```
