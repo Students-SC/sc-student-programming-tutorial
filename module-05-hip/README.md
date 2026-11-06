@@ -209,7 +209,8 @@ cat hip-exercise_<JOBID>.out
 ```
 
 The program verifies the results against a CPU reference. If everything is
-correct, you'll see "PASSED".
+correct, you'll see "PASSED". It also reports the kernel's average time and
+memory bandwidth, which you'll compare across block sizes in Exercise 3.
 
 ---
 
