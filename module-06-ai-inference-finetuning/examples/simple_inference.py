@@ -6,9 +6,9 @@ This script demonstrates the basic pattern for LLM inference on a GPU:
   2. Move the model to the GPU
   3. Tokenize prompts, generate responses, decode back to text
 
-Usage (inside a Slurm job):
-  source /work1/<group>/<username>/sc26_venv/bin/activate
-  python3 simple_inference.py
+Usage (from the exercises directory; the batch script activates the shared
+Python environment):
+  sbatch submit_inference.sh
 """
 
 import time

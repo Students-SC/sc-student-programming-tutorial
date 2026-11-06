@@ -134,9 +134,8 @@ export AGENT_API_URL=$(cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/
 ```
 ````
 
-These scripts use the same Python venv you created during Getting Started.
-If `"$WORK/sc26_venv"` is missing, return to that setup section before submitting
-the agent jobs.
+These scripts use the tutorial's shared Python environment, the same one as
+Module 6. If a script reports that it is missing, ask an instructor.
 
 ### Exercise 1: Run a Simple Agent
 

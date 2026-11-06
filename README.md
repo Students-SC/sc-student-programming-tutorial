@@ -60,37 +60,29 @@ bash setup/check_environment.sh
 
 You should see [PASS] for all items. If anything fails, ask an instructor for help.
 
-### 4. Set Up Your Python Environment
+### 4. Check That Your Jobs Can Use a GPU
 
-Create the Python virtual environment now, before starting the modules. You will
-use this same environment several times throughout the day, including for the
-tutorial-provided AI agent and the afternoon AI exercises.
-
-From the repository root:
-
-```bash
-sbatch setup/setup_venv.sh
-```
-
-This runs as a Slurm batch job, so it may take a few minutes. You will learn what
-`sbatch` is doing in Module 2; for now, submit the job and wait for it to finish:
+Your instructors have already installed the Python environment for the
+afternoon's AI exercises (PyTorch and friends) in a shared location, so there
+is nothing for you to install. Instead, run a quick job that checks that you
+can use it and a GPU. From the repository root:
 
 ```bash
-squeue -u $USER
-tail -f setup_venv_<JOBID>.out      # Watch the log (Ctrl+C to stop)
+sbatch setup/check_gpu.sh
 ```
 
-When the job completes, verify the environment:
+This runs as a Slurm batch job on a compute node. You will learn what `sbatch`
+is doing in Module 2; for now, submit the job, wait for it to leave the queue,
+and read its output:
 
 ```bash
-source "$WORK/sc26_venv/bin/activate"
-python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
-deactivate
+squeue -u $USER                     # Your job disappears when it finishes
+cat check_gpu_<JOBID>.out           # Replace <JOBID> with the number sbatch printed
 ```
 
-You only need to create this venv once. Module 2 includes a checkpoint that
-explains the Slurm command you used here and helps anyone who skipped this step
-catch up.
+You should see `Status: PASSED` and the GPU's name. Module 2 includes a
+checkpoint that explains this job and helps anyone who skipped this step catch
+up.
 
 ### 5. Install the AI Agent
 

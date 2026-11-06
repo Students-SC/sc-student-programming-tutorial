@@ -88,9 +88,8 @@ See [Module 2](module-02-slurm/README.md) for the Slurm walkthrough.
 
 | I want to... | Command |
 |--------------|---------|
-| Create the tutorial virtual environment from the repo root | `sbatch setup/setup_venv.sh` |
-| Create the venv from inside a module exercise directory | `sbatch ../../setup/setup_venv.sh` |
-| Activate the venv | `source "$WORK/sc26_venv/bin/activate"` |
+| Check that your jobs can use a GPU (from the repo root) | `sbatch setup/check_gpu.sh` |
+| Activate the shared Python environment | `source "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_venv/bin/activate"` |
 | Verify PyTorch | `python3 -c "import torch; print(torch.__version__)"` |
 | Verify ROCm is visible to PyTorch | `python3 -c "import torch; print(torch.cuda.is_available())"` |
 | Leave the venv | `deactivate` |
@@ -199,7 +198,7 @@ See [Module 7](module-07-ai-agents/README.md) for the agent exercises.
 
 | Job or exercise | Output file pattern |
 |-----------------|---------------------|
-| Venv setup | `setup_venv_<JOBID>.out` |
+| GPU check | `check_gpu_<JOBID>.out` |
 | Slurm first job | `first-job_<JOBID>.out` |
 | Compute-node hello | `hello-compute_<JOBID>.out` |
 | OpenMP pi | `openmp-pi_<JOBID>.out` |

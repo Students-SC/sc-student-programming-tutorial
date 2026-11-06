@@ -100,32 +100,29 @@ script, wait for it to complete, then examine the output while others use the
 nodes.
 ```
 
-### Exercise 1: Verify Your Python Environment
+### Exercise 1: Meet the Shared Python Environment
 
-#### Step 1: Check the Existing Environment
+The AI exercises use Python packages such as PyTorch (built for AMD GPUs with
+ROCm), Hugging Face `transformers` and `datasets`, and `peft`. Together they
+take 16 GB, so your instructors installed them once in a shared, read-only
+Python environment (a **virtual environment**, or venv) that everyone uses.
+Each batch script in this module activates it for you, and you already tested
+it with the GPU check in Getting Started.
 
-You should already have the venv from the Getting Started Python environment
-setup (checked again in Module 2). Verify it before starting the AI exercises:
+#### Step 1: Look Inside
 
-```bash
-source "$WORK/sc26_venv/bin/activate"
-python3 -c "import torch; print(f'PyTorch {torch.__version__}, ROCm: {torch.cuda.is_available()}')"
-```
-
-#### Step 2: Create the Environment if Needed
-
-If the venv is missing, set it up now from this module's `exercises` directory:
+On the login node, activate the environment and list a few of its packages:
 
 ```bash
-sbatch ../../setup/setup_venv.sh
-# Wait for the job to finish, then activate it:
-source "$WORK/sc26_venv/bin/activate"
+source "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_venv/bin/activate"
+pip list 2>/dev/null | grep -iE '^(torch|transformers|datasets|peft) '
+deactivate
 ```
 
 ```{note}
-The venv lives under `$WORK` (your `/work1/<project>/<username>/` directory)
-because `/work1` has much more storage space than `$HOME`. The `$WORK`
-environment variable is set automatically when you log in.
+The shared environment is read-only, so `pip install` won't work in it.
+Everything the exercises need is already installed. If a script reports that
+the environment is missing, ask an instructor.
 ```
 
 ---
