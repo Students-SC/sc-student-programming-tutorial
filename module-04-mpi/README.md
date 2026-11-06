@@ -36,6 +36,15 @@ Each process is called a **rank** and has its own private memory, even though
 all ranks run on the same node. Ranks coordinate by explicitly sending and
 receiving data.
 
+**Why learn MPI if one node is enough today?** Because MPI is how programs
+grow beyond one node. The same program can run across many nodes of a real
+cluster, for example as 64 ranks with
+`srun --nodes=4 --ntasks-per-node=16 ./program`. Ranks on the same node
+exchange messages through shared memory, while ranks on different nodes send
+them over the high-speed network from Module 1. OpenMP threads can't do that,
+because they all have to share one node's memory. Our tutorial partition
+allows one node per job, so today all of your ranks share one node.
+
 ### MPI Basics
 
 Every MPI program follows this structure:
