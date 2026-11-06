@@ -319,7 +319,7 @@ reads a personal `~/.qwen/QWEN.md` in every directory; keep that for
 preferences you want in all of your projects, not for facts about one
 cluster or tutorial.
 
-#### Step 3: Ask Again
+#### Step 3: Ask Again, Then Let It Try
 
 Start Qwen Code from the top of the repository, where it reads `QWEN.md`, and
 ask the same question:
@@ -328,10 +328,33 @@ ask the same question:
 bash setup/launch_qwen.sh
 ```
 
+Compare its answer with Step 1. Then ask it to run the command:
+
+> Run that command.
+
+Qwen Code asks before running anything. Approve the `srun` command: `srun`
+asks Slurm for a compute node, so it's fine to start from the login node.
+
+Expect the cluster to reject the agent's first attempts: the command is
+missing **two** options that this cluster requires and your notes don't
+mention yet. Each time, watch the agent read the rejection and fix the
+command, then approve its next try. (If its first try already works, ask it
+which options it added and why.)
+
+When the command succeeds, type `/quit` and add the two facts the agent
+discovered to `QWEN.md`, one line each:
+
+```bash
+echo "- <first fact>" >> QWEN.md
+echo "- <second fact>" >> QWEN.md
+```
+
 **Questions:**
-- What changed in the answer, and why?
-- Is the new command complete? Compare it with the note under Step 6.
-- What else should your notes say? You will add to them in later modules.
+- What changed in the answer after you added your notes, and why?
+- Which two options did the cluster require? Compare them with the note under
+  Step 6.
+- What time limit did the agent choose? Is that a sensible request for
+  `hostname` on a shared cluster?
 
 ```{tip}
 Teams that use coding agents keep a file like this in every project (often
