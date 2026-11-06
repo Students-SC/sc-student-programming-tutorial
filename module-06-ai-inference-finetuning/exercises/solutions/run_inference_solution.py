@@ -23,6 +23,7 @@ def generate_response(model, tokenizer, prompt, device, max_new_tokens=128,
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
+            max_length=None,  # use max_new_tokens only (avoids a warning)
             temperature=temperature,
             do_sample=True,
             top_p=0.9,
@@ -52,7 +53,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME,
-        torch_dtype=torch.float16,
+        dtype=torch.float16,
         device_map=device,
     )
 

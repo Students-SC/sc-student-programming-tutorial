@@ -34,7 +34,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME,
-        torch_dtype=torch.float16,
+        dtype=torch.float16,
         device_map=device,
     )
     load_time = time.time() - t0
@@ -73,6 +73,7 @@ def main():
             outputs = model.generate(
                 **inputs,
                 max_new_tokens=128,
+                max_length=None,  # use max_new_tokens only (avoids a warning)
                 temperature=0.7,
                 do_sample=True,
                 top_p=0.9,
