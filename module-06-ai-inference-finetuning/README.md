@@ -284,19 +284,26 @@ Experiment with different LoRA settings in `finetune_lora.py`:
 
 How do these affect final accuracy and training time?
 
-### Challenge B: GPU Memory Profiling
+### Challenge B: LoRA vs. Full Fine-Tuning
 
-Add `rocm-smi` monitoring to your batch script to see GPU memory usage during
-inference vs. training:
+How much does LoRA actually save? Fine-tune the same model without it:
 
-```bash
-# Add to your batch script before and during model loading:
-rocm-smi --showmeminfo vram
-# ... load model ...
-rocm-smi --showmeminfo vram
-```
+1. Copy your completed script: `cp finetune_lora.py finetune_full.py`
+2. In `finetune_full.py`, delete the line that wraps the model with
+   `get_peft_model`, so that every weight is trained.
+3. Submit it: `sbatch submit_finetune.sh finetune_full.py`
 
-How much GPU memory does the model use during inference vs. fine-tuning?
+Compare the two runs: trainable parameters, peak GPU memory during training,
+training time, and accuracy after fine-tuning. How do both peaks compare with
+the peak memory for inference in Exercise 2?
+
+Then change `LEARNING_RATE` in `finetune_full.py` from `2e-4` to `2e-5` and
+run it again. Why does training *all* of the weights need a smaller learning
+rate than training only the LoRA adapters? (Hint: think about how far each
+update moves the pre-trained weights.)
+
+A full fine-tuning solution with the smaller learning rate is in
+`solutions/finetune_full_solution.py`.
 
 ### Challenge C: Batch Your Prompts
 
