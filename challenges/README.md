@@ -52,17 +52,12 @@ If you look at the [OpenMP API spec for `pragma for`](https://www.openmp.org/spe
 
 ## Module 4: MPI Challenges
 
-### Ring Communication
+### Hybrid MPI + OpenMP
 
-Run all ranks on one compute node. In a ring pattern, each rank sends its
-rank number to the next rank and receives the previous rank's number. Each
-value moves one hop. The last rank sends back to rank 0:
-
-```text
-  Rank 0 → Rank 1 → Rank 2 → Rank 3
-    ▲                         │
-    └─────────────────────────┘
-```
+Large applications often combine both models: a few MPI ranks per node, each
+running several OpenMP threads. In this challenge, you turn Module 4's
+parallel sum into a hybrid program and compare different ways of splitting a
+node's 16 cores between ranks and threads.
 
 #### Step 1: Open the Template
 
@@ -71,60 +66,46 @@ challenges directory and open the template in an editor:
 
 ```bash
 cd challenges/module-04-mpi-challenges
-vim ring.c
+vim hybrid_sum.c
 ```
 
-In Vim, press `i` to edit. When you finish, press `Esc`, type `:wq`, and press
-`Enter` to save and exit.
+#### Step 2: Complete the TODOs
 
-#### Step 2: Complete the Communication
+There are **2 TODOs** to fill in:
 
-Fill in the TODO to send `send_val` to `dest` and receive a value from
-`source` into `recv_val`. Use `MPI_Send` and `MPI_Recv`, or explore
-`MPI_Sendrecv` as an alternative.
+1. **TODO 1**: Initialize MPI with `MPI_Init_thread`, requesting
+   `MPI_THREAD_FUNNELED` (threads may run, but only the main thread makes MPI
+   calls), and check the level that MPI provides.
+2. **TODO 2**: Split each rank's loop across OpenMP threads, combining the
+   threads' results with a reduction, as in Module 3.
 
-```{tip}
-Plan the order of the sends and receives. If every rank starts with a blocking
-receive, no rank can send. Starting with blocking sends can also deadlock if
-the messages cannot be buffered. Consider alternating the order for even and
-odd ranks, or use `MPI_Sendrecv` to coordinate the exchange.
-```
-
-#### Step 3: Compile and Run
-
-Compile on the login node:
+#### Step 3: Compile and Submit
 
 ```bash
-mpicc -O2 -o ring ring.c
+mpicc -fopenmp -O2 -o hybrid_sum hybrid_sum.c -lm
+sbatch submit_hybrid.sh
 ```
 
-Run on a compute node with four ranks:
+The batch script runs four splits of the node's 16 cores: 16 ranks x 1
+thread, 4 x 4, 2 x 8, and 1 x 16. For each one, `srun --cpus-per-task` gives
+every rank its own cores for its threads.
+
+#### Step 4: Examine the Output
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring
+cat hybrid-sum_<JOBID>.out
 ```
 
-Each rank should receive the previous rank's number. With four ranks, rank 0
-should receive `3` from rank 3 and report that ring communication succeeded.
-The output lines may appear in any order.
+**Questions:**
+- Do all four splits give the same sum? About the same time?
+- If the time grows as the number of ranks drops, what does that tell you
+  about your threads?
+- On one node, the splits can perform about the same. On a large cluster, why
+  might an application prefer fewer ranks with more threads on each node?
+  (Hint: think about how many messages are exchanged, and how much memory
+  each rank uses.)
 
-Check every rank's source, destination, and received value. The success banner
-checks only rank 0; the program exits with status 0 even when it prints a
-failed value check.
-
-Try again with eight ranks by changing `--ntasks=4` to `--ntasks=8`. Rank 0
-should now receive `7`. In general, rank 0 receives `size - 1`.
-
-#### Step 4: Compare with the Solution
-
-After completing your implementation, examine the solution in
-`solutions/ring_solution.c`. It uses `MPI_Sendrecv` to exchange values.
-From the same challenges directory, compile and run it separately:
-
-```bash
-mpicc -O2 -o ring_solution solutions/ring_solution.c
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring_solution
-```
+A completed version is in `solutions/hybrid_sum_solution.c`.
 
 # Bonus Modules
 
