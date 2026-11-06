@@ -19,7 +19,17 @@ int main(void) {
 
     /* FIXED: reduction(+:sum) gives each thread a private copy of 'sum'
      * and adds the copies together at the end, so no two threads write
-     * the shared 'sum' at the same time. */
+     * the shared 'sum' at the same time.
+     *
+     * Why were the wrong answers so small? Without the reduction, each
+     * thread read and updated the one shared 'sum'. With -O2 the compiler
+     * keeps a thread's running total in a register and writes it back to
+     * 'sum' when that thread finishes its share of the loop, so the last
+     * thread to finish overwrites everyone else's work. The "answer" is
+     * then roughly one thread's share of pi; with 2 threads, for example,
+     * it is about 1.85, the integral over the first half of [0, 1]. If the
+     * same thread finishes last on every run, the same wrong answer
+     * repeats, which is why it doesn't always change between runs. */
     #pragma omp parallel for reduction(+:sum)
     for (long i = 0; i < NUM_STEPS; i++) {
         double x = (i + 0.5) * step;

@@ -336,7 +336,11 @@ Can you spot and fix the bug? (Hint: compare it to your working `pi_openmp.c`.)
 Edit `pi_race.c`, then recompile and run it again with the commands from
 Step 1. When the bug is fixed, the answer matches pi for any thread count.
 
-A fixed version is in `solutions/pi_race_solution.c`.
+**Question:** The wrong answers are much smaller than pi. Why? (Hint: think
+about what each thread does with `sum` when it finishes its share of the
+loop.)
+
+A fixed version, with an explanation, is in `solutions/pi_race_solution.c`.
 
 ---
 
