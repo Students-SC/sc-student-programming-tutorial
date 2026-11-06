@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Write a HIP kernel that runs on the AMD MI210 GPU
 - Manage data transfers between host (CPU) and device (GPU) memory
 - Choose thread and block dimensions for a kernel launch
+- Measure a kernel's performance and explain what limits it
 
 ---
 
@@ -123,6 +124,27 @@ add_vectors<<<blocks, threads_per_block>>>(d_a, d_b, d_c, n);
 Copy directions:
 - `hipMemcpyHostToDevice` -- CPU to GPU
 - `hipMemcpyDeviceToHost` -- GPU to CPU
+
+### What Makes GPU Code Fast
+
+A few rules of thumb explain most GPU performance results, including the ones
+you'll measure today:
+
+1. **Launch enough threads.** The MI210 has 104 compute units, each running
+   many threads at once. A kernel with only a few thousand threads leaves most
+   of the GPU idle.
+2. **Let neighboring threads read neighboring memory.** When the threads of a
+   wavefront read consecutive addresses, the GPU combines their reads into a
+   few wide memory transactions (**coalescing**). Scattered reads waste memory
+   bandwidth.
+3. **Think in wavefronts.** AMD GPUs run threads in groups of 64 called
+   **wavefronts** (NVIDIA's equivalent, the warp, has 32), so use block sizes
+   that are multiples of 64. The threads of a wavefront execute each
+   instruction together: if some take one side of an `if` and some the other,
+   the two paths run one after the other (**divergence**).
+4. **Minimize host-device copies.** Copying data between CPU and GPU memory is
+   much slower than the GPU's own memory, so keep data on the GPU across as
+   many kernels as you can.
 
 ---
 
