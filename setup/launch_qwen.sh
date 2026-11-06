@@ -63,6 +63,12 @@ export QWEN_USAGE_STATISTICS_ENABLED=0
 export QWEN_TELEMETRY_ENABLED=0
 export QWEN_CODE_MODELS_DEV=off
 
+# The login node caps each process's address space at 32 GB (ulimit -v), and
+# Node reserves 10 GB of it per WebAssembly memory unless this flag is set.
+# Without it, interactive sessions fail every request with "Connection error
+# (cause: fetch failed)": Node's HTTP parser can't allocate its Wasm memory.
+export NODE_OPTIONS="--disable-wasm-trap-handler${NODE_OPTIONS:+ $NODE_OPTIONS}"
+
 echo "=== Launching Qwen Code (SC26) ==="
 echo "  API:    $OPENAI_BASE_URL"
 echo "  Model:  $MODEL"
