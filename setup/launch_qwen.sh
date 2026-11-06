@@ -9,17 +9,17 @@
 # tutorial's shared, read-only install ($SC26_SHARED_DIR/sc26_qwen_code,
 # built by the instructors with setup/shared-env/build_qwen_code.sh).
 #
-# By default Qwen Code starts in PLAN mode: it reads your files and explains,
-# but does not edit them or run commands. Pass --approval-mode default to
-# have it ask before each edit and command.
+# By default Qwen Code starts in ASK PERMISSIONS mode: it reads your files and
+# answers, and asks you before every edit and every command. Pass
+# --approval-mode plan for a read-only session.
 #
 # Usage:
 #     cd <project directory you want to work on>
 #     bash <repo>/setup/launch_qwen.sh [qwen args...]
 #
 # Examples:
-#     bash setup/launch_qwen.sh                            # plan mode
-#     bash setup/launch_qwen.sh --approval-mode default    # ask before acting
+#     bash setup/launch_qwen.sh                            # ask before acting
+#     bash setup/launch_qwen.sh --approval-mode plan       # read-only
 #
 # Press Shift+Tab inside Qwen Code to switch modes, type /help for commands,
 # and /quit to exit.
@@ -54,7 +54,7 @@ export OPENAI_BASE_URL="$(cat "$URL_FILE")"
 export OPENAI_API_KEY="sk-no-key-needed"   # vLLM ignores this; Qwen Code needs *something*
 MODEL="Qwen/Qwen3-Coder-30B-A3B-Instruct"
 
-# The tutorial's defaults (plan mode, the server's context window, no
+# The tutorial's defaults (ask-permissions mode, the server's context window, no
 # auto-update) have the lowest precedence, so command-line flags and the
 # participant's own settings override them. Qwen Code fails if a flag such
 # as --approval-mode is given twice, so defaults must not be passed as flags.

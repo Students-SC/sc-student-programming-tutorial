@@ -159,12 +159,12 @@ to switch between them:
 
 | Mode | What the agent may do | When to use it |
 |------|-----------------------|----------------|
-| **Plan** (the tutorial's default) | Read files and explain; no edits, no commands | Questions, explanations, reviewing your code |
-| **Ask permissions** | Edit files and run commands, each only after you approve it | Agent Practice steps |
+| **Ask permissions** (the tutorial's default) | Read files and answer; edit files and run commands, each only after you approve it | Questions, explanations, and the Agent Practice steps |
+| **Plan** | Read files and research before answering; no edits, no commands | Planning a bigger change before letting the agent make it |
 | **Auto-edit** | Edit files without asking; still asks before every command | Module 7's capstone, if you want fewer interruptions |
 
-To start in ask-permissions mode, pass `--approval-mode default` (Qwen Code's
-name for it): `bash setup/launch_qwen.sh --approval-mode default`.
+To start a read-only session, pass `--approval-mode plan`:
+`bash setup/launch_qwen.sh --approval-mode plan`.
 
 Read everything before you approve it. Approve an edit only if you understand
 the change, and a command only if you would run it yourself. In particular,

@@ -294,10 +294,10 @@ the agent's script follows your spec and reports failures honestly.
 
 #### Step 1: Ask for a Sweep Script
 
-Start Qwen Code in ask-permissions mode:
+Start Qwen Code:
 
 ```bash
-bash ../../setup/launch_qwen.sh --approval-mode default
+bash ../../setup/launch_qwen.sh
 ```
 
 Ask it:

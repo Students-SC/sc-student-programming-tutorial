@@ -77,7 +77,7 @@ bash setup/shared-env/build_qwen_code.sh
 It downloads the release pinned in the script (`QWEN_CODE_VERSION`), checks
 its SHA-256 checksum, unpacks it, and copies in `qwen-code-defaults.json`,
 which `setup/launch_qwen.sh` gives Qwen Code as its lowest-precedence
-settings: plan mode by default, only the plan, ask-permissions, and
+settings: ask-permissions mode by default, only the plan, ask-permissions, and
 auto-edit modes offered, the server's 32K context window, and no
 auto-update, usage statistics, or telemetry. It takes about 20 seconds and
 produces a 324 MB install. Re-run it after changing the version or the

@@ -11,7 +11,7 @@ agent took, and how many tokens it used.
 
 Agents:
     aider        setup/launch_aider.sh (ask mode or code mode), edits only
-    qwen-edit    setup/launch_qwen.sh, plan mode or auto-edit with no shell
+    qwen-edit    setup/launch_qwen.sh, ask-permissions or auto-edit, no shell
     qwen-agent   like qwen-edit, but may compile and use Slurm on its own
     reference    known-good answers, no server needed: tests the checks
 
@@ -398,7 +398,7 @@ def agent_command(run):
         for f in task.read:
             cmd += ["--read", f]
         return cmd + task.files
-    mode = "plan" if task.mode == "ask" else "auto-edit"
+    mode = "default" if task.mode == "ask" else "auto-edit"
     cmd = ["bash", str(run.tree / "setup/launch_qwen.sh"),
            "--approval-mode", mode, "--output-format", "json",
            "--max-wall-time", "15m", "-p", task.prompt]

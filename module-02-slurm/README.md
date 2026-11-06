@@ -312,10 +312,10 @@ let the agent edit files, but only after you approve each change.
 
 #### Step 1: Give the Agent the Spec
 
-Start Qwen Code in ask-permissions mode, from this directory:
+Start Qwen Code from this directory:
 
 ```bash
-bash ../../setup/launch_qwen.sh --approval-mode default
+bash ../../setup/launch_qwen.sh
 ```
 
 Ask it:

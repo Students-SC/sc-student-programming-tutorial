@@ -1,5 +1,5 @@
 {
-  "tools": { "approvalMode": "plan" },
+  "tools": { "approvalMode": "default" },
   "ui": { "allowedApprovalModes": ["plan", "default", "auto-edit"] },
   "model": {
     "generationConfig": {

@@ -381,10 +381,10 @@ use the same trick to prove whether its version can deadlock.
 
 #### Step 1: Ask for a Ring
 
-Start Qwen Code in ask-permissions mode:
+Start Qwen Code:
 
 ```bash
-bash ../../setup/launch_qwen.sh --approval-mode default
+bash ../../setup/launch_qwen.sh
 ```
 
 Ask it:

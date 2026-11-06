@@ -224,11 +224,11 @@ more tools, careful prompts, and you approving its actions.
 
 #### Step 2: Watch the Loop
 
-Start Qwen Code in ask-permissions mode in the Module 3 exercises directory:
+Start Qwen Code in the Module 3 exercises directory:
 
 ```bash
 cd ../../module-03-openmp/exercises
-bash ../../setup/launch_qwen.sh --approval-mode default
+bash ../../setup/launch_qwen.sh
 ```
 
 Type `/tools` to see every tool the model can call. Then ask it:
@@ -283,7 +283,7 @@ Add at least one check of your own, for example from the review list in
 #### Step 2: Hand It to the Agent
 
 ```bash
-bash ~/sc-student-programming-tutorial/setup/launch_qwen.sh --approval-mode default
+bash ~/sc-student-programming-tutorial/setup/launch_qwen.sh
 ```
 
 Ask it to read `spec.md`, then write, compile, and test `dot_product.cpp`

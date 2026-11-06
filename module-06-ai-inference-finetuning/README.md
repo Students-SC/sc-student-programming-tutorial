@@ -287,12 +287,11 @@ that change, and check it with measurements and the job's warnings.
 
 #### Step 1: Ask for the Change
 
-Copy your completed script from Exercise 3, then start Qwen Code in
-ask-permissions mode:
+Copy your completed script from Exercise 3, then start Qwen Code:
 
 ```bash
 cp run_inference.py batch_agent.py
-bash ../../setup/launch_qwen.sh --approval-mode default
+bash ../../setup/launch_qwen.sh
 ```
 
 Ask it:
