@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Write a Slurm batch script with appropriate `#SBATCH` directives
 - Submit, monitor, and cancel jobs using `sbatch`, `squeue`, and `scancel`
 - Run quick commands on compute nodes with `srun`
+- Check an agent-written batch script against the cluster's rules
 
 ---
 
@@ -300,6 +301,58 @@ cat check_gpu_<JOBID>.out           # After the job leaves the queue
 The output file appears in this directory, because a batch job writes its
 output where you submitted it. If the check still doesn't pass, ask an
 instructor.
+
+---
+
+### Agent Practice: A Batch Script from a Spec
+
+You have written and read batch scripts yourself; now give the agent a
+specification and check its script the way the cluster will. This time you
+let the agent edit files, but only after you approve each change.
+
+#### Step 1: Give the Agent the Spec
+
+Start Qwen Code in ask-permissions mode, from this directory:
+
+```bash
+bash ../../setup/launch_qwen.sh --approval-mode default
+```
+
+Ask it:
+
+> Create agent_job.sh: a Slurm batch script that runs ./hello_compute with 8 CPU cores for at most 3 minutes and writes its output to agent-job_<job ID>.out.
+
+The agent may read other files first; watch which ones. When it asks to create
+the file, read the script before you approve it.
+
+#### Step 2: Check It Before Slurm Does
+
+Compare the script with the [key directives](#anatomy-of-a-batch-script)
+above. Does it name the partition, the node count, and a time limit? Does it
+ask for anything this cluster doesn't allow, such as `--gpus`? Predict whether
+Slurm will accept it.
+
+#### Step 3: Submit and Iterate
+
+If the agent offers to run `sbatch agent_job.sh`, you can approve that, or
+`/quit` and run it yourself. If the filter rejects the job, give the agent the
+lines that start with `-->` and ask it to fix the script. When the job
+finishes, check its output:
+
+```bash
+cat agent-job_<JOBID>.out
+```
+
+**Questions:**
+- Which directives did the agent get right on its own? Did it copy any from
+  the files in this directory?
+- What did you, or the filter, have to correct?
+
+Add what you learned to your notes, so the agent gets it right next time:
+
+```bash
+echo "- Every job needs --partition, --nodes=1, and --time." >> ~/.qwen/QWEN.md
+```
 
 ---
 
