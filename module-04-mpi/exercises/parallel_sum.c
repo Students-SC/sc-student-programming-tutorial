@@ -15,7 +15,7 @@
 #include <math.h>
 #include <mpi.h>
 
-#define TOTAL_ELEMENTS 100000000L
+#define TOTAL_ELEMENTS 1000000000L
 
 int main(int argc, char **argv) {
 

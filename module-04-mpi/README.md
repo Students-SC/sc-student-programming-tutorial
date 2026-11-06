@@ -227,8 +227,8 @@ Replace `<JOBID>` with your job ID:
 cat mpi-sum_<JOBID>.out
 ```
 
-With the default 100 million terms, expect a positive sum of approximately
-`6.67e11`. Check this magnitude first, then use the one-rank global sum as a
+With the default 1 billion terms, expect a positive sum of approximately
+`2.11e13` (about 21,082,000,000,000). Check this magnitude first, then use the one-rank global sum as a
 consistency baseline for other rank counts. They should agree closely,
 although floating-point addition can produce small differences in the last
 digits when the order of addition changes.
@@ -267,7 +267,7 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=8  ./parallel_sum
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=16 ./parallel_sum
 ```
 
-The three-rank case checks the remainder handling: 100 million is not divisible
+The three-rank case checks the remainder handling: 1 billion is not divisible
 by three, so the last rank computes one extra term. Its global sum should
 still agree closely with the one-rank baseline.
 
