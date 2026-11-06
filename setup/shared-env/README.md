@@ -10,6 +10,9 @@ their jobs activate the shared environments directly.
 /work1/proj_sc26students/shared/                  ($SC26_SHARED_DIR)
 ├── sc26_venv -> sc26_venv-<timestamp>/           ML stack for Modules 6-7 (build_venv.sh)
 ├── sc26_aider_venv -> sc26_aider_venv-<timestamp>/   aider CLI agent (build_aider_venv.sh)
+├── sc26_hf_cache/                                Module 6 models and dataset (download_hf_cache.sh)
+│   ├── hub/                                      TinyLlama, DistilBERT, and IMDB's raw files
+│   └── datasets/                                 IMDB, prepared
 └── sc26_agent/                                   agent server files (see ../vllm-server/README.md)
 ```
 
@@ -60,6 +63,33 @@ It installs exactly the versions in `requirements-sc26-aider-venv.txt`
 produces a 654 MB venv. To upgrade aider, see the comment at the top of that
 file.
 
+## Download Module 6's Models and Dataset
+
+This script uses the shared ML venv, so build that first:
+
+```bash
+sbatch setup/shared-env/download_hf_cache.sh
+sbatch -p devel setup/shared-env/download_hf_cache.sh    # if mi2101x is busy
+```
+
+It downloads TinyLlama-1.1B-Chat and DistilBERT into `sc26_hf_cache/hub/`,
+downloads and prepares the IMDB dataset into `sc26_hf_cache/datasets/`, and
+checks that everything loads offline. It takes about a minute (2.4 GB of
+models and raw files, plus 128 MB for the prepared dataset). Keep its model
+names in sync with `MODEL_NAME` in the Module 6 scripts.
+
+Students' Module 6 jobs load everything offline (`HF_HUB_OFFLINE=1`), with
+the models and the dataset handled differently:
+
+- **Models** load straight from the shared, read-only `hub/` cache
+  (`HF_HUB_CACHE`).
+- **The dataset** can't load from a read-only cache: the `datasets` library
+  writes lock and cache files next to the data, and offline it won't rebuild
+  the dataset from the raw files in `hub/`. So each student's job copies the
+  prepared `datasets/` cache (128 MB) into `$WORK` once and points
+  `HF_DATASETS_CACHE` at the copy. Student code still calls
+  `load_dataset("imdb")`.
+
 ## Rebuilding and Rolling Back
 
 Each build goes into a new timestamped directory, and the symlink is switched
@@ -88,4 +118,5 @@ python3 -c "import torch, transformers; print(torch.__version__, transformers.__
 touch "$S/sc26_venv/x"          # Permission denied
 deactivate
 "$S/sc26_aider_venv/bin/aider" --version
+ls "$S/sc26_hf_cache/hub" "$S/sc26_hf_cache/datasets"
 ```
