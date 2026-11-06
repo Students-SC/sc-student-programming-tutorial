@@ -185,7 +185,18 @@ In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
 `:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
 or an existing VS Code Remote SSH connection.
 
-#### Step 2: Complete the TODOs
+#### Step 2: (Optional) Try the CPU First
+
+Until you complete TODO 1, the template runs the model on the CPU
+(`device = "cpu"`). To get a baseline, submit it once before editing anything:
+
+```bash
+sbatch submit_inference.sh run_inference.py
+```
+
+Note the tokens/sec it reports, so you can compare with the GPU in Step 5.
+
+#### Step 3: Complete the TODOs
 
 There are **3 TODOs**:
 
@@ -194,7 +205,7 @@ There are **3 TODOs**:
    `temperatures` to compare (try `[0.1, 0.7, 1.5]`)
 3. **TODO 3**: Add your own custom prompts to the prompt list
 
-#### Step 3: Submit the Batch Job
+#### Step 4: Submit the Batch Job
 
 Edit the file, add your own prompts, and submit it by naming the script after
 the batch file:
@@ -203,7 +214,7 @@ the batch file:
 sbatch submit_inference.sh run_inference.py
 ```
 
-#### Step 4: Compare Temperatures
+#### Step 5: Compare Temperatures
 
 Your script runs every prompt at each temperature in `temperatures`, so one
 job gives you a side-by-side comparison. With the suggested values, expect:
@@ -211,7 +222,8 @@ job gives you a side-by-side comparison. With the suggested values, expect:
 - `0.7` -- balanced creativity
 - `1.5` -- wild and unpredictable
 
-Which temperature gives the most useful answers to your prompts?
+Which temperature gives the most useful answers to your prompts? If you ran
+the CPU baseline in Step 2, how many times faster is the GPU?
 
 ---
 
