@@ -305,6 +305,12 @@ Then add one fact of your own from Exercise 1, for example:
 echo "- Large files go in \$WORK, not \$HOME." >> ~/.qwen/QWEN.md
 ```
 
+Why `~/.qwen`? Qwen Code reads `~/.qwen/QWEN.md` every time it starts, in any
+directory, so these notes follow you through every module (and into your own
+projects later). Notes about one project go in a `QWEN.md` at that project's
+top level instead, which Qwen Code reads only when it starts inside that
+project. This repository has one, so from Module 2 on, the agent sees both.
+
 #### Step 3: Ask Again
 
 Start Qwen Code again from `~/agent-scratch` and ask the same question.
@@ -317,7 +323,7 @@ Start Qwen Code again from `~/agent-scratch` and ask the same question.
 ```{tip}
 Teams that use coding agents keep a file like this in every project (often
 called `AGENTS.md`; Qwen Code reads `QWEN.md`), so every session starts from
-the same facts. This repository has one at its top level too.
+the same facts.
 ```
 
 ### Challenge
@@ -326,15 +332,16 @@ the same facts. This repository has one at its top level too.
    sentences) describing the cluster: how many nodes are in our partition, how many
    CPUs per node, what GPU each node has, and what software is available.
 
-2. **AI agent check.** Run this command, which adds each device's number of
-   compute units to the Step 5 output:
+2. **AI agent check.** Save the Step 5 output, plus each device's number of
+   compute units, to a file the agent can read:
 
    ```bash
-   rocminfo | grep -E "Marketing Name|Device Type|Compute Unit"
+   rocminfo | grep -E "Marketing Name|Device Type|Compute Unit" > ~/agent-scratch/rocminfo.txt
    ```
 
-   Start Qwen Code as in Agent Practice, paste the output, and ask it to
-   explain each line. Does the agent correctly identify the CPU model? The
+   Start Qwen Code in `~/agent-scratch` as in Agent Practice and ask it to
+   explain each line of `@rocminfo.txt` (typing `@` lets you pick a file in
+   the current directory). Does the agent correctly identify the CPU model? The
    GPU? What does it say a "compute unit" is for the CPU, and for the GPU?
    Check its answer against the cluster table above. Does it get anything
    wrong? See [Using AI Assistants](../README.md#using-ai-assistants) for more
