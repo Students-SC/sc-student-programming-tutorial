@@ -78,6 +78,36 @@ Without `reduction`, multiple threads writing to `sum` simultaneously would
 cause a **race condition** -- a bug where the result depends on unpredictable
 timing.
 
+### Shared and Private Variables
+
+Inside a parallel region, every variable is either **shared** (one copy that
+all threads see) or **private** (each thread has its own copy). By default:
+
+- Variables declared **outside** the parallel region are **shared**.
+- Variables declared **inside** the region, including inside a loop body, are
+  **private**.
+- The loop index of an `omp for` loop is **private**.
+
+In the pi program you'll parallelize below, `sum` and `step` are declared
+before the loop, so they are shared, while `x` is declared inside the loop
+body, so each thread has its own. Many threads can safely *read* a shared
+variable like `step`. When several threads *write* one, like `sum`, you get a
+race condition unless something coordinates the writes. That is what
+`reduction` does: it gives each thread a private copy of `sum` and adds the
+copies together at the end.
+
+You can also make a variable private explicitly with the `private` clause, for
+example if `x` were declared before the loop:
+
+```c
+double x;
+#pragma omp parallel for private(x) reduction(+:sum)
+for (long i = 0; i < NUM_STEPS; i++) {
+    x = (i + 0.5) * step;
+    sum += 4.0 / (1.0 + x * x);
+}
+```
+
 ### Decomposing `parallel for`
 
 The combined `parallel for` is really *two* directives fused together for
