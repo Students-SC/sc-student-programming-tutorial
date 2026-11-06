@@ -346,7 +346,7 @@ A fixed version, with an explanation, is in `solutions/pi_race_solution.c`.
 
 ### Additional Challenges
 
-After you complete the rest of the main modules, check out the [Challenges directory](../challenges/README.md#module-3---openmp-challenges) for additional OpenMP exercises that you can try.
+If you finish the exercises above early, try the [Module 3 challenges](../challenges/README.md#module-3---openmp-challenges): parallelizing a matrix-vector multiply and exploring other `omp for` clauses. You can also come back to them after the tutorial.
 
 ### Advanced: OpenMP Offload
 
