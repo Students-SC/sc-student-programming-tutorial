@@ -20,11 +20,6 @@ int main(void) {
 
     double t_start = omp_get_wtime();
 
-    /*
-     * BUG: The parallel for is missing a reduction clause.
-     * Multiple threads are writing to 'sum' simultaneously,
-     * causing a race condition.
-     */
     #pragma omp parallel for
     for (long i = 0; i < NUM_STEPS; i++) {
         double x = (i + 0.5) * step;
