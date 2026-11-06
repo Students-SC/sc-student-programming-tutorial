@@ -280,8 +280,8 @@ idle.
    cluster table above. Does it get anything wrong?
 
    ````{tip}
-   If you installed the tutorial-provided coding agent during Getting Started,
-   launch Aider from any directory:
+   The tutorial-provided coding agent is preinstalled. Launch Aider from any
+   directory:
 
    ```bash
    bash "$HOME/sc-student-programming-tutorial/setup/launch_aider.sh"

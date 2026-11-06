@@ -84,18 +84,8 @@ You should see `Status: PASSED` and the GPU's name. Module 2 includes a
 checkpoint that explains this job and helps anyone who skipped this step catch
 up.
 
-### 5. Install the AI Agent
-
-The coding agent (Aider) lives in its own small environment, separate from the
-AI/ML venv above. This install is quick and runs right on the login node (no
-Slurm job needed):
-
-```bash
-bash setup/install_aider.sh
-```
-
-You only need to do this once. You'll launch the agent with
-`setup/launch_aider.sh` (see "Using AI Assistants" below).
+The tutorial's AI coding agent (Aider) is also preinstalled, so it's ready to
+use. See "Using AI Assistants" below.
 
 ## Getting Help
 
@@ -149,7 +139,7 @@ coding agent) pointed at **Qwen3-Coder-30B-A3B-Instruct**, served on a
 dedicated MI300X compute node by your instructors. Exercises that say *"ask
 your AI agent..."* refer to this tool.
 
-Launch it from inside the repo after completing the setup steps above:
+It's preinstalled for everyone. Launch it from inside the repo:
 
 
 ```bash
@@ -157,7 +147,7 @@ Launch it from inside the repo after completing the setup steps above:
 cd ~/sc-student-programming-tutorial
 
 
-# Launch aider (uses the agent you installed during Getting Started, pointed at the local model)
+# Launch aider (the shared install, pointed at the local model)
 bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
 ```
 

@@ -4,8 +4,9 @@
 #
 # Aider is a CLI coding agent. This wrapper points it at the locally-served
 # Qwen3-Coder model from Module 7's vLLM backend, so no API keys or external
-# accounts are needed. It runs aider from its dedicated venv
-# ($WORK/sc26_aider_venv, created by setup/install_aider.sh).
+# accounts are needed. It runs aider from the tutorial's shared, read-only
+# aider venv ($SC26_SHARED_DIR/sc26_aider_venv, built by the instructors with
+# setup/shared-env/build_aider_venv.sh).
 #
 # By default aider runs in ASK mode: it reads the files you give it and explains
 # what to do, but does not edit them -- understanding is the participant's job.
@@ -29,14 +30,9 @@
 set -euo pipefail
 
 # --- Pre-flight checks ------------------------------------------------------
-# aider's venv is per-user (under $WORK), but the agent server URL file is
-# shared (under $SC26_SHARED_DIR) so all students hit the same vLLM endpoint.
-if [[ -z "${WORK:-}" ]]; then
-    echo "ERROR: The WORK environment variable is not set." >&2
-    echo "       Please ask an instructor for help." >&2
-    exit 1
-fi
-
+# The aider install and the agent server URL file are both shared (under
+# $SC26_SHARED_DIR), so every student runs the same agent against the same
+# vLLM endpoint.
 SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
 URL_FILE="$SC26_SHARED_DIR/sc26_agent/sc26_agent_server_url"
 if [[ ! -f "$URL_FILE" ]]; then
@@ -45,14 +41,14 @@ if [[ ! -f "$URL_FILE" ]]; then
     exit 1
 fi
 
-# aider lives in its OWN per-user venv (separate from the ML venv sc26_venv),
-# created by setup/install_aider.sh. We invoke its binary by absolute path so
-# this never accidentally picks up some other aider on $PATH.
-AIDER_VENV="$WORK/sc26_aider_venv"
+# aider lives in its OWN venv (separate from the ML venv sc26_venv). We invoke
+# its binary by absolute path so this never accidentally picks up some other
+# aider on $PATH.
+AIDER_VENV="$SC26_SHARED_DIR/sc26_aider_venv"
 AIDER_BIN="$AIDER_VENV/bin/aider"
 if [[ ! -x "$AIDER_BIN" ]]; then
     echo "ERROR: aider not found at $AIDER_BIN" >&2
-    echo "       Install it first (from the repo root): bash setup/install_aider.sh" >&2
+    echo "       Please ask an instructor for help." >&2
     exit 1
 fi
 
@@ -80,4 +76,5 @@ exec "$AIDER_BIN" \
     --chat-mode ask \
     --no-auto-commits \
     --no-show-model-warnings \
+    --no-check-update \
     "$@"
