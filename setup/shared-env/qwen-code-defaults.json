@@ -7,7 +7,7 @@
       "samplingParams": { "max_tokens": 8192 }
     }
   },
-  "general": { "enableAutoUpdate": false },
+  "general": { "enableAutoUpdate": false, "outputLanguage": "English" },
   "privacy": { "usageStatisticsEnabled": false },
   "telemetry": { "enabled": false }
 }
