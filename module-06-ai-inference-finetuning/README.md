@@ -172,11 +172,15 @@ cat inference_<JOBID>.out
 
 #### Step 1: Open the Exercise
 
-Open the inference exercise:
+Open the inference exercise in an editor on the login node:
 
 ```bash
-cat run_inference.py
+vim run_inference.py
 ```
+
+In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
+`:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
+or an existing VS Code Remote SSH connection.
 
 #### Step 2: Complete the TODOs
 
@@ -209,12 +213,12 @@ Try varying the `temperature` parameter:
 Now let's adapt a pre-trained model to a new task. We'll fine-tune a text
 classification model (DistilBERT) on a sentiment analysis dataset using LoRA.
 
-#### Step 1: Examine the Fine-Tuning Script
+#### Step 1: Open the Fine-Tuning Script
 
-Look at the script:
+Open the script in an editor, as in Exercise 3:
 
 ```bash
-cat finetune_lora.py
+vim finetune_lora.py
 ```
 
 #### Step 2: Complete the TODOs
