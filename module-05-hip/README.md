@@ -312,6 +312,15 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./matvec_hip
 
 A completed version is in `solutions/matvec_hip_solution.cpp`.
 
+**Make it faster (optional):** store the matrix transposed, so that element
+(i, j) is at `A[j * M + i]`; update the initialization, the CPU reference, and
+the kernel. Then at each step of the loop, neighboring threads read
+neighboring addresses, and the GPU can combine their reads. How much faster
+is it? A completed version is in
+`solutions/matvec_hip_transposed_solution.cpp`. The other limit, too few
+threads, needs a different design: a whole block per row, combining partial
+sums in shared memory, like the reduction in Module 7's capstone.
+
 ### Challenge B: Ask the Agent
 
 Give your AI agent this serial C loop and ask it to convert it to a HIP
