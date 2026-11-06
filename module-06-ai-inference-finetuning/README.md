@@ -190,7 +190,8 @@ or an existing VS Code Remote SSH connection.
 There are **3 TODOs**:
 
 1. **TODO 1**: Load the model onto the GPU (choose the right device)
-2. **TODO 2**: Set generation parameters (max tokens, temperature)
+2. **TODO 2**: Choose the generation settings: `max_new_tokens`, and a list of
+   `temperatures` to compare (try `[0.1, 0.7, 1.5]`)
 3. **TODO 3**: Add your own custom prompts to the prompt list
 
 #### Step 3: Submit the Batch Job
@@ -202,12 +203,15 @@ the batch file:
 sbatch submit_inference.sh run_inference.py
 ```
 
-#### Step 4: Experiment with Temperature
+#### Step 4: Compare Temperatures
 
-Try varying the `temperature` parameter:
-- `temperature=0.1` -- very focused, repetitive
-- `temperature=0.7` -- balanced creativity
-- `temperature=1.5` -- wild and unpredictable
+Your script runs every prompt at each temperature in `temperatures`, so one
+job gives you a side-by-side comparison. With the suggested values, expect:
+- `0.1` -- very focused, repetitive
+- `0.7` -- balanced creativity
+- `1.5` -- wild and unpredictable
+
+Which temperature gives the most useful answers to your prompts?
 
 ---
 
