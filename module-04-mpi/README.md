@@ -237,10 +237,23 @@ The reported time covers rank 0's local calculation and reduction interval;
 it excludes job startup. Use it to explore scaling. Reliable benchmarking
 would need repeated measurements and coordinated timing across ranks.
 
+Copy this table into your notes and fill it in from the output, as you did
+for OpenMP in Module 3. Speedup is the 1-rank time divided by the N-rank time:
+
+| Ranks | Time (s) | Speedup |
+|-------|----------|---------|
+| 1     |          | 1.0     |
+| 2     |          |         |
+| 4     |          |         |
+| 8     |          |         |
+| 16    |          |         |
+
 **Questions:**
 - Does the sum have the expected magnitude?
 - Do the global sums at 2, 4, 8, and 16 ranks agree with the one-rank baseline?
-- How does the time change from 1 rank to 16 ranks?
+- How does the time change from 1 rank to 16 ranks? How does your speedup
+  compare with your OpenMP pi speedup from Module 3? If both scale about as
+  well on one node, why would you choose MPI? (Hint: see "Why MPI?" above.)
 - What would happen if you forgot the `MPI_Reduce` and just printed each
   rank's partial sum?
 
