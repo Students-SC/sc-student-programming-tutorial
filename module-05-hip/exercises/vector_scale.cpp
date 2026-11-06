@@ -49,6 +49,7 @@ int main(void) {
     double *h_result = (double *)malloc(bytes);
     for (int i = 0; i < N; i++) {
         h_input[i] = (double)i;
+        h_result[i] = -1.0;  /* so the check below fails if no result is copied back */
     }
 
     /* Allocate device memory */
