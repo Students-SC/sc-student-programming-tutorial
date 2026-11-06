@@ -66,8 +66,10 @@ small trainable "adapter" matrices:
   Effective weight: W + A × B
 ```
 
-For a model with 110M parameters, LoRA might only train ~0.5M parameters --
-a 200x reduction. This means fine-tuning fits on a single GPU and runs fast.
+The DistilBERT model you'll fine-tune has about 67 million parameters. With
+this exercise's LoRA settings, only about 0.74 million (1.1%) are trained --
+about 90x fewer. That is why fine-tuning fits easily on one GPU and finishes
+in seconds.
 
 ### Why GPUs for AI?
 
