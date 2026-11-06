@@ -31,6 +31,7 @@ exclude_patterns = [
     "setup/vllm-server/README.md",
     "setup/shared-env/README.md",
     "setup/agent-pilot/**",
+    "QWEN.md",
 ]
 
 html_theme = "furo"
