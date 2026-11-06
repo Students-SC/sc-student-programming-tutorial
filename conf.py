@@ -30,6 +30,7 @@ exclude_patterns = [
     "__pycache__",
     "setup/vllm-server/README.md",
     "setup/shared-env/README.md",
+    "setup/agent-pilot/**",
 ]
 
 html_theme = "furo"
