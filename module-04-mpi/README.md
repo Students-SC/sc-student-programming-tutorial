@@ -9,6 +9,7 @@ By the end of this module, you will be able to:
 - Explain the message-passing model and how it differs from shared memory
 - Write an MPI program that distributes work across multiple processes (ranks) on one node
 - Explain point-to-point communication (`MPI_Send` / `MPI_Recv`)
+- Recognize a deadlock and order messages to avoid it
 - Use collective operations (`MPI_Reduce`)
 
 ---
@@ -291,11 +292,40 @@ Open the template in an editor on the login node:
 vim ring.c
 ```
 
-#### Step 2: Complete the Communication
+#### Step 2: See a Deadlock First
 
-Fill in the TODO to send `send_val` to `dest` and receive a value from
-`source` into `recv_val`. Use `MPI_Send` and `MPI_Recv`, or explore
-`MPI_Sendrecv` as an alternative.
+Start with the simplest idea: every rank sends, then receives. Put these two
+lines at the TODO:
+
+```c
+MPI_Ssend(&send_val, 1, MPI_INT, dest, 0, MPI_COMM_WORLD);
+MPI_Recv(&recv_val, 1, MPI_INT, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+```
+
+Compile and run it with a short time limit:
+
+```bash
+mpicc -O2 -o ring ring.c
+srun --partition=mi2101x --nodes=1 --time=1:00 --ntasks=4 ./ring
+```
+
+The program hangs with no output. `MPI_Ssend` (synchronous send) does not
+finish until the receiving rank has started its receive, but every rank is
+stuck sending, so no rank ever reaches `MPI_Recv`. This is a **deadlock**.
+Press `Ctrl-C` twice within a second to stop `srun` (otherwise the job holds a
+whole node until its 1-minute limit).
+
+With plain `MPI_Send`, this same code often works, because MPI copies small
+messages into a buffer and returns right away. Larger messages, or another
+MPI library, can make it deadlock, so correct programs never rely on that
+buffering.
+
+#### Step 3: Fix the Ordering
+
+Replace those two lines so the exchange can't deadlock. Fill in the TODO to
+send `send_val` to `dest` and receive a value from `source` into `recv_val`.
+Use `MPI_Send` and `MPI_Recv`, or explore `MPI_Sendrecv` as an alternative. A
+correct ordering works even with `MPI_Ssend`, which makes it a good test.
 
 ```{tip}
 Plan the order of the sends and receives. If every rank starts with a blocking
@@ -304,7 +334,7 @@ the messages cannot be buffered. Consider alternating the order for even and
 odd ranks, or use `MPI_Sendrecv` to coordinate the exchange.
 ```
 
-#### Step 3: Compile and Run
+#### Step 4: Compile and Run
 
 Compile on the login node:
 
@@ -329,7 +359,7 @@ failed value check.
 Try again with eight ranks by changing `--ntasks=4` to `--ntasks=8`. Rank 0
 should now receive `7`. In general, rank 0 receives `size - 1`.
 
-#### Step 4: Compare with the Solution
+#### Step 5: Compare with the Solution
 
 After completing your implementation, examine the solution in
 `solutions/ring_solution.c`. It uses `MPI_Sendrecv` to exchange values.
@@ -360,6 +390,8 @@ to combine MPI ranks with OpenMP threads.
 | `MPI_Comm_size(comm, &size)` | Get total number of ranks |
 | `MPI_Send(buf, count, type, dest, tag, comm)` | Send data to a rank |
 | `MPI_Recv(buf, count, type, src, tag, comm, status)` | Receive data from a rank |
+| `MPI_Ssend(buf, count, type, dest, tag, comm)` | Send, waiting until the receiver has started receiving |
+| `MPI_Sendrecv(...)` | Send to one rank and receive from another in one call |
 | `MPI_Reduce(sendbuf, recvbuf, count, type, op, root, comm)` | Combine values across ranks |
 | `MPI_Bcast(buf, count, type, root, comm)` | Broadcast from one rank to all |
 
