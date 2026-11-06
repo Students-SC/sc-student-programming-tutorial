@@ -10,22 +10,7 @@ of the curriculum.
 
 The files for these challenges are located in `module-03-openmp-challenges` directory.
 
-### Challenge A: Find the Race Condition
-
-The file `pi_race.c` has a **deliberate bug** -- a
-race condition. Compile and run it:
-
-```bash
-gcc -fopenmp -O2 -o pi_race pi_race.c -lm
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
-  bash -c 'export OMP_NUM_THREADS=8; ./pi_race'
-```
-
-Run it several times. Notice the answer changes each time! Can you spot and fix
-the bug? (Hint: compare it to your working `pi_openmp.c`.)
-
-
-### Challenge B: Matrix-Vector Multiply
+### Challenge A: Matrix-Vector Multiply
 
 Parallelize a matrix-vector multiplication using OpenMP. A template is at:
 
@@ -39,7 +24,7 @@ performance with the serial version.
 
 
 
-### Challenge C: Exploring other clauses for `pragma omp for`
+### Challenge B: Exploring other clauses for `pragma omp for`
 
 If you look at the [OpenMP API spec for `pragma for`](https://www.openmp.org/spec-html/5.0/openmpsu41.html#x64-1290002.9.2), you will see it has a number of optional clauses you can use. You've seen one already: `reduction`. Try exploring some of the others. For example:
 

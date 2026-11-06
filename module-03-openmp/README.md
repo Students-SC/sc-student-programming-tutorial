@@ -314,6 +314,31 @@ the 1-thread time divided by the N-thread time:
 
 ---
 
+### Exercise 4: Find and Fix a Race Condition
+
+#### Step 1: Compile and Run the Program
+
+The file `pi_race.c` has a **deliberate bug** -- a race condition. Compile and
+run it:
+
+```bash
+gcc -fopenmp -O2 -o pi_race pi_race.c -lm
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+  bash -c 'export OMP_NUM_THREADS=8; ./pi_race'
+```
+
+Run it several times. Notice the answer changes each time!
+
+#### Step 2: Find and Fix the Bug
+
+Can you spot and fix the bug? (Hint: compare it to your working `pi_openmp.c`.)
+Edit `pi_race.c`, then recompile and run it again with the commands from
+Step 1. When the bug is fixed, the answer matches pi for any thread count.
+
+A fixed version is in `solutions/pi_race_solution.c`.
+
+---
+
 ### Additional Challenges
 
 After you complete the rest of the main modules, check out the [Challenges directory](../challenges/README.md#module-3---openmp-challenges) for additional OpenMP exercises that you can try.
