@@ -63,6 +63,12 @@ int main(void) {
            blocks, BLOCK_SIZE, blocks * BLOCK_SIZE);
     printf("Problem size: %d elements (%.1f MB)\n\n", N, bytes / 1e6);
 
+    /* Warm-up launch: the first launch in a program includes one-time setup,
+     * so time a second launch instead. */
+    vector_add_kernel<<<blocks, BLOCK_SIZE>>>(d_a, d_b, d_c, N);
+    HIP_CHECK(hipGetLastError());
+    HIP_CHECK(hipDeviceSynchronize());
+
     hipEvent_t start, stop;
     HIP_CHECK(hipEventCreate(&start));
     HIP_CHECK(hipEventCreate(&stop));
