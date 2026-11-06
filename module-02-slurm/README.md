@@ -38,7 +38,7 @@ most widely used scheduler in HPC.
 | `sbatch script.sh` | Submit a batch job | `sbatch my_job.sh` |
 | `squeue` | View the job queue | `squeue -u $USER` |
 | `scancel <jobid>` | Cancel a job | `scancel 12345` |
-| `srun <command>` | Run a command on a compute node | `srun hostname` |
+| `srun <command>` | Run a command on a compute node | `srun --partition=mi2101x --time=1:00 hostname` |
 | `sinfo` | View partition/node status | `sinfo -p mi2101x` |
 | `scontrol show job <id>` | Detailed info about a job | `scontrol show job 12345` |
 | `sacct -j <id>` | Accounting info after completion | `sacct -j 12345` |
@@ -66,12 +66,16 @@ echo "Hello from $(hostname) at $(date)"
 
 | Directive | Meaning |
 |-----------|---------|
-| `--partition` | Target node group. Use `mi2101x` for this tutorial. |
+| `--partition` | Target node group. **Required on this cluster.** Use `mi2101x` for this tutorial. |
 | `--nodes` | How many nodes. Use `1` for most exercises. |
 | `--ntasks` | Number of MPI ranks (processes). Use `1` unless doing MPI. |
 | `--cpus-per-task` | CPU cores per task. Useful for OpenMP threading. |
-| `--time` | Maximum run time. Keep short (5--10 min) to share nodes fairly. |
+| `--time` | Maximum run time. **Required on this cluster.** Keep short (5--10 min) to share nodes fairly. |
 | `--output` / `--error` | Where stdout/stderr go. `%j` is replaced with the job ID. |
+
+When your job runs, Slurm also sets environment variables that describe it,
+such as `SLURM_JOB_ID`, `SLURM_JOB_NODELIST`, and `SLURM_CPUS_ON_NODE`. Scripts
+and programs can read them; the programs in Exercises 1 and 2 print several.
 
 ### The Job Lifecycle
 
@@ -82,6 +86,17 @@ sbatch submit → PENDING (waiting for nodes) → RUNNING (on a node) → COMPLE
 ```
 
 You can also cancel at any stage with `scancel`.
+
+While a job is `PENDING`, the last column of `squeue` (`NODELIST(REASON)`)
+says why it is waiting:
+
+| Reason | Meaning |
+|--------|---------|
+| `Resources` | Waiting for a node to become free |
+| `Priority` | Other jobs are ahead of it in the queue |
+
+With 80+ students sharing about 20 nodes, expect to see these today. Waiting
+is normal: Slurm starts your job as soon as a node is free.
 
 ---
 
@@ -111,6 +126,13 @@ sbatch first_job.sh
 ```
 
 Slurm will print something like `Submitted batch job 12345`. Note the **job ID**.
+
+```{note}
+Before that line, you'll see a block of checks from the cluster's
+job-submission filter (lines starting with `-->`). That's normal, and you'll
+see it for every `sbatch` and `srun`. If the filter rejects a job, the block
+says why, for example `runtime limit is required` when a job has no `--time`.
+```
 
 #### Step 3: Check the Queue
 
@@ -146,7 +168,7 @@ Submit it again and let it finish. Then read the output:
 
 ```bash
 sbatch first_job.sh
-# Wait ~70 seconds for it to complete...
+# Once it starts, it runs for about 50 seconds (it may wait in the queue first)
 squeue -u $USER                     # Should disappear when done
 cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 ```
@@ -154,6 +176,16 @@ cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 ```{tip}
 `ls -lt *.out | head` shows the most recent output files.
 ```
+
+`squeue` lists only jobs that are pending or running. To look up jobs that have
+finished, including the one you cancelled in Step 4, use `sacct`:
+
+```bash
+sacct -X -j <JOBID> --format=JobID,JobName%15,State,Elapsed   # Try both job IDs from this exercise
+```
+
+`-X` shows one line per job. `State` shows `COMPLETED` or `CANCELLED`, and
+`Elapsed` shows how long the job ran.
 
 ---
 
@@ -220,12 +252,22 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 hostname
 
 ```bash
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 lscpu | grep "Model name"
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | head -30
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | grep -E "Marketing Name|Device Type"
 ```
+
+On the login node, the same `rocminfo` command lists two CPUs and two GPUs.
+Your compute node has one of each.
 
 ```{note}
 `srun` waits for a node, runs the command, and returns. If the partition is
 busy, you may wait a moment.
+```
+
+```{important}
+Every job, even a one-line `srun`, gets a whole compute node to itself until it
+finishes. That makes `srun` great for quick commands, but please don't start
+an interactive shell on a compute node today (for example, `srun --pty bash`):
+an idle shell holds a node that five of your classmates could be using.
 ```
 
 ---
@@ -291,6 +333,12 @@ cat sweep_compute.py        # The Python script (TODO: add the loop)
 
 Fill in the TODO sections in **both** files and submit the batch script. You
 should see timing results for each value of N, showing how compute time grows.
+
+**In practice:** for sweeps over many independent values, HPC users usually
+submit a **job array** instead of a loop. Adding `#SBATCH --array=0-3` runs
+four copies of the script as separate jobs, which can run on different nodes at
+the same time, and each copy reads its own index from `$SLURM_ARRAY_TASK_ID`.
+We use a loop today so that 80+ students don't flood the queue.
 
 #### Challenge B: Explore Resource Requests
 

@@ -4,7 +4,7 @@
 #
 # Submit with:  sbatch first_job.sh
 #
-# This job prints system info and then sleeps for 60 seconds, giving you
+# This job prints system info and then sleeps for 45 seconds, giving you
 # time to practice squeue, scontrol show job, and scancel while it runs.
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=first-job
@@ -29,8 +29,8 @@ echo "Tasks:         $SLURM_NTASKS"
 echo "CPUs on node:  $SLURM_CPUS_ON_NODE"
 echo "Working dir:   $(pwd)"
 echo ""
-echo "Now sleeping for 60 seconds..."
+echo "Now sleeping for 45 seconds..."
 
-sleep 60
+sleep 45
 
 echo "Done sleeping. Job complete at $(date)."

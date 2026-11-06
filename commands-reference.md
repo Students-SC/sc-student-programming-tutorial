@@ -66,7 +66,7 @@ See [Module 2](module-02-slurm/README.md) for the Slurm walkthrough.
 |--------------|---------|
 | Run `hostname` on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 hostname` |
 | Check CPU model on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 lscpu \| grep "Model name"` |
-| Preview ROCm GPU info on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo \| head -30` |
+| List the CPUs and GPUs on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo \| grep -E "Marketing Name\|Device Type"` |
 | Run a program on one compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./program` |
 | Run with 4 MPI ranks | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program` |
 | Run with 16 CPU cores for one task | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 ./program` |
