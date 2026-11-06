@@ -296,7 +296,21 @@ cat matvec_hip.cpp
 Implement a HIP kernel for matrix-vector multiplication: `y[i] = sum_j(A[i][j] * x[j])`
 
 Each thread computes one element of the output vector y. This means each
-thread must iterate over an entire row of the matrix.
+thread must iterate over an entire row of the matrix. Name the kernel
+`matvec_kernel`, as in the template's TODO. Then compile and run it:
+
+```bash
+hipcc -O2 -o matvec_hip matvec_hip.cpp
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./matvec_hip
+```
+
+**Questions:**
+- Compare the bandwidth with `vector_add`'s from Exercise 1. Why is it so much
+  lower? (Hints: how many blocks does the program launch, and how many compute
+  units does the MI210 have? At each step of the loop, how far apart in memory
+  are the elements that neighboring threads read?)
+
+A completed version is in `solutions/matvec_hip_solution.cpp`.
 
 ### Challenge B: Ask the Agent
 
