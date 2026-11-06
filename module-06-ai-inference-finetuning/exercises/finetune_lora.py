@@ -6,9 +6,8 @@ EXERCISE: Fill in the 3 TODOs to fine-tune DistilBERT for sentiment analysis.
 We use the IMDB dataset (positive/negative movie reviews) and LoRA to
 efficiently adapt the model with very few trainable parameters.
 
-Usage (inside a Slurm job):
-  source /work1/<group>/<username>/sc26_venv/bin/activate
-  python3 finetune_lora.py
+Usage (the batch script activates the shared Python environment):
+  sbatch submit_finetune.sh
 """
 
 import time

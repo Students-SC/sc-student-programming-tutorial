@@ -272,50 +272,34 @@ an idle shell holds a node that five of your classmates could be using.
 
 ---
 
-### Exercise 4: Python Environment Checkpoint
+### Exercise 4: Checkpoint -- The GPU Check Job
 
-During Getting Started, you submitted `setup/setup_venv.sh` as a Slurm job.
-Now that you've seen `sbatch`, `squeue`, and output files, that command should
-make more sense: it requested a compute node and installed the Python packages
-used by the tutorial agent and the afternoon AI modules.
+During Getting Started, you submitted `setup/check_gpu.sh` as a Slurm job. Now
+that you've written batch scripts yourself, that job should make more sense.
 
-#### Step 1: Verify the Environment
-
-First, verify that the venv exists:
+#### Step 1: Read the Script
 
 ```bash
-source "$WORK/sc26_venv/bin/activate"
-python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
-deactivate
+cat ../../setup/check_gpu.sh
 ```
 
-#### Step 2: Create the Environment if Needed
+**Questions:**
+- Which partition and time limit does it request?
+- Which line chose the name of its output file, and what did `%j` become?
 
-If the verification works, you're done. If you skipped the Python environment
-setup or the venv is missing, create it now with the repository's setup script:
+#### Step 2: Run It if You Skipped It
+
+If you didn't run it during Getting Started, or it didn't print
+`Status: PASSED`, run it now from this directory:
 
 ```bash
-sbatch "$HOME/sc-student-programming-tutorial/setup/setup_venv.sh"
+sbatch ../../setup/check_gpu.sh
+cat check_gpu_<JOBID>.out           # After the job leaves the queue
 ```
 
-#### Step 3: Monitor the Setup Job
-
-This takes a few minutes. Check progress with:
-
-```bash
-squeue -u $USER
-tail -f setup_venv_<JOBID>.out      # Watch the log (Ctrl+C to stop)
-```
-
-#### Step 4: Verify the Completed Setup
-
-Once the job finishes, run the verification commands again:
-
-```bash
-source "$WORK/sc26_venv/bin/activate"
-python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
-deactivate
-```
+The output file appears in this directory, because a batch job writes its
+output where you submitted it. If the check still doesn't pass, ask an
+instructor.
 
 ---
 

@@ -29,6 +29,7 @@ exclude_patterns = [
     "venv",
     "__pycache__",
     "setup/vllm-server/README.md",
+    "setup/shared-env/README.md",
 ]
 
 html_theme = "furo"
