@@ -58,6 +58,11 @@ SIF_FILE="$AGENT_DIR/sc26_containers/vllm-openai-rocm.sif"
 MODEL_NAME="Qwen/Qwen3-Coder-30B-A3B-Instruct"
 CACHE_DIR="$AGENT_DIR/sc26_model_cache"
 PORT=8321
+# Agents that call tools natively (Qwen Code) need vLLM to parse the model's
+# tool calls. aider and Module 7's simple agents don't send tools, so they
+# are unaffected. To try this model's other parser:
+#   TOOL_CALL_PARSER=qwen3_coder sbatch setup/vllm-server/start_server.sh
+TOOL_CALL_PARSER="${TOOL_CALL_PARSER:-qwen3_xml}"
 URL_FILE="$AGENT_DIR/sc26_agent_server_url"
 READY_TIMEOUT=900   # max seconds to wait for vLLM to become ready
 
@@ -94,6 +99,7 @@ log "=== vLLM Inference Server (Apptainer) ==="
 log "Node:         $NODE_HOSTNAME ($NODE_IP)"
 log "Model:        $MODEL_NAME"
 log "Port:         $PORT"
+log "Tool parser:  $TOOL_CALL_PARSER"
 log "URL (target): $SERVER_URL"
 log "URL file:     $URL_FILE"
 log "Container:    $SIF_FILE"
@@ -120,6 +126,8 @@ apptainer run \
     --max-model-len 32768 \
     --gpu-memory-utilization 0.90 \
     --download-dir /model_cache \
+    --enable-auto-tool-choice \
+    --tool-call-parser "$TOOL_CALL_PARSER" \
     --trust-remote-code &
 
 VLLM_PID=$!
