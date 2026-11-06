@@ -166,6 +166,9 @@ def main():
 
     train_time = time.time() - t_train_start
     print(f"Training completed in {train_time:.1f}s")
+    if device == "cuda":
+        print(f"Peak GPU memory during training: "
+              f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
 
     # TODO 3: Evaluate after fine-tuning and print the accuracy.
     #

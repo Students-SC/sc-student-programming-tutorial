@@ -163,7 +163,8 @@ cat inference_<JOBID>.out
 
 **Questions:**
 - How fast does the model generate text (tokens/sec)?
-- How much GPU memory does the model use?
+- How much GPU memory does the model use after loading, and at its peak while
+  generating?
 - Do the generated responses make sense?
 
 ---
@@ -246,6 +247,8 @@ cat finetune_<JOBID>.out
 - What accuracy after fine-tuning?
 - How long did training take?
 - How many parameters were actually trained (vs. total)?
+- What was the peak GPU memory during training? Training stores gradients and
+  optimizer state as well as the model, so why is the number still small?
 
 ---
 

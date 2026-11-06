@@ -31,10 +31,6 @@ echo "Python:  $(python3 --version)"
 echo "PyTorch: $(python3 -c 'import torch; print(torch.__version__)')"
 echo ""
 
-echo "--- GPU memory before ---"
-rocm-smi --showmeminfo vram 2>/dev/null | head -10
-echo ""
-
 # The Python script to run is the first argument (default: the exercise)
 SCRIPT="${1:-finetune_lora.py}"
 if [[ ! -f "$SCRIPT" ]]; then
@@ -44,7 +40,3 @@ fi
 echo "Running: $SCRIPT"
 echo ""
 python3 "$SCRIPT"
-
-echo ""
-echo "--- GPU memory after ---"
-rocm-smi --showmeminfo vram 2>/dev/null | head -10

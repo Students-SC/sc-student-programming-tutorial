@@ -90,6 +90,10 @@ def main():
         print(f"Response: {response.strip()}")
         print(f"[{new_tokens} tokens in {elapsed:.2f}s = {tokens_per_sec:.1f} tok/s]")
 
+    if device == "cuda":
+        print(f"\nPeak GPU memory while generating: "
+              f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
+
     print(f"\n{'=' * 60}")
     print("  Done!")
     print(f"{'=' * 60}")

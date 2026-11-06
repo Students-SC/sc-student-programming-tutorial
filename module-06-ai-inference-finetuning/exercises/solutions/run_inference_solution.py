@@ -100,6 +100,9 @@ def main():
     print(f"  Summary: {total_tokens} tokens in {total_time:.2f}s "
           f"= {total_tokens/total_time:.1f} tok/s average")
     print(f"{'=' * 60}")
+    if device == "cuda":
+        print(f"Peak GPU memory while generating: "
+              f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
 
 
 if __name__ == "__main__":
