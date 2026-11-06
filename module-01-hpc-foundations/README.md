@@ -292,8 +292,8 @@ Start your notes file with facts from Exercise 1:
 ```bash
 mkdir -p ~/.qwen
 cat >> ~/.qwen/QWEN.md << 'EOF'
-# My notes on the AUP AI & HPC Cluster
-- Our partition is mi2101x: 16 CPU cores, 64 GB of memory, and 1 AMD MI210 GPU per node.
+# My notes on the AUP AI & HPC Cluster (SC26 HPC + AI tutorial)
+- This tutorial uses the mi2101x partition: 16 CPU cores, 64 GB of memory, and 1 AMD MI210 GPU per node.
 - AMD GPUs: use rocm-smi and rocminfo, never nvidia-smi.
 - Never run computations on the login node. Use srun or sbatch.
 EOF
