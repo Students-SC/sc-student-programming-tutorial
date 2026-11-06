@@ -58,7 +58,9 @@ Run the environment check script to confirm everything is set up:
 bash setup/check_environment.sh
 ```
 
-You should see [PASS] for all items. If anything fails, ask an instructor for help.
+You should see [PASS] for all items. A [WARN] that the AI agent server isn't
+running yet is fine before the tutorial starts. If anything fails, ask an
+instructor for help.
 
 ### 4. Check That Your Jobs Can Use a GPU
 
