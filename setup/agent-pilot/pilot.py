@@ -351,7 +351,8 @@ TASKS = {t.name: t for t in [
     Task("m4-ring", "module-04-mpi/exercises", "code",
          "Write ring_agent.c: an MPI program in which every rank sends its rank "
          "number to the next rank (the last rank sends to rank 0) and receives "
-         "from the previous rank, then prints a line 'Rank <r> received <v>'.",
+         "from the previous rank, then prints a line 'Rank <r> received <v>'. "
+         "Use MPI_Send and MPI_Recv.",
          files=["ring_agent.c"], reference=reference_m4, check=check_m4),
     Task("m5-sweep", "module-05-hip/exercises", "code",
          "Write sweep.sh, which compiles vector_scale.cpp with -DBLOCK_SIZE set "
