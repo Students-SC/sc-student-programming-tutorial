@@ -10,7 +10,7 @@
 #include <time.h>
 #include <omp.h>            /* TODO 1: SOLVED */
 
-#define NUM_STEPS 100000000L
+#define NUM_STEPS 1000000000L
 
 int main(void) {
     double step = 1.0 / (double)NUM_STEPS;
