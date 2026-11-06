@@ -123,7 +123,7 @@ against a BLAS reference (`-lopenblas`).
 First, navigate to the exercises directory for this module:
 
 ```bash
-cd module-08-openmp-offload/exercises
+cd challenges/bonus-openmp-offload/exercises
 module load rocm openblas
 ```
 
@@ -215,7 +215,7 @@ cat omp-offload_<JOBID>.out
 - How does it compare to the BLAS library time?
 
 A completed version is available at
-[`solutions/matmul_offload_solution.c`](solutions/matmul_offload_solution.c).
+[`solutions/matmul_offload_solution.c`](exercises/solutions/matmul_offload_solution.c).
 
 ---
 

@@ -262,11 +262,11 @@ cat openmp-pi_<JOBID>.out
 
 ### Additional Challenges
 
-After you complete the rest of the main modules, checkout the [Challenges directory](../challenges#module-3---openmp-challenges) for additional OpenMP exercises that you can try.
+After you complete the rest of the main modules, check out the [Challenges directory](../challenges/README.md#module-3---openmp-challenges) for additional OpenMP exercises that you can try.
 
 ### Advanced: OpenMP Offload
 
-OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, visit the [OpenMP Offload bonus module in the challenges directory](../challenges/bonus-openmp-offload) to learn about how to additional OpenMP directives that can be used to accomplish tasks on the GPU.
+OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, visit the [OpenMP Offload bonus module in the challenges directory](../challenges/bonus-openmp-offload/README.md) to learn how additional OpenMP directives can be used to accomplish tasks on the GPU.
 
 
 

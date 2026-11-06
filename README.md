@@ -117,14 +117,13 @@ or after the session. Details will be added here before the tutorial.
 ## Compute (virtual) Node Details
 
 In this tutorial, a **virtual compute node** is a slice of a larger physical
-compute node. You can think of it like having your own assigned portion of a
-shared machine: each virtual node gets a fraction of the physical node's CPU
-cores, memory, and GPU resources, while Slurm keeps different users' jobs
-separated from each other.
+server with its own CPU cores, memory, and GPU.
+[Module 1](module-01-hpc-foundations/README.md#inside-a-compute-node) explains
+how this works.
 
 | Resource | Details |
 |----------|---------|
-| CPU | AMD EPYC (16 cores per virtual node) |
+| CPU | AMD EPYC 7V13 (16 cores per virtual node) |
 | GPU | 1x AMD Instinct MI210 (64 GB HBM2e) per virtual node |
 | RAM | 64 GB system DRAM per virtual node |
 | Partition | `mi2101x` |
