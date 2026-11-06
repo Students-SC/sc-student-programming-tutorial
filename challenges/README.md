@@ -33,6 +33,10 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
   bash -c 'export OMP_NUM_THREADS=16; ./matvec_openmp'
 ```
 
+**Question:** On 16 threads, the matrix-vector multiply speeds up much less
+than the pi program did in Module 3's Exercise 3. Why? (Hint: compare how much
+data each program reads from memory for each arithmetic operation it does.)
+
 A completed version is in
 [`module-03-openmp/exercises/solutions/matvec_openmp_solution.c`](../module-03-openmp/exercises/solutions/matvec_openmp_solution.c).
 
