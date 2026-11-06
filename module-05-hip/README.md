@@ -293,7 +293,7 @@ the `if (i < n)` bounds check?
 | Compile & Run | |
 |--------------|---|
 | `hipcc -O2 -o prog prog.cpp` | Compile HIP code |
-| `srun --partition=mi2101x ./prog` | Run on a GPU node |
+| `srun --partition=mi2101x --time=2:00 ./prog` | Run on a GPU node |
 
 ---
 
