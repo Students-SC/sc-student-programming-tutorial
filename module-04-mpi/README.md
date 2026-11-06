@@ -125,9 +125,8 @@ ranks to explore the node's 16 CPU cores.
 
 ## Hands-On Exercises (~35 min)
 
-Suggested pacing: about 8 minutes for Hello World, 20 minutes for Parallel Sum,
-and 7 minutes for interactive MPI. Complete the main exercises before trying
-the optional challenges.
+Suggested pacing: about 8 minutes for Hello World and 22 minutes for Parallel
+Sum. Complete the main exercises before trying the optional challenges.
 
 From the repository root on the login node, navigate to this module's exercises:
 
@@ -258,32 +257,16 @@ for OpenMP in Module 3. Speedup is the 1-rank time divided by the N-rank time:
 - What would happen if you forgot the `MPI_Reduce` and just printed each
   rank's partial sum?
 
----
+#### Step 6: Check the Remainder Handling
 
-### Exercise 3: Run MPI Interactively
-
-#### Step 1: Compile the Program
-
-Use the completed `parallel_sum.c` from Exercise 2. If you have changed it,
-recompile it on the login node:
+Run your program once more, directly with `srun`, using three ranks:
 
 ```bash
-mpicc -O2 -o parallel_sum parallel_sum.c -lm
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=3 ./parallel_sum
 ```
 
-#### Step 2: Try Different Rank Counts
-
-Run the program directly with several rank counts:
-
-```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=3  ./parallel_sum
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=8  ./parallel_sum
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=16 ./parallel_sum
-```
-
-The three-rank case checks the remainder handling: 1 billion is not divisible
-by three, so the last rank computes one extra term. Its global sum should
-still agree closely with the one-rank baseline.
+1 billion is not divisible by three, so the last rank computes one extra term.
+Its global sum should still agree closely with the one-rank baseline.
 
 ---
 
