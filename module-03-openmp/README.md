@@ -193,6 +193,17 @@ cat ../examples/openmp_hello.c
 gcc -fopenmp -o openmp_hello ../examples/openmp_hello.c
 ```
 
+```{note}
+C is a *compiled* language: before you can run a C program, a compiler (here
+`gcc`) translates the source file into an executable program. In the command
+above, `-o openmp_hello` names the executable, and `-fopenmp` turns on OpenMP:
+the compiler acts on the `#pragma omp` lines and links in the OpenMP runtime
+library, which creates and manages the threads. Without `-fopenmp`, `gcc`
+ignores the pragmas, so a program would quietly run on one thread -- and this
+one wouldn't build at all, because it calls OpenMP functions such as
+`omp_get_thread_num()`.
+```
+
 #### Step 2: Run on a Compute Node
 
 Use `srun` to execute the compiled program on a compute node:
