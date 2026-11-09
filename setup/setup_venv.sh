@@ -18,36 +18,21 @@
 
 set -euo pipefail
 
-# Place the venv on /work1 (large shared storage) rather than $HOME (small quota).
-# $WORK is set by the cluster environment to /work1/<project-id>/$USER.
-if [[ -z "${WORK:-}" ]]; then
-    echo "ERROR: The WORK environment variable is not set." >&2
-    echo "       Please ask an instructor for help." >&2
-    exit 1
-fi
-VENV_DIR="$WORK/sc26_venv"
-
-echo "=== Setting up Python virtual environment ==="
-echo "Node:    $(hostname)"
-echo "Date:    $(date)"
-echo "Target:  $VENV_DIR"
-echo ""
-
-if [ -d "$VENV_DIR" ]; then
-    echo "Removing existing venv..."
-    rm -rf "$VENV_DIR"
+module load miniforge3
+module load rocm/7.2
+if [[ $(conda env list | grep sc26_venv) ]]; then
+    echo "Removing existing aider venv..."
+    conda env remove -n sc26_aider_venv
 fi
 
 echo "Creating virtual environment with Python 3.12..."
-python3.12 -m venv "$VENV_DIR"
+# we'll create a conda virtual environment that is stored in the default location
+# instead of specifying a location
+# Python 3.12 is required since that is what the Aider release we are using works with
+conda create -n sc26_venv python=3.12 -y
 
-source "$VENV_DIR/bin/activate"
+conda activate sc26_venv
 
-echo "Upgrading pip..."
-pip install --upgrade pip
-
-echo ""
-echo "Installing PyTorch with ROCm 7.2 support..."
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm7.2
 
 echo ""

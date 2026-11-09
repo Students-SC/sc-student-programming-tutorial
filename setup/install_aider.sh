@@ -31,7 +31,7 @@ echo "Date:    $(date)"
 echo "Version: aider-chat==$AIDER_VERSION"
 echo ""
 
-if [[ $(conda env list | grep sc26) ]]; then
+if [[ $(conda env list | grep sc26_aider_venv) ]]; then
     echo "Removing existing aider venv..."
     conda env remove -n sc26_aider_venv
 fi
