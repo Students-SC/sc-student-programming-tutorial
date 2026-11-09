@@ -337,7 +337,8 @@ the file, read the script before you approve it.
 
 Compare the script with the [key directives](#anatomy-of-a-batch-script)
 above. Does it name the partition, the node count, and a time limit? Does it
-ask for anything this cluster doesn't allow, such as `--gpus`? Predict whether
+ask for anything this cluster doesn't allow, such as `--gpus`? Check every
+directive against the table, not just the required ones. Predict whether
 Slurm will accept it.
 
 #### Step 3: Submit and Iterate
@@ -352,8 +353,10 @@ cat agent-job_<JOBID>.out
 ```
 
 **Questions:**
-- Which directives did the agent get right on its own? Did it copy any from
-  the files in this directory?
+- In the output, what is `SLURM_NTASKS`? Is that what the spec asked for?
+- Why does the program still see 16 CPU cores?
+- Which directives came from your notes in `QWEN.md`, and which did the agent
+  copy from files in this directory?
 - What did you, or the filter, have to correct?
 
 If you or the filter had to correct anything, add it to the tutorial's agent
