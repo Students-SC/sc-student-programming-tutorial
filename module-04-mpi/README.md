@@ -19,10 +19,24 @@ By the end of this module, you will be able to:
 
 ### Why MPI?
 
-OpenMP threads share memory. **MPI (Message Passing Interface)** uses
-**multiple processes** that communicate by **sending and receiving messages**.
-In this module, we run 1 to 16 MPI processes on the CPU cores of one compute
-node.
+As you saw in Module 3, OpenMP threads work together through **shared
+memory**, so they must all run on one compute node: each node has its own
+memory, and threads can't see another node's. **MPI (Message Passing
+Interface)** takes a different approach. A program runs as **multiple
+processes**, called **ranks**, and each rank has its own private memory.
+Ranks coordinate by explicitly **sending and receiving messages**, and because
+messages can travel over the network, an MPI program can run across many
+compute nodes.
+
+That is how programs grow beyond one node. The same program can run across
+many nodes of a real cluster, for example as 64 ranks with
+`srun --nodes=4 --ntasks-per-node=16 ./program`. Ranks on the same node
+exchange messages through shared memory, while ranks on different nodes send
+them over the high-speed network from Module 1.
+
+In this tutorial, we focus on MPI within a single node: our tutorial partition
+allows one node per job, so in this module you run 1 to 16 ranks on the CPU
+cores of one compute node.
 
 ```
   One compute node
@@ -34,18 +48,10 @@ node.
   └───────────────────────────────────────────────────┘
 ```
 
-Each process is called a **rank** and has its own private memory, even though
-all ranks run on the same node. Ranks coordinate by explicitly sending and
-receiving data.
-
-**Why learn MPI if one node is enough today?** Because MPI is how programs
-grow beyond one node. The same program can run across many nodes of a real
-cluster, for example as 64 ranks with
-`srun --nodes=4 --ntasks-per-node=16 ./program`. Ranks on the same node
-exchange messages through shared memory, while ranks on different nodes send
-them over the high-speed network from Module 1. OpenMP threads can't do that,
-because they all have to share one node's memory. Our tutorial partition
-allows one node per job, so today all of your ranks share one node.
+Single-node MPI is still useful. Each rank keeps its own private memory even
+though all ranks share a node, so you practice exactly the programming model
+that runs across nodes, and the programs you write today would run on many
+nodes without changes.
 
 ### MPI Basics
 
