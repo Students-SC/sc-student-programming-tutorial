@@ -175,7 +175,9 @@ cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 ```
 
 ```{tip}
-`ls -lt *.out | head` shows the most recent output files.
+`ls -lt *.out | head` shows the most recent output files, which helps when you
+have several `.out` and `.err` files from earlier jobs, such as the one you
+submitted and cancelled in Steps 2-4.
 ```
 
 `squeue` lists only jobs that are pending or running. To look up jobs that have
@@ -202,6 +204,12 @@ cat hello_compute.c
 ```
 
 This program prints information about the compute node, including GPU details.
+
+```{note}
+You don't need to understand the C code at this point. Skim it to see what it
+prints; the point of this exercise is compiling it and running it through
+Slurm. You'll write your own C programs starting in Module 3.
+```
 
 #### Step 2: Compile on the Login Node
 
