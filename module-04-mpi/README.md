@@ -206,7 +206,6 @@ There are **4 TODOs** to fill in:
 3. **TODO 3**: Use `MPI_Reduce` to sum the partial results
 4. **TODO 4**: Finalize MPI
 
-Replace the placeholder rank/size setup instead of adding a second declaration.
 Place the reduction after the declaration of `global_sum` and outside the
 rank-0 printing condition so every rank participates.
 
