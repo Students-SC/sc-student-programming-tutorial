@@ -39,10 +39,10 @@ walkthrough.
 | List available modules | `module avail` |
 | Inspect the tutorial base module | `module show hpcfund` |
 
-```{note}
-The tutorial environment is preconfigured. Do not run `module purge` unless an
-instructor tells you to.
-```
+> **Note**
+>
+> The tutorial environment is preconfigured. Do not run `module purge` unless an
+> instructor tells you to.
 
 ## Slurm Jobs
 
