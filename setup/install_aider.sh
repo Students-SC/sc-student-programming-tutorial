@@ -17,6 +17,8 @@
 # ---------------------------------------------------------------------------
 
 set -euo pipefail
+
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/lustre/orion/stf007/world-shared/subil/SC26_student_program}"
 module load miniforge3
 
 
@@ -39,9 +41,9 @@ fi
 # we'll create a conda virtual environment that is stored in the default location
 # instead of specifying a location
 # Python 3.12 is required since that is what the Aider release we are using works with
-conda create -n sc26_aider_venv python=3.12 -y
+conda create -p $SC26_SHARED_DIR/sc26_aider_venv python=3.12 -y
 
-conda activate sc26_aider_venv
+conda activate $SC26_SHARED_DIR/sc26_aider_venv
 
 
 echo ""

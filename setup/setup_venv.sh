@@ -18,20 +18,22 @@
 
 set -euo pipefail
 
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/lustre/orion/stf007/world-shared/subil/SC26_student_program}"
+
 module load miniforge3
 module load rocm/7.2
 if [[ $(conda env list | grep sc26_venv) ]]; then
     echo "Removing existing aider venv..."
-    conda env remove -n sc26_aider_venv
+    conda env remove -n sc26_venv
 fi
 
 echo "Creating virtual environment with Python 3.12..."
 # we'll create a conda virtual environment that is stored in the default location
 # instead of specifying a location
 # Python 3.12 is required since that is what the Aider release we are using works with
-conda create -n sc26_venv python=3.12 -y
+conda create -p $SC26_SHARED_DIR/sc26_venv python=3.12 -y
 
-conda activate sc26_venv
+conda activate $SC26_SHARED_DIR/sc26_venv
 
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm7.2
 
@@ -57,4 +59,4 @@ if torch.cuda.is_available():
 
 echo ""
 echo "=== Setup complete ==="
-echo "To activate:  source $VENV_DIR/bin/activate"
+echo "To activate:  conda activate SC26_SHARED_DIR/sc26_venv"

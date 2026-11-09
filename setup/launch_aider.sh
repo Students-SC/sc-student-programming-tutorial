@@ -37,10 +37,11 @@ if [[ -z "${HOME:-}" ]]; then
     exit 1
 fi
 
-module load miniforge3
-conda activate sc26_aider_venv
-
 SC26_SHARED_DIR="${SC26_SHARED_DIR:-/lustre/orion/stf007/world-shared/subil/SC26_student_program}"
+
+module load miniforge3
+conda activate $SC26_SHARED_DIR/sc26_aider_venv
+
 URL_FILE="$SC26_SHARED_DIR/sc26_agent_server_url_frontier"
 if [[ ! -f "$URL_FILE" ]]; then
     echo "ERROR: vLLM server URL file not found at $URL_FILE" >&2
@@ -58,7 +59,7 @@ fi
 
 # --- Configure aider for the local vLLM server -----------------------------
 export OPENAI_API_BASE="$(cat "$URL_FILE")"
-export OPENAI_API_KEY=$(grep $USER $KEY_MAP | cut -d" " -f2)   # vLLM ignores this; aider needs *something*
+export OPENAI_API_KEY=$(grep $USER $KEY_MAP | cut -d" " -f2)   
 
 MODEL="openai/gemma-4-31b"
 
