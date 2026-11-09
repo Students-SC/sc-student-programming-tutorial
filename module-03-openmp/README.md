@@ -402,7 +402,10 @@ Does it match the table you filled in by hand? If it crashes or prints wrong
 numbers, show the agent the output and ask it to fix the script.
 
 **Questions:**
-- How does the script find the 1-thread time?
+- Where does the script get each thread count: from the
+  `=== OMP_NUM_THREADS=N ===` header that the batch script prints, or from
+  the `Threads = N` line that your program prints? When could those two
+  disagree, and which one tells you how many threads actually ran?
 - What would it do if the 1-thread run were missing from the file?
 
 ---
