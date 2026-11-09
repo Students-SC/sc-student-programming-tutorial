@@ -325,8 +325,13 @@ the 1-thread time divided by the N-thread time:
 | 16      |          |         |
 
 **Questions:**
-- Does the answer change with different thread counts? (It shouldn't!)
-- How does the time change? What speedup do you get with 16 threads vs. 1?
+- Does the **answer** change with different thread counts? Compare the last
+  few digits of `Computed pi` and the `Error` line. With more threads, each
+  thread adds up a smaller share of the steps, and the partial sums are
+  combined at the end, so the additions happen in a different order. Why
+  would the order of additions change the result on a computer, when it
+  doesn't in math?
+- How does the **time** change? What speedup do you get with 16 threads vs. 1?
 - Is the speedup perfect (16x)? Why or why not? Think back to
   [Amdahl's law](../module-01-hpc-foundations/README.md#how-much-faster-amdahls-law)
   from Module 1: which parts of this program don't run in parallel?
