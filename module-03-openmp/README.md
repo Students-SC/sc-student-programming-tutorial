@@ -272,7 +272,14 @@ an existing VS Code Remote SSH connection.
 
 There are **2 TODOs** to fill in:
 
-1. **TODO 1**: Add the OpenMP header include.
+1. **TODO 1**: Add the OpenMP header include. C programs start with
+   `#include` lines that bring in **header files**, which declare the
+   functions a library provides so the compiler knows how to call them. For
+   example, `pi_serial.c` includes `<stdio.h>` for `printf()`. OpenMP's
+   functions, such as `omp_get_num_threads()`, are declared in `<omp.h>`; the
+   hello-world program in Exercise 1 includes it right after `<stdio.h>`. If you
+   leave it out, `gcc` warns about an "implicit declaration of function
+   `omp_get_num_threads`".
 2. **TODO 2**: Parallelize the loop using the **split** form of `parallel for`
    so you can also capture the thread count. Specifically: wrap the for loop
    in a `#pragma omp parallel` region; inside that region but outside the
