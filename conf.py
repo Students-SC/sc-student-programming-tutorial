@@ -17,6 +17,10 @@ extensions = [
     "sphinx_copybutton",
 ]
 
+myst_enable_extensions = ["html_admonition"]
+# HTML <code> is parsed as raw markup, so smart quotes would alter CLI flags.
+smartquotes = False
+
 myst_heading_anchors = 3
 copybutton_prompt_text = r"^(\$ |>>> |\.\.\. )"
 copybutton_prompt_is_regexp = True

@@ -224,9 +224,10 @@ lscpu             # Print CPU architecture details: model, sockets, cores, threa
 free -h           # Show memory usage and total RAM in human-readable units.
 ```
 
-```{note}
-This is the LOGIN node. The compute nodes we'll use have 16 cores and 64 GB RAM.
-```
+<div class="admonition note">
+<p class="title">Note</p>
+<p>This is the LOGIN node. The compute nodes we'll use have 16 cores and 64 GB RAM.</p>
+</div>
 
 #### Step 5: Preview the GPU Software
 
@@ -239,11 +240,12 @@ rocminfo | grep -E "Marketing Name|Device Type"   # List the CPUs and GPUs that 
 `rocminfo` prints over 300 lines, so `grep` keeps just the lines that name each
 device.
 
-```{note}
-This login node has two MI210 GPUs of its own, so GPU programs *will* run here
+<div class="admonition note">
+<p class="title">Note</p>
+<p>This login node has two MI210 GPUs of its own, so GPU programs <em>will</em> run here
 if you skip Slurm. Don't: every user on the cluster shares the login node.
-Starting in Module 2, each of your jobs gets its own MI210 on a compute node.
-```
+Starting in Module 2, each of your jobs gets its own MI210 on a compute node.</p>
+</div>
 
 #### Step 6: Look at the Cluster
 
@@ -253,15 +255,16 @@ sinfo -p mi2101x -N -l      # Show node-level details just for the mi2101x parti
 squeue -p mi2101x           # Show the job queue for our partition (plain 'squeue' lists every job on the cluster).
 ```
 
-```{note}
-`sinfo` lists every partition on the cluster, but this tutorial uses only
-`mi2101x`. (The `*` marks the cluster's default partition, but this cluster
+<div class="admonition note">
+<p class="title">Note</p>
+<p><code>sinfo</code> lists every partition on the cluster, but this tutorial uses only
+<code>mi2101x</code>. (The <code>*</code> marks the cluster's default partition, but this cluster
 rejects jobs that don't name a partition, a node count, and a time limit, so
-every command in this tutorial includes `--partition=mi2101x`, `--nodes=1`,
-and `--time`.) Nodes
-set aside for this tutorial show the state `resv` (reserved) while they are
-idle.
-```
+every command in this tutorial includes <code>--partition=mi2101x</code>, <code>--nodes=1</code>,
+and <code>--time</code>.) Nodes
+set aside for this tutorial show the state <code>resv</code> (reserved) while they are
+idle.</p>
+</div>
 
 ### Agent Practice: Teach Your Agent the Cluster
 
@@ -356,11 +359,12 @@ echo "- <second fact>" >> QWEN.md
 - What time limit did the agent choose? Is that a sensible request for
   `hostname` on a shared cluster?
 
-```{tip}
-Teams that use coding agents keep a file like this in every project (often
-called `AGENTS.md`; Qwen Code reads `QWEN.md`), so every session starts from
-the same facts.
-```
+<div class="admonition tip">
+<p class="title">Tip</p>
+<p>Teams that use coding agents keep a file like this in every project (often
+called <code>AGENTS.md</code>; Qwen Code reads <code>QWEN.md</code>), so every session starts from
+the same facts.</p>
+</div>
 
 ### Challenge
 

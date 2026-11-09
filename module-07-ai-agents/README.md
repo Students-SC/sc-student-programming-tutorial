@@ -298,11 +298,12 @@ Before you accept the result, check every line of `spec.md` yourself: read the
 kernel, run the test, and compare the numbers. Keep track of how many times
 you had to send the agent back.
 
-```{tip}
-Ask yourself the questions you've asked all day: did the agent get the GPU
+<div class="admonition tip">
+<p class="title">Tip</p>
+<p>Ask yourself the questions you've asked all day: did the agent get the GPU
 memory management right? Did it use the right reduction pattern? Does the
-launch configuration make sense? You verify; the agent assists.
-```
+launch configuration make sense? You verify; the agent assists.</p>
+</div>
 
 ---
 

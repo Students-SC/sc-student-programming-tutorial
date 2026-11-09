@@ -328,12 +328,13 @@ send `send_val` to `dest` and receive a value from `source` into `recv_val`.
 Use `MPI_Send` and `MPI_Recv`, or explore `MPI_Sendrecv` as an alternative. A
 correct ordering works even with `MPI_Ssend`, which makes it a good test.
 
-```{tip}
-Plan the order of the sends and receives. If every rank starts with a blocking
+<div class="admonition tip">
+<p class="title">Tip</p>
+<p>Plan the order of the sends and receives. If every rank starts with a blocking
 receive, no rank can send. Starting with blocking sends can also deadlock if
 the messages cannot be buffered. Consider alternating the order for even and
-odd ranks, or use `MPI_Sendrecv` to coordinate the exchange.
-```
+odd ranks, or use <code>MPI_Sendrecv</code> to coordinate the exchange.</p>
+</div>
 
 #### Step 4: Compile and Run
 
