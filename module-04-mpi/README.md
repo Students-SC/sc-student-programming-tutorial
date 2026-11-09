@@ -117,17 +117,19 @@ if (rank == 0)
 
 ### Compiling and Running
 
-Compile these small programs on the login node with `mpicc`, then use `srun`
-to execute them on a compute node:
+MPI programs are compiled with `mpicc`, a wrapper around `gcc` that adds the
+MPI headers and libraries, and run with `srun`, which starts one copy of the
+program for each rank. In general, for a program in `program.c`:
 
 ```bash
-mpicc -O2 -o program program.c
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program
+mpicc -O2 -o program program.c                                       # Compile (fine on the login node)
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program  # Run 4 ranks on a compute node
 ```
 
 `--nodes=1` places all ranks on one compute node. `--ntasks=4` tells `srun`
-to launch four ranks, each running one copy of your program. Use up to 16
-ranks to explore the node's 16 CPU cores.
+to launch four ranks, each running one copy of the program. A node has 16 CPU
+cores, so you can use up to 16 ranks. You'll compile and run real programs
+this way in the exercises below.
 
 ---
 
