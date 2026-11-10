@@ -32,7 +32,7 @@ You can see below for example a simplified block diagram showing 2 64-core AMD E
 the Riker cluster at Oak Ridge National Laboratory. You can see that each CPU has 64 cores, and
 there are 2 CPUs per node availing a total of 128 cores per node. That's a lot of cores!
 
-![Riker CPU node](/_static/Riker_CPU_node.jpg)
+![Riker CPU node](./_static/Riker_CPU_node.png)
 
 But how do you program such a CPU? How do you write a program that can launch dozens or hundreds or
 thousands of individual tasks and coordinate them?
@@ -152,7 +152,7 @@ for (int i = 0; i < N; i++) {
 }
 ```
 
-<a href="/_static/openmp_thread_visualizer.html">Let's visualize this!</a>
+<a href="./_static/openmp_thread_visualizer.html">Let's visualize this!</a>
 
 So this is great when all the iterations of the loop are independent of each other. But if one
 iteration depends on the result of another iteration, the loop may not be safe to parallelize with
