@@ -128,12 +128,12 @@ sbatch first_job.sh
 
 Slurm will print something like `Submitted batch job 12345`. Note the **job ID**.
 
-```{note}
-Before that line, you'll see a block of checks from the cluster's
-job-submission filter (lines starting with `-->`). That's normal, and you'll
-see it for every `sbatch` and `srun`. If the filter rejects a job, the block
-says why, for example `runtime limit is required` when a job has no `--time`.
-```
+> **Note**
+>
+> Before that line, you'll see a block of checks from the cluster's
+> job-submission filter (lines starting with `-->`). That's normal, and you'll
+> see it for every `sbatch` and `srun`. If the filter rejects a job, the block
+> says why, for example `runtime limit is required` when a job has no `--time`.
 
 #### Step 3: Check the Queue
 
@@ -148,6 +148,20 @@ squeue -u $USER                     # Your jobs
 scontrol show job <JOBID>           # Detailed job info
 squeue -p mi2101x                   # All jobs on our partition
 ```
+
+Slurm is part of day-to-day work on an HPC cluster, so it's worth learning how
+to tailor its commands to get the information you need. For example, `squeue`
+truncates long usernames by default, sometimes making it hard to tell whose
+jobs you're looking at. Widen the username column to 16 characters:
+
+```bash
+squeue -o "%.18i %.9P %.8j %.16u %.2t %.10M %.6D %R"
+```
+
+`-o` selects the output format. This keeps the default columns and changes
+`%.8u` to `%.16u`, so you can see each full student account username. See the
+[squeue documentation](https://slurm.schedmd.com/squeue.html) for more ways to
+customize the display.
 
 #### Step 4: Cancel the Job
 
@@ -174,11 +188,12 @@ squeue -u $USER                     # Should disappear when done
 cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 ```
 
-```{tip}
-`ls -lt *.out | head` shows the most recent output files, which helps when you
-have several `.out` and `.err` files from earlier jobs, such as the one you
-submitted and cancelled in Steps 2-4.
-```
+> **Tip**
+>
+> `ls -lt *.out | head` lists the most recently modified output files first.
+> Each submission gets a new job ID, so your cancelled job and this new run
+> have different output files. Match the ID in `first-job_<JOBID>.out` to the
+> ID printed by `sbatch` to make sure you're reading the right run.
 
 `squeue` lists only jobs that are pending or running. To look up jobs that have
 finished, including the one you cancelled in Step 4, use `sacct`:
@@ -205,15 +220,16 @@ cat hello_compute.c
 
 This program prints information about the compute node, including GPU details.
 
-```{note}
-You don't need to understand the C code at this point. Skim it to see what it
-prints; the point of this exercise is compiling it and running it through
-Slurm. You'll write your own C programs starting in Module 3.
-```
+> **Note**
+>
+> You don't need to understand the C code at this point. Skim it to see what
+> it prints, then focus on the process: compile on the login node, submit a
+> batch script, and read the output from the compute node. You'll write your
+> own programs starting in Module 3.
 
 #### Step 2: Compile on the Login Node
 
-Compiling is lightweight, so it is OK to do on the login node:
+Compiling is usually lightweight, so it is OK to do on the login node:
 
 ```bash
 gcc -o hello_compute hello_compute.c
@@ -267,17 +283,17 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | grep -E "Ma
 On the login node, the same `rocminfo` command lists two CPUs and two GPUs.
 Your compute node has one of each.
 
-```{note}
-`srun` waits for a node, runs the command, and returns. If the partition is
-busy, you may wait a moment.
-```
+> **Note**
+>
+> `srun` waits for a node, runs the command, and returns. If the partition is
+> busy, you may wait a moment.
 
-```{important}
-Every job, even a one-line `srun`, gets a whole compute node to itself until it
-finishes. That makes `srun` great for quick commands, but please don't start
-an interactive shell on a compute node today (for example, `srun --pty bash`):
-an idle shell holds a node that five of your classmates could be using.
-```
+> **Important**
+>
+> Every job, even a one-line `srun`, gets a whole compute node to itself until it
+> finishes. That makes `srun` great for quick commands, but please don't start
+> an interactive shell on a compute node today (for example, `srun --pty bash`):
+> an idle shell holds a node that five of your classmates could be using.
 
 ---
 
@@ -386,9 +402,10 @@ should see timing results for each value of N, showing how compute time grows.
 
 **In practice:** for sweeps over many independent values, HPC users usually
 submit a **job array** instead of a loop. Adding `#SBATCH --array=0-3` runs
-four copies of the script as separate jobs, which can run on different nodes at
-the same time, and each copy reads its own index from `$SLURM_ARRAY_TASK_ID`.
-We use a loop today so that 80+ students don't flood the queue.
+four copies of the script as separate Slurm jobs, which can run on different
+nodes at the same time, and each copy reads its own index from
+`$SLURM_ARRAY_TASK_ID`.  We use a loop today so that 80+ students don't flood
+the queue.
 
 #### Challenge B: Explore Resource Requests
 

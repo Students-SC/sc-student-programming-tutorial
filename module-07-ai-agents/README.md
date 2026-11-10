@@ -118,25 +118,25 @@ First, navigate to the exercises directory for this module:
 cd module-07-ai-agents/exercises
 ```
 
-````{note}
-These exercises use a shared inference server (vLLM) that your instructors have
-deployed on a dedicated MI300X compute node. It serves
-Qwen3-Coder-30B-A3B-Instruct via an OpenAI-compatible API.
-
-The batch scripts auto-discover the server URL from a shared file under the
-tutorial project's shared directory (default `/work1/proj_sc26students/shared/`).
-To check it manually:
-
-```bash
-cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url"
-```
-
-If you want to test interactively, set the environment variable:
-
-```bash
-export AGENT_API_URL=$(cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url")
-```
-````
+> **Note**
+>
+> These exercises use a shared inference server (vLLM) that your instructors have
+> deployed on a dedicated MI300X compute node. It serves
+> Qwen3-Coder-30B-A3B-Instruct via an OpenAI-compatible API.
+>
+> The batch scripts auto-discover the server URL from a shared file under the
+> tutorial project's shared directory (default `/work1/proj_sc26students/shared/`).
+> To check it manually:
+>
+> ```bash
+> cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url"
+> ```
+>
+> If you want to test interactively, set the environment variable:
+>
+> ```bash
+> export AGENT_API_URL=$(cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url")
+> ```
 
 These scripts use the tutorial's shared Python environment, the same one as
 Module 6. If a script reports that it is missing, ask an instructor.
@@ -298,11 +298,11 @@ Before you accept the result, check every line of `spec.md` yourself: read the
 kernel, run the test, and compare the numbers. Keep track of how many times
 you had to send the agent back.
 
-```{tip}
-Ask yourself the questions you've asked all day: did the agent get the GPU
-memory management right? Did it use the right reduction pattern? Does the
-launch configuration make sense? You verify; the agent assists.
-```
+> **Tip**
+>
+> Ask yourself the questions you've asked all day: did the agent get the GPU
+> memory management right? Did it use the right reduction pattern? Does the
+> launch configuration make sense? You verify; the agent assists.
 
 ---
 

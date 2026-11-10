@@ -91,12 +91,9 @@ to use. See "Using AI Assistants" below.
 
 ## Getting Help
 
-If you get stuck, ask for help early. Instructors will be in the room throughout
-the tutorial and can help with cluster access, Slurm jobs, code errors, and
-conceptual questions.
-
-We may also provide an online help channel, such as Slack, for questions during
-or after the session. Details will be added here before the tutorial.
+If you get stuck, raise your hand. Instructors are in the room throughout the
+tutorial to help with cluster access, Slurm jobs, code errors, and conceptual
+questions.
 
 ## Compute (virtual) Node Details
 
@@ -115,12 +112,12 @@ how this works.
 | Compiler | GCC 12.2, `hipcc` (ROCm 7.2) |
 | MPI | OpenMPI 4.1.8 |
 
-```{important}
-Do not run compute workloads on the login node. All programs must be
-submitted through Slurm (`sbatch` or `srun`). This is both good practice and
-necessary so that all 80+ participants can share the cluster fairly alongside
-the production research and education workloads being run on the system.
-```
+> **Important**
+>
+> Do not run compute workloads on the login node. All programs must be
+> submitted through Slurm (`sbatch` or `srun`). This is both good practice and
+> necessary so that all 80+ participants can share the cluster fairly alongside
+> the production research and education workloads being run on the system.
 
 ## Using AI Assistants
 
@@ -175,12 +172,12 @@ compiling and reading files on the login node are fine.
 Inside Qwen Code, `/diff` shows the changes it has made, `/restore` undoes them,
 `/stats model` shows how many tokens your session has used, and `/quit` exits.
 
-```{note}
-If you'd rather use your own coding assistant (Cursor, GitHub Copilot, ChatGPT,
-Claude, etc.), feel free -- the exercises don't require ours. But the
-tutorial-provided one works for everyone with no setup beyond what's already in
-this README.
-```
+> **Note**
+>
+> If you'd rather use your own coding assistant (Cursor, GitHub Copilot, ChatGPT,
+> Claude, etc.), feel free -- the exercises don't require ours. But the
+> tutorial-provided one works for everyone with no setup beyond what's already in
+> this README.
 
 ### How the agent backend works (preview of Module 7)
 

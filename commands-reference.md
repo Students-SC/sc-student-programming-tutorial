@@ -15,6 +15,14 @@ grouped by workflow and link back to the module where they first appear.
 | List newest output files first | `ls -lt *.out \| head` |
 | Print a file | `cat <file>` |
 | Watch a job output file update | `tail -f <file>.out` |
+| Redraw the terminal screen at the shell prompt | Ctrl+L |
+
+> **Tip**
+>
+> On a laptop, screen space is limited. At the shell prompt, press Ctrl+L
+> instead of running `clear` to get a fresh screen while keeping earlier
+> output in your terminal's scrollback. You can scroll up to check job IDs,
+> commands, and errors.
 
 ## Cluster And Filesystem
 
@@ -39,10 +47,10 @@ walkthrough.
 | List available modules | `module avail` |
 | Inspect the tutorial base module | `module show hpcfund` |
 
-```{note}
-The tutorial environment is preconfigured. Do not run `module purge` unless an
-instructor tells you to.
-```
+> **Note**
+>
+> The tutorial environment is preconfigured. Do not run `module purge` unless an
+> instructor tells you to.
 
 ## Slurm Jobs
 
