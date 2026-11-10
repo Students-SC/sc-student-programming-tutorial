@@ -128,12 +128,12 @@ sbatch first_job.sh
 
 Slurm will print something like `Submitted batch job 12345`. Note the **job ID**.
 
-```{note}
-Before that line, you'll see a block of checks from the cluster's
-job-submission filter (lines starting with `-->`). That's normal, and you'll
-see it for every `sbatch` and `srun`. If the filter rejects a job, the block
-says why, for example `runtime limit is required` when a job has no `--time`.
-```
+> **Note**
+>
+> Before that line, you'll see a block of checks from the cluster's
+> job-submission filter (lines starting with `-->`). That's normal, and you'll
+> see it for every `sbatch` and `srun`. If the filter rejects a job, the block
+> says why, for example `runtime limit is required` when a job has no `--time`.
 
 #### Step 3: Check the Queue
 
@@ -283,17 +283,17 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | grep -E "Ma
 On the login node, the same `rocminfo` command lists two CPUs and two GPUs.
 Your compute node has one of each.
 
-```{note}
-`srun` waits for a node, runs the command, and returns. If the partition is
-busy, you may wait a moment.
-```
+> **Note**
+>
+> `srun` waits for a node, runs the command, and returns. If the partition is
+> busy, you may wait a moment.
 
-```{important}
-Every job, even a one-line `srun`, gets a whole compute node to itself until it
-finishes. That makes `srun` great for quick commands, but please don't start
-an interactive shell on a compute node today (for example, `srun --pty bash`):
-an idle shell holds a node that five of your classmates could be using.
-```
+> **Important**
+>
+> Every job, even a one-line `srun`, gets a whole compute node to itself until it
+> finishes. That makes `srun` great for quick commands, but please don't start
+> an interactive shell on a compute node today (for example, `srun --pty bash`):
+> an idle shell holds a node that five of your classmates could be using.
 
 ---
 

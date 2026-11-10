@@ -96,11 +96,11 @@ First, navigate to the exercises directory for this module:
 cd module-06-ai-inference-finetuning/exercises
 ```
 
-```{important}
-All exercises run as **batch jobs** that produce output files. Submit your
-script, wait for it to complete, then examine the output while others use the
-nodes.
-```
+> **Important**
+>
+> All exercises run as **batch jobs** that produce output files. Submit your
+> script, wait for it to complete, then examine the output while others use the
+> nodes.
 
 ### Exercise 1: Meet the Shared Python Environment
 
@@ -121,11 +121,11 @@ pip list 2>/dev/null | grep -iE '^(torch|transformers|datasets|peft) '
 deactivate
 ```
 
-```{note}
-The shared environment is read-only, so `pip install` won't work in it.
-Everything the exercises need is already installed. If a script reports that
-the environment is missing, ask an instructor.
-```
+> **Note**
+>
+> The shared environment is read-only, so `pip install` won't work in it.
+> Everything the exercises need is already installed. If a script reports that
+> the environment is missing, ask an instructor.
 
 The models and the dataset these exercises use are pre-downloaded too, so your
 jobs load them from a shared cache instead of downloading them from Hugging
