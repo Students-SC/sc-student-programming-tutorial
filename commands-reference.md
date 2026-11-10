@@ -19,11 +19,10 @@ grouped by workflow and link back to the module where they first appear.
 
 > **Tip**
 >
-> On a laptop, terminal space is limited. At the shell prompt, press Ctrl+L
+> On a laptop, screen space is limited. At the shell prompt, press Ctrl+L
 > instead of running `clear` to get a fresh screen while keeping earlier
 > output in your terminal's scrollback. You can scroll up to check job IDs,
-> commands, and errors. `clear` can also erase scrollback, depending on the
-> terminal.
+> commands, and errors.
 
 ## Cluster And Filesystem
 
