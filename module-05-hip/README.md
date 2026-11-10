@@ -666,24 +666,6 @@ the program is reporting the defect you planted.
 - Does a matching result for this input prove correctness for all inputs?
 - What additional input patterns would you test?
 
-**Finish early?** Check the checker: ask the agent, *"Could vector_scale.cpp
-print PASSED even if the result were never copied back from the GPU?"* Then
-test its answer. Save your working version first, comment out the copy back to
-the host (your TODO 4 line), build and run it, and then restore your working
-version:
-
-```bash
-cp vector_scale.cpp vector_scale_working.cpp
-vim vector_scale.cpp       # Comment out the hipMemcpy in TODO 4
-hipcc -O2 -o vector_scale_nocopy vector_scale.cpp
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_scale_nocopy; echo "exit status: $?"
-cp vector_scale_working.cpp vector_scale.cpp
-```
-
-What does the program report? Look at how `h_result` is filled before the
-kernel runs and how the check treats values that aren't finite. Why does it
-need both?
-
 ---
 
 ### Challenge A (Optional): Matrix-Vector Multiply on the GPU
