@@ -12,7 +12,7 @@ By the end of this module, you will be able to:
 - Choose thread and block dimensions for a kernel launch
 - Check HIP calls and kernel launches for errors, knowing that launches are asynchronous
 - Measure a kernel's performance and explain what limits it
-- Check that an agent's experiment script follows its spec and reports failures
+- Decide whether a program's output gives enough evidence to verify its result
 
 ---
 
@@ -233,8 +233,9 @@ The programs in this module measure performance the same way:
 ## Hands-On Exercises (~40 min)
 
 Suggested pacing: about 7 minutes for Exercise 1, 15 minutes for Exercise 2,
-8 minutes for Exercise 3, and 10 minutes for the Agent Practice. Challenges A
-and B are optional extensions.
+and 8 minutes for Exercise 3. The Agent Practice takes about 15 to 20 minutes;
+if you are short on time, stop after its Step 5. Challenges A and B are
+optional extensions.
 
 The compiler (`hipcc`) and tools are already set up on the cluster. If
 `hipcc --version` doesn't work, run the environment check from
@@ -413,38 +414,43 @@ the reason is listed below it.
 
 ---
 
-### Agent Practice: Automate the Experiment, Honestly
+### Agent Practice: Can You Verify the Answer?
 
-A sweep like Exercise 3's is a natural job for an agent. Ask for a slightly
-bigger one that includes a block size you know is too large, written as a
-batch script, and check that the agent's script follows your spec and reports
-failures honestly.
+You will ask the agent to write the same GPU program twice: once with a basic
+prompt and once with explicit validation requirements. Compare the results
+with the known answer below. Then deliberately change the program and check
+whether its validation notices.
 
-Why a batch script? Each `srun` you start from the login node is a separate
-interactive job, and this cluster rejects a new interactive job when you
-already have 4 in the queue. A finished `srun` stays in the queue for a few
-seconds, so a script that calls `srun` over and over from the login node soon
-has 4 in the queue, and its next runs are rejected. Inside a batch job, each `srun` is a **step** of that one job, so
-the steps don't count against the limit, and the whole sweep waits in the
-queue only once.
+Keep one question in mind throughout: **does the program provide enough
+evidence to verify its result?** The agent may well write a correct program
+the first time. What matters is whether you can tell.
 
-#### Step 1: Write the Spec, Then Ask for a Script
+#### Step 1: Work Out the Expected Answer
 
-Save the specification in a file the agent can read:
+A histogram has one counter, called a **bin**, for each possible input value,
+and counts how many inputs have that value. The program will compute a
+histogram with 16 bins, numbered 0 to 15, of N = 1,000,003 integers,
+initialized as `input[i] = i % 16`. The input repeats 0, 1, 2, ..., 15, so you
+can work out the answer before any program runs:
 
-```bash
-cat > sweep_spec.md << 'EOF'
-# sweep.sh specification
-- sweep.sh is a Slurm batch script, submitted with sbatch, for one node of partition mi2101x with a 5-minute time limit. It writes its output to sweep_<job ID>.out.
-- Inside the job, compile vector_scale.cpp once for each of these block sizes (-DBLOCK_SIZE): 32, 64, 128, 256, 512, 1024, and 2048.
-- Run each configuration that compiled as its own srun step inside the job.
-- Keep useful compiler and program error messages.
-- For each configuration, report whether it failed to compile, failed to run, or failed validation, and keep going with the rest of the sweep.
-- Print the bandwidth only for runs that succeeded and passed validation.
-- Never silently skip a failed configuration, and never run a leftover executable from an earlier build.
-- Exit with a nonzero status if any configuration failed.
-EOF
-```
+- 1,000,003 = 16 × 62,500 + 3.
+- Every bin receives 62,500 elements.
+- The three remaining elements are 0, 1, and 2, so they go to bins 0, 1, and 2.
+- Therefore bins 0 to 2 contain 62,501 each.
+- Bins 3 to 15 contain 62,500 each.
+- The total is 1,000,003.
+
+| Bins | Expected count per bin |
+|------|------------------------|
+| 0 to 2 | 62,501 |
+| 3 to 15 | 62,500 |
+| Total across all bins | 1,000,003 |
+
+Write down these expected counts before you ask the agent anything. A correct
+total doesn't show that the counts are in the correct bins: a program could
+put counts in the wrong bins and still add up to 1,000,003.
+
+#### Step 2: Ask for a Basic Program
 
 Start Qwen Code:
 
@@ -454,58 +460,212 @@ bash ../../setup/launch_qwen.sh
 
 Ask it:
 
-> Write sweep.sh to meet the specification in @sweep_spec.md.
+> Write a simple HIP C++ program that computes a 16-bin histogram of 1,000,003 integers on an AMD MI210. Initialize input[i] = i % 16. Include instructions to compile and run it. Save it as histogram_basic.cpp.
 
-#### Step 2: Review Before Running
+If the agent shows only part of the file when it asks to create it, press
+`Ctrl+S` to see all of it.
 
-If the agent shows only part of the script when it asks to create the file,
-press `Ctrl+S` to see all of it. Before you approve the script, answer three
-questions:
-- What should happen at 2048? (See Exercise 3.)
-- Do the `#SBATCH` lines include everything this cluster requires (see
-  Module 2), and does every GPU run happen in an `srun` step?
-- If a build fails, could the script still run an executable left over from
-  an earlier run?
-
-If the script doesn't match your spec, tell the agent what to fix before you
-approve it.
-
-> **Tip**
->
-> Ask for one fix at a time, here or after you run the script in Step 3. For
-> each new round of fixes, type `/clear` first to start a fresh conversation,
-> then name the file and the problem, for example: *"Fix sweep.sh so that it
-> prints the error message when a configuration fails."* The script is saved,
-> so the agent reads it again. A long conversation can fill the agent's
-> context window, and then its replies get cut off.
-
-#### Step 3: Run It and Check
-
-Submit the job, wait for it to leave the queue, then read its output and how
-it ended:
+Before you approve any command the agent offers to run, remember:
+- GPU programs must run on a compute node through Slurm. Approve a command
+  that runs the program only if it starts with `srun` or `sbatch`: running
+  `./histogram_basic` directly would run it on the login node.
+- You can always decline, and compile and run the program yourself with the
+  commands below.
+- `hipcc` is already set up, as in the exercises above. If the agent suggests
+  setup steps, such as installing ROCm, or writes extra files, such as a batch
+  script, you don't need them.
 
 ```bash
-sbatch sweep.sh
-squeue -u $USER                     # The job disappears when it finishes
-cat sweep_<JOBID>.out
-cat sweep_<JOBID>.err               # If the script writes one: error messages usually go here
-sacct -X -j <JOBID> --format=JobID,JobName%15,State,ExitCode
+hipcc -O2 -o histogram_basic histogram_basic.cpp
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_basic
 ```
 
-Check the output against your spec:
-- Do the bandwidths match Exercise 3?
-- 2048 threads is more than the MI210's limit of 1024 per block, so the 2048
-  row must report a failure. It doesn't matter which stage rejects it (here,
-  the kernel launch does), but is the row an error, or a blank or
-  plausible-looking number?
-- Because one configuration failed, the job should end as `FAILED` with a
-  nonzero exit code. Did it?
+#### Step 3: Decide What the Output Establishes
 
-A script that hides a failure is worse than one that crashes.
+Compare the output with the expected counts you wrote down, and use this table
+to decide what it tells you:
+
+| Observed output | Conclusion |
+|-----------------|------------|
+| Every bin matches the expected answer | Correct result for this test input |
+| Any bin differs | Incorrect result |
+| Only the grand total is printed | Not enough information to verify the distribution |
+| Only PASSED is printed | Inspect what was checked; the message alone isn't enough |
+
+If the output doesn't show all 16 bin counts, ask the agent:
+
+> Update histogram_basic.cpp to print all 16 bin counts. Keep the histogram computation unchanged.
+
+Then rebuild, run, and compare every bin with your expected counts.
+
+If the program fails to compile or run, give the agent the error message and
+ask it to fix that one problem. If it still doesn't work after one or two
+fixes, don't spend the rest of the activity debugging: note what went wrong
+and go on to Step 4.
+
+Keep in mind what a matching result does and doesn't tell you:
+- A matching result verifies this input, not every possible input.
+- One successful run doesn't rule out errors that happen only some of the
+  time.
+- Different output across repeated runs is a warning sign.
+- Repeated successful runs are not proof that the program coordinates its
+  threads correctly.
+
+You don't need to read the HIP code to decide whether the result is correct:
+the expected counts are your evidence.
+
+#### Step 4: Ask for a Detailed Version
+
+Type `/clear` in Qwen Code to start a fresh conversation. The earlier exchange
+is no longer in the agent's context, so it has less influence, but the agent
+can still read the files in this directory, including `histogram_basic.cpp`.
+This is a teaching comparison, not a controlled test of the model.
+
+One idea in the next prompt is new: **concurrent updates**. Many GPU threads
+can encounter the same input value and update the same bin. An ordinary
+increment can lose updates when threads access the counter concurrently. An
+atomic addition, such as HIP's `atomicAdd`, ensures each increment is applied.
+
+Copy this whole prompt (the copy button at the top right of the box copies all
+of it) and paste it into Qwen Code. Because it is long, Qwen Code shows it as
+`[Pasted Content ... chars]`; press `Enter` to send it.
+
+```text
+Write histogram_checked.cpp, a complete HIP C++ program for an AMD MI210.
+
+Task:
+- Compute a 16-bin histogram of N = 1,000,003 integers.
+- Initialize input[i] = i % 16.
+- Use one GPU thread per input element.
+- Use 256 threads per block and handle the final partial block.
+- Use integer arithmetic for the data, counts, and validation.
+- Correctly handle concurrent updates to histogram bins.
+- Initialize the device histogram to zero before launching.
+- Keep the implementation simple; do not use shared-memory optimization
+  or external libraries.
+
+Validation and reporting:
+- Derive the expected count for each bin directly from N and the number
+  of bins, independently of the GPU implementation.
+- Print a table with bin number, expected count, actual count, and
+  whether they match.
+- Print the expected total and actual total.
+- Require every bin to match, not just the total.
+- Print an overall result and return nonzero on validation failure.
+- Check all HIP API return values, kernel launch errors, and execution
+  errors.
+- Do not print success after an API or execution failure.
+
+Provide compilation and Slurm execution commands using partition
+mi2101x. Run GPU work only through Slurm.
+```
+
+Then compile and run it:
+
+```bash
+hipcc -O2 -o histogram_checked histogram_checked.cpp
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_checked
+```
+
+The basic program may already do much of what this prompt asks. If so, note
+which useful checks the agent added without being asked.
+
+If `histogram_checked.cpp` still doesn't work after one or two fixes, copy the
+reference version and continue with it:
+
+```bash
+cp solutions/histogram_checked_solution.cpp histogram_checked.cpp
+```
+
+#### Step 5: Compare the Evidence
+
+Here is an illustration of the kind of output that lets you verify the
+result. It is not from a measured run, and your program's layout will differ.
+The `...` stands for bins 4 to 14, which your program must print.
+
+```text
+Bin   Expected   Actual   Match
+  0      62501    62501   yes
+  1      62501    62501   yes
+  2      62501    62501   yes
+  3      62500    62500   yes
+...
+ 15      62500    62500   yes
+
+Expected total: 1000003
+Actual total:   1000003
+Mismatched bins: 0
+Overall: PASSED
+```
 
 **Questions:**
-- What did you have to correct in the agent's script?
-- If you had not known that 1024 is the limit, would its table have told you?
+- Did both programs produce the expected counts?
+- Could you verify the basic program from its original output?
+- What did the detailed prompt make easier to inspect?
+- Did the agent add useful checks without being asked?
+- Would the grand total alone detect counts assigned to the wrong bins?
+
+#### Step 6 (Optional): Test the Check with a Deliberate Defect
+
+A check is only useful if it fails when the program is wrong. Make a copy of
+the detailed version to break:
+
+```bash
+cp histogram_checked.cpp histogram_broken.cpp
+```
+
+In `histogram_broken.cpp`, find the line in the kernel that adds 1 to a bin,
+usually with `atomicAdd`. Change only which bin it adds to, so that each count
+goes to the next bin up (and bin 15's count wraps around to bin 0). If the
+line uses `input[i]` directly, change
+
+```cpp
+atomicAdd(&histogram[input[i]], 1);
+```
+
+to:
+
+```cpp
+atomicAdd(&histogram[(input[i] + 1) % 16], 1);
+```
+
+Your program's names may differ. For example, it may first store `input[i]`
+in a variable such as `bin`; then change `histogram[bin]` to
+`histogram[(bin + 1) % 16]`. Don't change the input, the expected counts, or
+the validation.
+
+**Predict** before you run it:
+- Will the grand total change?
+- Which bins will become incorrect?
+- Should the overall check pass?
+
+Then build and run it:
+
+```bash
+hipcc -O2 -o histogram_broken histogram_broken.cpp
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_broken
+```
+
+What you should see:
+- The total is still 1,000,003.
+- Bin 0 has 62,500 instead of 62,501.
+- Bin 3 has 62,501 instead of 62,500.
+- All other bins still match.
+- The program reports 2 mismatched bins, prints FAILED, and exits with a
+  nonzero status.
+
+`srun` also prints a line like
+`srun: error: <node>: task 0: Exited with exit code 1`, sometimes before the
+program's last lines. That message and the nonzero exit status are expected:
+the program is reporting the defect you planted.
+
+#### Closing Questions
+
+- Why was the known answer useful before running either program?
+- Why did the broken program still have the correct total?
+- What does checking every bin establish that checking the total does not?
+- Does a matching result for this input prove correctness for all inputs?
+- What additional input patterns would you test?
 
 **Finish early?** Check the checker: ask the agent, *"Could vector_scale.cpp
 print PASSED even if the result were never copied back from the GPU?"* Then
