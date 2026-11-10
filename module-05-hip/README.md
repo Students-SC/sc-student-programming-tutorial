@@ -421,10 +421,10 @@ batch script, and check that the agent's script follows your spec and reports
 failures honestly.
 
 Why a batch script? Each `srun` you start from the login node is a separate
-job, and this cluster allows each person only 4 interactive jobs in the queue
-at once. A finished `srun` stays in the queue for a few seconds, so a script
-that calls `srun` over and over from the login node will have some runs
-rejected. Inside a batch job, each `srun` is a **step** of that one job, so
+interactive job, and this cluster rejects a new interactive job when you
+already have 4 in the queue. A finished `srun` stays in the queue for a few
+seconds, so a script that calls `srun` over and over from the login node soon
+has 4 in the queue, and its next runs are rejected. Inside a batch job, each `srun` is a **step** of that one job, so
 the steps don't count against the limit, and the whole sweep waits in the
 queue only once.
 
@@ -458,7 +458,9 @@ Ask it:
 
 #### Step 2: Review Before Running
 
-Before you approve the script, answer three questions:
+If the agent shows only part of the script when it asks to create the file,
+press `Ctrl+S` to see all of it. Before you approve the script, answer three
+questions:
 - What should happen at 2048? (See Exercise 3.)
 - Do the `#SBATCH` lines include everything this cluster requires (see
   Module 2), and does every GPU run happen in an `srun` step?
