@@ -404,8 +404,17 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 \
 ### Agent Practice: Automate the Experiment, Honestly
 
 A sweep like Exercise 3's is a natural job for an agent. Ask for a slightly
-bigger one that includes a block size you know is too large, and check that
-the agent's script follows your spec and reports failures honestly.
+bigger one that includes a block size you know is too large, written as a
+batch script, and check that the agent's script follows your spec and reports
+failures honestly.
+
+Why a batch script? Each `srun` you start from the login node is a separate
+job, and this cluster allows each person only 4 interactive jobs in the queue
+at once. A finished `srun` stays in the queue for a few seconds, so a script
+that calls `srun` over and over from the login node will have some runs
+rejected. Inside a batch job, each `srun` is a **step** of that one job, so
+the steps don't count against the limit, and the whole sweep waits in the
+queue only once.
 
 #### Step 1: Write the Spec, Then Ask for a Script
 
@@ -414,8 +423,9 @@ Save the specification in a file the agent can read:
 ```bash
 cat > sweep_spec.md << 'EOF'
 # sweep.sh specification
-- On the login node, compile vector_scale.cpp once for each of these block sizes (-DBLOCK_SIZE): 32, 64, 128, 256, 512, 1024, and 2048.
-- Run every configuration that compiled within exactly one srun, on partition mi2101x.
+- sweep.sh is a Slurm batch script, submitted with sbatch, for one node of partition mi2101x with a 5-minute time limit. It writes its output to sweep_<job ID>.out.
+- Inside the job, compile vector_scale.cpp once for each of these block sizes (-DBLOCK_SIZE): 32, 64, 128, 256, 512, 1024, and 2048.
+- Run each configuration that compiled as its own srun step inside the job.
 - Keep useful compiler and program error messages.
 - For each configuration, report whether it failed to compile, failed to run, or failed validation, and keep going with the rest of the sweep.
 - Print the bandwidth only for runs that succeeded and passed validation.
@@ -438,28 +448,35 @@ Ask it:
 
 Before you approve the script, answer three questions:
 - What should happen at 2048? (See Exercise 3.)
-- How many times will this script call `srun`, and does every GPU run happen
-  inside it? Each extra `srun` is another wait in the queue.
-- Where will the compiled programs be, and can the compute node see that
-  directory?
+- Do the `#SBATCH` lines include everything this cluster requires (see
+  Module 2), and does every GPU run happen in an `srun` step?
+- If a build fails, could the script still run an executable left over from
+  an earlier run?
 
 If the script doesn't match your spec, tell the agent what to fix before you
 approve it.
 
 #### Step 3: Run It and Check
 
+Submit the job, wait for it to leave the queue, then read its output and how
+it ended:
+
 ```bash
-bash sweep.sh; echo "exit status: $?"
+sbatch sweep.sh
+squeue -u $USER                     # The job disappears when it finishes
+cat sweep_<JOBID>.out
+cat sweep_<JOBID>.err               # If the script writes one: error messages usually go here
+sacct -X -j <JOBID> --format=JobID,JobName%15,State,ExitCode
 ```
 
-The script compiles on the login node and then runs on a compute node. Check
-its table against your spec:
+Check the output against your spec:
 - Do the bandwidths match Exercise 3?
 - 2048 threads is more than the MI210's limit of 1024 per block, so the 2048
   row must report a failure. It doesn't matter which stage rejects it (here,
   the kernel launch does), but is the row an error, or a blank or
   plausible-looking number?
-- Did the script exit with a nonzero status?
+- Because one configuration failed, the job should end as `FAILED` with a
+  nonzero exit code. Did it?
 
 A script that hides a failure is worse than one that crashes.
 
