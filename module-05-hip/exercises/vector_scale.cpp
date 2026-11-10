@@ -42,8 +42,8 @@
 /* TODO 1: Write the kernel function.
  *
  * It should:
- *   - Be marked __global__ and be named vector_scale_kernel (the timing code
- *     in main() launches it by that name)
+ *   - Have type __global__ void and be named vector_scale_kernel (the
+ *     timing code in main() launches it by that name)
  *   - Take parameters: const double *input, double *result, double alpha, int n
  *   - Compute the global thread index: i = blockIdx.x * blockDim.x + threadIdx.x
  *   - If i < n, set result[i] = alpha * input[i]
