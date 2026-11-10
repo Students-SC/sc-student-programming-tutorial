@@ -470,6 +470,15 @@ questions:
 If the script doesn't match your spec, tell the agent what to fix before you
 approve it.
 
+> **Tip**
+>
+> Ask for one fix at a time, here or after you run the script in Step 3. For
+> each new round of fixes, type `/clear` first to start a fresh conversation,
+> then name the file and the problem, for example: *"Fix sweep.sh so that it
+> prints the error message when a configuration fails."* The script is saved,
+> so the agent reads it again. A long conversation can fill the agent's
+> context window, and then its replies get cut off.
+
 #### Step 3: Run It and Check
 
 Submit the job, wait for it to leave the queue, then read its output and how
