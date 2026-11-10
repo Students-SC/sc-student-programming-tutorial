@@ -128,12 +128,12 @@ sbatch first_job.sh
 
 Slurm will print something like `Submitted batch job 12345`. Note the **job ID**.
 
-```{note}
-Before that line, you'll see a block of checks from the cluster's
-job-submission filter (lines starting with `-->`). That's normal, and you'll
-see it for every `sbatch` and `srun`. If the filter rejects a job, the block
-says why, for example `runtime limit is required` when a job has no `--time`.
-```
+> **Note**
+>
+> Before that line, you'll see a block of checks from the cluster's
+> job-submission filter (lines starting with `-->`). That's normal, and you'll
+> see it for every `sbatch` and `srun`. If the filter rejects a job, the block
+> says why, for example `runtime limit is required` when a job has no `--time`.
 
 #### Step 3: Check the Queue
 
@@ -174,11 +174,11 @@ squeue -u $USER                     # Should disappear when done
 cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 ```
 
-```{tip}
-`ls -lt *.out | head` shows the most recent output files, which helps when you
-have several `.out` and `.err` files from earlier jobs, such as the one you
-submitted and cancelled in Steps 2-4.
-```
+> **Tip**
+>
+> `ls -lt *.out | head` shows the most recent output files, which helps when you
+> have several `.out` and `.err` files from earlier jobs, such as the one you
+> submitted and cancelled in Steps 2-4.
 
 `squeue` lists only jobs that are pending or running. To look up jobs that have
 finished, including the one you cancelled in Step 4, use `sacct`:
@@ -205,11 +205,11 @@ cat hello_compute.c
 
 This program prints information about the compute node, including GPU details.
 
-```{note}
-You don't need to understand the C code at this point. Skim it to see what it
-prints; the point of this exercise is compiling it and running it through
-Slurm. You'll write your own C programs starting in Module 3.
-```
+> **Note**
+>
+> You don't need to understand the C code at this point. Skim it to see what it
+> prints; the point of this exercise is compiling it and running it through
+> Slurm. You'll write your own C programs starting in Module 3.
 
 #### Step 2: Compile on the Login Node
 
@@ -267,17 +267,17 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | grep -E "Ma
 On the login node, the same `rocminfo` command lists two CPUs and two GPUs.
 Your compute node has one of each.
 
-```{note}
-`srun` waits for a node, runs the command, and returns. If the partition is
-busy, you may wait a moment.
-```
+> **Note**
+>
+> `srun` waits for a node, runs the command, and returns. If the partition is
+> busy, you may wait a moment.
 
-```{important}
-Every job, even a one-line `srun`, gets a whole compute node to itself until it
-finishes. That makes `srun` great for quick commands, but please don't start
-an interactive shell on a compute node today (for example, `srun --pty bash`):
-an idle shell holds a node that five of your classmates could be using.
-```
+> **Important**
+>
+> Every job, even a one-line `srun`, gets a whole compute node to itself until it
+> finishes. That makes `srun` great for quick commands, but please don't start
+> an interactive shell on a compute node today (for example, `srun --pty bash`):
+> an idle shell holds a node that five of your classmates could be using.
 
 ---
 
