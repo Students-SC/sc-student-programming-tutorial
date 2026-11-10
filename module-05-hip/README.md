@@ -68,7 +68,7 @@ A HIP program has two parts:
   ──────────                    ────────────
   1. Allocate GPU memory        
   2. Copy data to GPU    ──►   
-  3. Launch kernel        ──►   Each thread processes one element
+  3. Launch kernel        ──►   Each thread processes one or more elements
   4. Copy results back   ◄──   
   5. Free GPU memory            
 ```
@@ -107,6 +107,9 @@ than can run simultaneously, and the rest wait for a compute unit to free up.
 
 ### Kernel Syntax
 
+Here is an example kernel for vector addition, `c = a + b`, and how the host
+launches it:
+
 ```cpp
 // Kernel definition (runs on GPU)
 __global__ void add_vectors(const double *a, const double *b, double *c, int n) {
@@ -122,10 +125,13 @@ int blocks = (n + threads_per_block - 1) / threads_per_block;
 add_vectors<<<blocks, threads_per_block>>>(d_a, d_b, d_c, n);
 ```
 
-The number of blocks is rounded up so that every element gets a thread. When
-`n` isn't a multiple of the block size, the last block has more threads than
-elements, and the `if (i < n)` check keeps those extra threads from reading or
-writing past the end of the arrays.
+The number of blocks comes from the length of the vectors (`n`) and the number
+of threads per block. Dividing `n` by `threads_per_block` alone would round
+down and leave the last few elements without a thread, so the code computes
+`(n + threads_per_block - 1) / threads_per_block`, which rounds the division
+up. When `n` isn't a multiple of the block size, the last block then has more
+threads than elements, and the `if (i < n)` check keeps those extra threads
+from reading or writing past the end of the arrays.
 
 ### Memory Management
 
