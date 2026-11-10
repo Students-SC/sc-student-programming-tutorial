@@ -4,7 +4,7 @@
 >
 > - Sunday, November 15, 2026
 > - 8:30 AM to 4:30 PM CST
-> - McCormick Place, Chicago, IL
+> - McCormick Place, Chicago, IL · [Room W180](https://sc26.conference-program.com/map/?location=rW180)
 
 ---
 
