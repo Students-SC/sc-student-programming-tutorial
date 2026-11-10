@@ -569,12 +569,9 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_checked
 The basic program may already do much of what this prompt asks. If so, note
 which useful checks the agent added without being asked.
 
-If `histogram_checked.cpp` still doesn't work after one or two fixes, copy the
-reference version and continue with it:
-
-```bash
-cp solutions/histogram_checked_solution.cpp histogram_checked.cpp
-```
+If `histogram_checked.cpp` still doesn't work after one or two fixes, don't
+spend the rest of the activity debugging: note what went wrong and continue
+with the basic program alone.
 
 #### Step 5: Compare the Evidence
 
@@ -664,7 +661,8 @@ the program is reporting the defect you planted.
 - Why did the broken program still have the correct total?
 - What does checking every bin establish that checking the total does not?
 - Does a matching result for this input prove correctness for all inputs?
-- What additional input patterns would you test?
+- What additional input patterns would you test? For example, what should
+  happen if every element were 0, or if there were fewer elements than bins?
 
 ---
 
