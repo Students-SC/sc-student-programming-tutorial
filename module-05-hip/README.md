@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Write a HIP kernel that runs on the AMD MI210 GPU
 - Manage data transfers between host (CPU) and device (GPU) memory
 - Choose thread and block dimensions for a kernel launch
+- Check HIP calls and kernel launches for errors, knowing that launches are asynchronous
 - Measure a kernel's performance and explain what limits it
 - Check that an agent's experiment script follows its spec and reports failures
 
@@ -19,24 +20,18 @@ By the end of this module, you will be able to:
 
 ### Why GPUs?
 
-A CPU has a few powerful cores optimized for complex, sequential tasks. A GPU
-has **thousands of simpler cores** optimized for doing the same operation on
-many data elements at once.
+CPUs emphasize low latency and strong performance on individual threads. GPUs
+emphasize high throughput by executing many threads in parallel. They work
+best when a problem exposes substantial parallelism, such as applying similar
+operations to many array elements: vector operations, matrix multiplication,
+and neural network layers.
 
-```
-  CPU: 16 powerful cores              GPU: thousands of lightweight cores
-  ┌──┐┌──┐┌──┐┌──┐                   ┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐
-  │  ││  ││  ││  │   ... (16)        │ ││ ││ ││ ││ ││ ││ ││ ││ ││ │ ...
-  └──┘└──┘└──┘└──┘                   └─┘└─┘└─┘└─┘└─┘└─┘└─┘└─┘└─┘└─┘
-                                      (thousands)
-```
-
-When your problem involves applying the same math to millions of data points
-(vector operations, matrix multiply, neural network layers), GPUs can be
-10-100x faster than CPUs, as long as the data is already in GPU memory.
-Copying data between CPU and GPU memory is slow by comparison, so real
-applications copy their data to the GPU once and run many kernels on it.
-You'll measure this in Exercise 1.
+How much faster a GPU is depends on the workload, how it is implemented, the
+problem size, and whether you count the time to move data between CPU and GPU
+memory. Those copies are slow compared with the GPU's own memory, so real
+applications copy their data to the GPU once and keep it there across many
+kernels, which reduces the transfer overhead. You'll measure this in
+Exercise 1.
 
 ### The AMD MI210
 
@@ -46,6 +41,8 @@ Our compute nodes each have an **AMD Instinct MI210** GPU:
 |------|-------|
 | Compute Units | 104 |
 | Stream Processors | 6656 |
+| Wavefront size | 64 threads |
+| Maximum threads per block | 1024 |
 | Memory | 64 GB HBM2e |
 | Memory Bandwidth | 1.6 TB/s |
 | Architecture | CDNA2 (gfx90a) |
@@ -53,8 +50,11 @@ Our compute nodes each have an **AMD Instinct MI210** GPU:
 ### HIP: Portable GPU Programming
 
 **HIP (Heterogeneous-compute Interface for Portability)** is AMD's GPU
-programming framework. It's designed to be nearly identical to NVIDIA's CUDA,
-so code is portable across AMD and NVIDIA GPUs.
+programming interface. Its API closely mirrors NVIDIA's CUDA, and HIP code can
+be compiled for both AMD and NVIDIA GPUs. Moving code between them can still
+take work when it makes assumptions about the hardware (such as the wavefront
+size), depends on vendor-specific libraries, or uses a feature that one
+platform doesn't support.
 
 ### The Programming Model
 
@@ -99,6 +99,12 @@ int i = blockIdx.x * blockDim.x + threadIdx.x;
 | `blockDim.x` | Number of threads per block |
 | `gridDim.x` | Number of blocks in the grid |
 
+**How this maps to the hardware.** On the MI210, threads execute in groups of
+64 called **wavefronts**. Each thread block runs entirely on one compute unit,
+and a compute unit can host multiple blocks when resources permit. Blocks are
+scheduled onto available compute units; a grid can contain many more blocks
+than can run simultaneously, and the rest wait for a compute unit to free up.
+
 ### Kernel Syntax
 
 ```cpp
@@ -116,6 +122,11 @@ int blocks = (n + threads_per_block - 1) / threads_per_block;
 add_vectors<<<blocks, threads_per_block>>>(d_a, d_b, d_c, n);
 ```
 
+The number of blocks is rounded up so that every element gets a thread. When
+`n` isn't a multiple of the block size, the last block has more threads than
+elements, and the `if (i < n)` check keeps those extra threads from reading or
+writing past the end of the arrays.
+
 ### Memory Management
 
 | Function | Purpose |
@@ -126,33 +137,102 @@ add_vectors<<<blocks, threads_per_block>>>(d_a, d_b, d_c, n);
 | `hipDeviceSynchronize()` | Wait for all GPU work to finish |
 
 Copy directions:
-- `hipMemcpyHostToDevice` -- CPU to GPU
-- `hipMemcpyDeviceToHost` -- GPU to CPU
+- `hipMemcpyHostToDevice`: CPU to GPU
+- `hipMemcpyDeviceToHost`: GPU to CPU
+
+### Kernel Launches Are Asynchronous
+
+A kernel launch is **asynchronous** with respect to the host: the launch
+returns as soon as the work is queued, which does not mean the GPU has
+finished running it. The host keeps going until it does something that waits
+for the GPU, such as `hipDeviceSynchronize()` or a `hipMemcpy` back to the
+host.
+
+This affects how errors show up. Some errors, such as an invalid launch
+configuration, are reported by the launch itself. Others happen while the
+kernel runs and are reported only when you wait for it. Every HIP call returns
+an error code, and ignoring it can hide a failure, so the programs in this
+module wrap each call in a small macro, `HIP_CHECK`, that reports which call
+failed, where, and why, and exits with a nonzero status:
+
+```cpp
+#define HIP_CHECK(call)                                                     \
+    do {                                                                    \
+        hipError_t err_ = (call);                                           \
+        if (err_ != hipSuccess) {                                           \
+            fprintf(stderr, "HIP error at %s:%d: %s failed: %s\n",         \
+                    __FILE__, __LINE__, #call, hipGetErrorString(err_));    \
+            exit(1);                                                        \
+        }                                                                   \
+    } while (0)
+
+kernel<<<blocks, threads>>>(...);
+HIP_CHECK(hipGetLastError());       // Check launch errors
+HIP_CHECK(hipDeviceSynchronize()); // Wait and check execution errors
+```
+
+Synchronizing right after a launch is useful while learning and debugging,
+because it ties each error to the kernel that caused it. It also makes the
+host wait, so don't put it inside a loop you are timing: the programs here
+check their timed launches with `hipGetLastError()` only.
 
 ### What Makes GPU Code Fast
 
 A few rules of thumb explain most GPU performance results, including the ones
 you'll measure today:
 
-1. **Launch enough threads.** The MI210 has 104 compute units, each running
-   many threads at once. A kernel with only a few thousand threads leaves most
-   of the GPU idle.
+1. **Give the GPU enough work.** The MI210 has 104 compute units. A kernel
+   needs enough blocks and active wavefronts to keep the GPU busy. For
+   example, 4,096 threads arranged as 16 blocks of 256 can use at most 16
+   compute units at once. Actual utilization also depends on the kernel's
+   resource requirements and behavior.
 2. **Let neighboring threads read neighboring memory.** When the threads of a
    wavefront read consecutive addresses, the GPU combines their reads into a
    few wide memory transactions (**coalescing**). Scattered reads waste memory
    bandwidth.
-3. **Think in wavefronts.** AMD GPUs run threads in groups of 64 called
-   **wavefronts** (NVIDIA's equivalent, the warp, has 32), so use block sizes
-   that are multiples of 64. The threads of a wavefront execute each
-   instruction together: if some take one side of an `if` and some the other,
-   the two paths run one after the other (**divergence**).
+3. **Think in wavefronts.** On the MI210, a wavefront is 64 threads (other
+   GPUs differ; NVIDIA's equivalent, the warp, has 32). Block sizes that are
+   multiples of 64 are a reasonable performance starting point on this GPU,
+   not a correctness requirement: a 32-thread block is valid, but it uses only
+   half of a wavefront's 64 lanes. The threads of a wavefront execute each
+   instruction together, so if some take one side of an `if` and some the
+   other, the two paths run one after the other (**divergence**).
 4. **Minimize host-device copies.** Copying data between CPU and GPU memory is
    much slower than the GPU's own memory, so keep data on the GPU across as
    many kernels as you can.
 
+### How the Programs Measure Performance
+
+The programs in this module measure performance the same way:
+
+- **Kernel time** comes from GPU events (`hipEventRecord`) recorded just before
+  and after the kernel launches, so it covers only the GPU work. Allocation,
+  initialization, copies, and validation are outside the timed region. The
+  program waits for the stop event (`hipEventSynchronize`) before reading the
+  time, so every timed launch has finished.
+- **A warm-up launch runs first and isn't timed**, because the first launch in
+  a program includes one-time setup.
+- **The kernel is then launched 10 times**, and the program reports the
+  average time per launch.
+- **Effective bandwidth** is the data the algorithm has to move divided by the
+  kernel time, in GB/s (10^9 bytes per second). For vector scaling, that is
+  2 × n × sizeof(double), for one read of the input and one write of the
+  result; vector addition counts two reads and one write. It is calculated
+  from the algorithm's nominal data movement, not measured from the GPU's
+  memory traffic, so treat the comparison with the MI210's 1.6 TB/s peak as a
+  rough guide.
+
 ---
 
 ## Hands-On Exercises (~40 min)
+
+Suggested pacing: about 7 minutes for Exercise 1, 15 minutes for Exercise 2,
+8 minutes for Exercise 3, and 10 minutes for the Agent Practice. Challenges A
+and B are optional extensions.
+
+The compiler (`hipcc`) and tools are already set up on the cluster. If
+`hipcc --version` doesn't work, run the environment check from
+[Getting Started](../README.md#3-verify-your-environment).
 
 First, navigate to the exercises directory for this module:
 
