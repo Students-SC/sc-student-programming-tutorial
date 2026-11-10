@@ -262,11 +262,11 @@ hipcc -O2 -o vector_add ../examples/vector_add.cpp
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_add
 ```
 
-```{note}
-`srun` waits for a free node before it runs your program, so a command may sit
-for a while when the partition is busy. Its `--time` limit counts only the time
-your program runs, not the time it waits in the queue.
-```
+> **Note**
+>
+> `srun` waits for a free node before it runs your program, so a command may
+> sit for a while when the partition is busy. Its `--time` limit counts only
+> the time your program runs, not the time it waits in the queue.
 
 #### Step 4: Study the HIP Workflow
 
