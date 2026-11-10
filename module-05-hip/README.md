@@ -418,8 +418,8 @@ the reason is listed below it.
 
 You will ask the agent to write the same GPU program twice: once with a basic
 prompt and once with explicit validation requirements. Compare the results
-with the known answer below. Then deliberately change the program and check
-whether its validation notices.
+with the known answer below. Then deliberately change both programs and check
+whether their validation notices.
 
 Keep one question in mind throughout: **does the program provide enough
 evidence to verify its result?** The agent may well write a correct program
@@ -601,19 +601,20 @@ Overall: PASSED
 - Did the agent add useful checks without being asked?
 - Would the grand total alone detect counts assigned to the wrong bins?
 
-#### Step 6 (Optional): Test the Check with a Deliberate Defect
+#### Step 6 (Optional): Test the Checks with a Deliberate Defect
 
 A check is only useful if it fails when the program is wrong. Make a copy of
-the detailed version to break:
+each program to break:
 
 ```bash
-cp histogram_checked.cpp histogram_broken.cpp
+cp histogram_basic.cpp histogram_basic_broken.cpp
+cp histogram_checked.cpp histogram_checked_broken.cpp
 ```
 
-In `histogram_broken.cpp`, find the line in the kernel that adds 1 to a bin,
-usually with `atomicAdd`. Change only which bin it adds to, so that each count
-goes to the next bin up (and bin 15's count wraps around to bin 0). If the
-line uses `input[i]` directly, change
+In each copy, find the line in the kernel that adds 1 to a bin, usually with
+`atomicAdd`. Change only which bin it adds to, so that each count goes to the
+next bin up (and bin 15's count wraps around to bin 0). If the line uses
+`input[i]` directly, change
 
 ```cpp
 atomicAdd(&histogram[input[i]], 1);
@@ -625,40 +626,47 @@ to:
 atomicAdd(&histogram[(input[i] + 1) % 16], 1);
 ```
 
-Your program's names may differ. For example, it may first store `input[i]`
-in a variable such as `bin`; then change `histogram[bin]` to
+The two programs' names may differ. For example, a program may first store
+`input[i]` in a variable such as `bin`; then change `histogram[bin]` to
 `histogram[(bin + 1) % 16]`. Don't change the input, the expected counts, or
 the validation.
 
-**Predict** before you run it:
+**Predict** before you run them:
 - Will the grand total change?
 - Which bins will become incorrect?
-- Should the overall check pass?
+- Will each program's check notice?
 
-Then build and run it:
+Then build and run both:
 
 ```bash
-hipcc -O2 -o histogram_broken histogram_broken.cpp
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_broken
+hipcc -O2 -o histogram_basic_broken histogram_basic_broken.cpp
+hipcc -O2 -o histogram_checked_broken histogram_checked_broken.cpp
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_basic_broken
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_checked_broken
 ```
 
-What you should see:
+What you should see in both programs' counts:
 - The total is still 1,000,003.
 - Bin 0 has 62,500 instead of 62,501.
 - Bin 3 has 62,501 instead of 62,500.
 - All other bins still match.
-- The program reports 2 mismatched bins, prints FAILED, and exits with a
-  nonzero status.
 
-`srun` also prints a line like
+The detailed program should report 2 mismatched bins, print FAILED, and exit
+with a nonzero status. `srun` then also prints a line like
 `srun: error: <node>: task 0: Exited with exit code 1`, sometimes before the
 program's last lines. That message and the nonzero exit status are expected:
 the program is reporting the defect you planted.
 
+What did the basic program report? If it printed PASSED for this wrong
+answer, find its check, near the line that prints PASSED, and see what it
+actually compares.
+
 #### Closing Questions
 
 - Why was the known answer useful before running either program?
-- Why did the broken program still have the correct total?
+- Why did the broken programs still have the correct total?
+- Did the basic program's check notice the defect? What would you need to
+  see in its output to trust its PASSED?
 - What does checking every bin establish that checking the total does not?
 - Does a matching result for this input prove correctness for all inputs?
 - What additional input patterns would you test? For example, what should
