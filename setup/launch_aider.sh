@@ -2,6 +2,9 @@
 # ---------------------------------------------------------------------------
 # launch_aider.sh -- Run aider configured for the SC26 tutorial vLLM server
 #
+# The tutorial's agent is Qwen Code (setup/launch_qwen.sh); this aider launcher
+# is kept as an instructor fallback.
+#
 # Aider is a CLI coding agent. This wrapper points it at the locally-served
 # Qwen3-Coder model from Module 7's vLLM backend, so no API keys or external
 # accounts are needed. It runs aider from the tutorial's shared, read-only
@@ -67,10 +70,10 @@ echo "Type /help inside aider for commands, /exit to quit."
 echo ""
 
 # Default to ask mode: aider reasons about the participant's actual files and
-# explains what to do, but never edits them -- understanding is the
-# participant's job. Module 7's capstone deliberately overrides this with
-# `--chat-mode code` to introduce the full edit-capable agent. Because "$@" is
-# expanded last, any caller-supplied --chat-mode wins over this default.
+# explains what to do, but never edits them. To let it edit, pass an edit
+# format such as `--chat-mode diff`; `--chat-mode` is an alias of
+# `--edit-format`, so `--chat-mode code` is rejected. Because "$@" is expanded
+# last, any caller-supplied --chat-mode wins over this default.
 exec "$AIDER_BIN" \
     --model "$MODEL" \
     --chat-mode ask \

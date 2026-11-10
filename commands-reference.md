@@ -189,8 +189,14 @@ fine-tuning details.
 | Show the shared agent server URL | `cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url"` |
 | Export the agent server URL for interactive testing | `export AGENT_API_URL=$(cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url")` |
 | Run the agent exercise | `sbatch submit_agent.sh` |
-| Launch the tutorial-provided CLI agent | `bash ../../setup/launch_aider.sh` |
-| Launch Aider from an arbitrary working directory | `bash <repo-path>/setup/launch_aider.sh` |
+| Launch the tutorial's CLI agent (Qwen Code); it asks before every edit and command | `bash ../../setup/launch_qwen.sh` |
+| Launch it read-only (plan mode: no edits, no commands) | `bash ../../setup/launch_qwen.sh --approval-mode plan` |
+| Launch it from any other directory | `bash ~/sc-student-programming-tutorial/setup/launch_qwen.sh` |
+| Switch modes inside Qwen Code (plan, ask permissions, auto-edit) | Shift+Tab |
+| See or undo the agent's changes | `/diff`, `/restore` |
+| See how many tokens your session has used | `/stats model` |
+| Add a fact to the agent's notes for this tutorial | `echo "- <fact>" >> ~/sc-student-programming-tutorial/QWEN.md` |
+| Exit Qwen Code | `/quit` |
 
 See [Module 7](module-07-ai-agents/README.md) for the agent exercises.
 

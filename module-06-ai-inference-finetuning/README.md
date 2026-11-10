@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Run inference with a pre-trained language model on the MI210 GPU
 - Fine-tune a text classification model using LoRA (parameter-efficient fine-tuning)
 - Reason about GPU memory usage during inference vs. training
+- Check an agent's change with measurements and the job's warnings
 
 ---
 
@@ -81,8 +82,9 @@ massively parallel operation GPUs excel at:
 - Generating text for one prompt at a time uses only a sliver of that
   parallelism, so the GPU may be only slightly faster than the CPU (you can
   measure this in Exercise 3). GPUs pull far ahead when they process many
-  prompts together, which is called **batching** (Challenge C). Batching is
-  how the shared AI server in Module 7 answers a whole classroom at once.
+  prompts together, which is called **batching** (this module's Agent
+  Practice). Batching is how the shared AI server behind the tutorial's agent
+  answers a whole classroom at once.
 
 ---
 
@@ -276,6 +278,57 @@ cat finetune_<JOBID>.out
 
 ---
 
+### Agent Practice: Batch Your Prompts
+
+So far the model answers one prompt at a time. Each step of generation reads
+all of the model's weights from GPU memory, so the GPU does much more useful
+work per step when it generates for many prompts together. Have the agent make
+that change, and check it with measurements and the job's warnings.
+
+#### Step 1: Ask for the Change
+
+Copy your completed script from Exercise 3, then start Qwen Code:
+
+```bash
+cp run_inference.py batch_agent.py
+bash ../../setup/launch_qwen.sh
+```
+
+Ask it:
+
+> Change batch_agent.py so it generates the responses for all prompts at each temperature in a single model.generate() call, and prints the total tokens per second.
+
+Read the change before you approve it. Predict: will the total tokens per
+second go up or down? Will each individual response arrive sooner or later?
+
+#### Step 2: Run It and Check
+
+```bash
+sbatch submit_inference.sh batch_agent.py
+```
+
+When the job finishes, check three things:
+- Is the total tokens per second higher than in Exercise 3?
+- Do the responses still make sense?
+- Does `inference_<JOBID>.err` contain a warning about padding?
+
+If something is wrong, give the agent the warning or the output and ask it to
+fix the script.
+
+**Questions:**
+- Prompts have different lengths, so they are padded to the same length.
+  Which side did the agent pad on? Why does a text generation model need the
+  padding on the left?
+- The shared AI server behind Qwen Code answers the whole class at once. How
+  does batching help it?
+- Type `/stats model` in Qwen Code. How many tokens has your session used?
+  Every request behind those numbers was an inference job like yours.
+
+A solution that measures both ways is in
+`solutions/batch_inference_solution.py`.
+
+---
+
 ### Challenge A: LoRA Hyperparameters
 
 Experiment with different LoRA settings in `finetune_lora.py`:
@@ -306,35 +359,6 @@ update moves the pre-trained weights.)
 
 A full fine-tuning solution with the smaller learning rate is in
 `solutions/finetune_full_solution.py`.
-
-### Challenge C: Batch Your Prompts
-
-So far the model answers one prompt at a time. Each step of generation reads
-all of the model's weights from GPU memory, so the GPU does much more useful
-work per step when it generates for many prompts together.
-
-Modify a copy of your `run_inference.py` so it generates responses for all of
-your prompts in a **single** `model.generate()` call:
-
-1. Set `tokenizer.padding_side = "left"`. Prompts have different lengths, so
-   they are padded to the same length, and a text generation model needs the
-   padding on the left because it continues from the end of its input.
-2. Format every prompt with the chat template, then tokenize the whole list
-   at once: `tokenizer(texts, return_tensors="pt", padding=True)`.
-3. Call `model.generate()` once, then decode each row of the output.
-
-Compare the total tokens per second with one-prompt-at-a-time generation. A
-solution that measures both is in `solutions/batch_inference_solution.py`:
-
-```bash
-sbatch submit_inference.sh solutions/batch_inference_solution.py
-```
-
-**Questions:**
-- How much higher is the batched throughput? Did each individual response
-  arrive faster or slower?
-- The shared AI server in Module 7 answers the whole class at once. How does
-  batching help it?
 
 ---
 

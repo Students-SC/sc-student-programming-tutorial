@@ -4,7 +4,7 @@
  * Computes c[i] = a[i] + b[i] for N elements.
  *
  * Compile:  hipcc -O2 -o vector_add vector_add.cpp
- * Run:      srun --partition=mi2101x --time=2:00 --ntasks=1 ./vector_add
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_add
  */
 
 #include <hip/hip_runtime.h>

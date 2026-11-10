@@ -1,0 +1,43 @@
+OpenMP Pi Scaling -- Job 12345 on t004-002-v1
+Available CPUs: 16
+
+=== OMP_NUM_THREADS=1 ===
+Computed pi = 3.141592653589971
+Reference   = 3.141592653589793
+Error       = 1.78e-13
+Steps       = 1000000000
+Threads     = 1
+Time        = 4.012 seconds
+
+=== OMP_NUM_THREADS=2 ===
+Computed pi = 3.141592653589901
+Reference   = 3.141592653589793
+Error       = 1.08e-13
+Steps       = 1000000000
+Threads     = 2
+Time        = 2.031 seconds
+
+=== OMP_NUM_THREADS=4 ===
+Computed pi = 3.141592653589870
+Reference   = 3.141592653589793
+Error       = 7.72e-14
+Steps       = 1000000000
+Threads     = 4
+Time        = 1.024 seconds
+
+=== OMP_NUM_THREADS=8 ===
+Computed pi = 3.141592653589806
+Reference   = 3.141592653589793
+Error       = 1.29e-14
+Steps       = 1000000000
+Threads     = 8
+Time        = 0.533 seconds
+
+=== OMP_NUM_THREADS=16 ===
+Computed pi = 3.141592653589819
+Reference   = 3.141592653589793
+Error       = 2.62e-14
+Steps       = 1000000000
+Threads     = 16
+Time        = 0.291 seconds
+

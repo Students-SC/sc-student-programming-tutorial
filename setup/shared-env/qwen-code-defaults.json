@@ -1,0 +1,13 @@
+{
+  "tools": { "approvalMode": "default" },
+  "ui": { "allowedApprovalModes": ["plan", "default", "auto-edit"] },
+  "model": {
+    "generationConfig": {
+      "contextWindowSize": 32768,
+      "samplingParams": { "max_tokens": 8192 }
+    }
+  },
+  "general": { "enableAutoUpdate": false, "outputLanguage": "English" },
+  "privacy": { "usageStatisticsEnabled": false },
+  "telemetry": { "enabled": false }
+}

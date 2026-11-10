@@ -4,7 +4,7 @@
  * EXERCISE: Fill in the 4 TODOs to complete this HIP program.
  *
  * Compile:  hipcc -O2 -o vector_scale vector_scale.cpp
- * Run:      srun --partition=mi2101x --time=2:00 --ntasks=1 ./vector_scale
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_scale
  */
 
 #include <hip/hip_runtime.h>

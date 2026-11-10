@@ -9,6 +9,8 @@ By the end of this module, you will be able to:
 - Explain what an AI agent is and how it differs from a simple chatbot
 - Describe the agent loop: perceive, reason, act, observe
 - Build a simple agent that uses an LLM to generate and execute code
+- Direct a production coding agent: give it context, approve its actions, and
+  hold it to a written spec
 - Reflect on how AI agents helped (and occasionally misled) you today
 
 ---
@@ -74,7 +76,8 @@ the conversation so far.
 
 ### How Agents Work Under the Hood
 
-When you use an AI coding assistant (Cursor, Copilot, etc.), here's what happens:
+When you use an AI coding agent (Qwen Code, Cursor, Copilot, etc.), here's what
+happens:
 
 1. Your request + context is sent to an LLM
 2. The LLM responds with either text **or a tool call** (structured JSON)
@@ -97,7 +100,8 @@ Agents are powerful but imperfect:
 
 - **Hallucinations**: The LLM may generate plausible-sounding but wrong code
 - **Verification**: Always check that generated code does what you expect
-- **Security**: Don't let agents run arbitrary commands on production systems
+- **Security**: Approve commands deliberately; don't let agents run arbitrary
+  commands on shared or production systems
 - **Understanding**: An agent can write code for you, but if you don't
   understand it, you can't debug it when things go wrong
 
@@ -200,107 +204,121 @@ Try asking your agent to:
 
 ---
 
-### Exercise 3: Use a Real CLI Agent
+### Exercise 3: Open the Hood of a Real CLI Agent
 
-The agent you just built is a minimal example. The CLI agent you've been using
-all day -- **Aider** -- is essentially the same idea, but with many more tools
-(read/write files, apply diffs, run tests, integrate with git) and much more
-careful prompt engineering and error recovery.
-
-In other words: you've already used the production version of what you just
-built. Now let's open the hood.
+The agent you just built is a minimal example. **Qwen Code**, the agent you
+have used all day, is the same idea -- an LLM, tools, and a loop -- with many
+more tools, careful prompts, and you approving its actions.
 
 #### Step 1: Compare the Agents
 
-Compare what Aider does against your `build_agent.py`:
-
-| Feature | Your agent | Aider |
+| Feature | Your agent | Qwen Code |
 |---|---|---|
 | Backend LLM | Same Qwen3-Coder via vLLM | Same Qwen3-Coder via vLLM |
-| Tool: run shell command | yes | yes |
-| Tool: read file | no | yes |
-| Tool: edit file (apply diff) | no | yes |
-| Tool: git integration | no | yes (auto-commits, undo) |
-| Streaming responses | no | yes |
-| Multi-file context | no | yes |
+| How the model asks for a tool | JSON in a code block, which your code parses | The model's built-in tool-call format, which vLLM parses |
+| Tool: run a shell command | yes | yes, after you approve it |
+| Tools: read, search, and edit files | no | yes |
+| Context it always starts with | your system prompt | the repository's `QWEN.md`, including the notes you added |
+| Approval before acting | no | plan, ask-permissions, and auto-edit modes |
+| Undo | no | `/restore` |
 
-#### Step 2: Enable Aider's Code Mode
+#### Step 2: Watch the Loop
 
-> **A new mode.** All day, `launch_aider.sh` has run Aider in **ask mode**: it
-> reads your files and explains *what* to do, but never edits them -- so the
-> learning stayed your job. For this module we deliberately turn on the agent's
-> ability to **act**. Passing `--chat-mode code` lets Aider edit files and run
-> commands -- the full observe-think-act loop. This contrast is the whole point
-> of Module 7: you're switching the assistant from *advising* to *doing*.
-
-#### Step 3: Give Aider a Task
-
-Try driving Aider through a small task. From the repo root:
+Start Qwen Code in the Module 3 exercises directory:
 
 ```bash
-cd module-03-openmp/exercises
-bash ../../setup/launch_aider.sh --chat-mode code
-
-# Inside aider, type:
-> Add OpenMP directives to pi_serial.c to parallelize the main loop using a reduction. Save it as pi_openmp_aider.c.
+cd ../../module-03-openmp/exercises
+bash ../../setup/launch_qwen.sh
 ```
 
-Watch what happens: Aider reads the file, proposes a diff, asks you to confirm,
-and writes the new file. That's the same observe-think-act loop your
-`build_agent.py` ran -- it just has nicer tools.
+Type `/tools` to see every tool the model can call. Then ask it:
+
+> Parallelize the main loop of pi_serial.c with OpenMP using a reduction, save it as pi_openmp_agent.c, compile it, and test it on a compute node with 1 and 16 threads.
+
+Each action it asks you to approve is one turn of the loop you built in
+Exercise 2: the model picks a tool and its arguments, Qwen Code runs it, and
+the result goes back to the model. Approve only what you would run yourself;
+the test belongs on a compute node, not the login node.
+
+#### Step 3: Count the Calls and Check the Code
+
+Type `/stats model` to see how many requests and tokens the task took.
+
+**Questions:**
+- How does that compare with the number of LLM calls your own agent needed in
+  Exercise 2?
+- Compare `pi_openmp_agent.c` with your `pi_openmp.c` from Module 3. Did the
+  agent use the same pragmas? Did it record the thread count? Is anything
+  shared that should be private?
 
 ---
 
-### Exercise 4: Capstone Challenge (Part B -- Extension)
+### Exercise 4: Capstone Challenge
 
-Now put the whole day together. Use **Aider** (or your own agent if you'd
-like a real challenge) to solve this multi-step problem:
+Now put the whole day together the way you would on the job: write down what
+"done" means before the agent writes any code, then hold the agent to it.
 
 > **Challenge:** Write a HIP kernel that computes the dot product of two vectors.
 > The kernel should use parallel reduction within a block. Compile it, run it on
 > the GPU via Slurm, and verify the result against a CPU reference.
 
-#### Step 1: Launch Aider
+#### Step 1: Write Your Acceptance Checks
 
-Recommended workflow with Aider:
+Go back to this module's exercises directory, which is inside the repository
+so the agent reads `QWEN.md`, and write down how you will know the program is
+right:
 
 ```bash
-mkdir -p ~/capstone && cd ~/capstone
-bash <repo-path>/setup/launch_aider.sh --chat-mode code
+cd ~/sc-student-programming-tutorial/module-07-ai-agents/exercises
+cat > spec.md << 'EOF'
+# Dot product: done means
+- Matches a CPU reference, computed in double precision, to a relative error below 1e-4
+- Works when N is not a multiple of the block size (try N = 1000003)
+- Uses more than one block and combines the blocks' partial sums
+- Runs on a compute node through Slurm, never on the login node
+EOF
 ```
 
-(`--chat-mode code` enables editing, as introduced in Exercise 3.)
+Add at least one check of your own, for example from the review list in
+`capstone.md` (in this directory).
 
-#### Step 2: Complete the Capstone Workflow
+#### Step 2: Hand It to the Agent
 
-Then ask Aider to:
+```bash
+bash ../../setup/launch_qwen.sh
+```
 
-1. Generate the HIP code (`> Write dot_product.cpp that ...`).
-2. Review the code -- does the reduction look correct? Are there race conditions?
-3. Compile with `hipcc` (`> Compile dot_product.cpp with hipcc -O2`).
-4. Write a Slurm batch script (`> Write submit_dot.sh that runs ./dot_product on mi2101x`).
-5. Submit, check output, iterate.
+Ask it to read `spec.md`, then write, compile, and test `dot_product.cpp`
+against it. Once you trust its edits, you can press Shift+Tab to switch to
+auto-edit mode; it still asks before every command.
 
-See `capstone.md` for the full description.
+#### Step 3: Hold It to Your Spec
+
+Before you accept the result, check every line of `spec.md` yourself: read the
+kernel, run the test, and compare the numbers. Keep track of how many times
+you had to send the agent back.
 
 ```{tip}
-As you go, ask yourself the same questions you've been asking all day -- did
-the agent get the GPU memory management right? Did it use the right reduction
-pattern? Did the launch configuration make sense? You verify; the agent
-assists.
+Ask yourself the questions you've asked all day: did the agent get the GPU
+memory management right? Did it use the right reduction pattern? Does the
+launch configuration make sense? You verify; the agent assists.
 ```
 
 ---
 
 ### Reflection
 
-Take a few minutes to reflect on how AI agents helped you today:
+Take a few minutes to look back at the day's Agent Practice steps:
 
 1. When did the agent give you **correct, useful** help?
-2. When did it **mislead** you or produce something wrong?
-3. Did you catch the mistakes? How?
-4. Would you have been able to verify the agent's output if you **didn't**
-   understand the fundamentals (OpenMP, MPI, HIP)?
+2. What did it get wrong, and which check caught each mistake -- the Slurm
+   filter, your own measurements, the `MPI_Ssend` test, the 2048 row, the
+   padding warning, your spec?
+3. Read the repository's `QWEN.md` (`cat ../../QWEN.md`). What did you teach
+   your agent today, and what would you put in a `QWEN.md` for your own next
+   project?
+4. Would you have caught those mistakes if you **didn't** understand the
+   fundamentals (Slurm, OpenMP, MPI, HIP)?
 
 > The goal isn't to avoid using AI agents -- they're incredibly useful tools.
 > The goal is to **use them effectively**, which means understanding enough to

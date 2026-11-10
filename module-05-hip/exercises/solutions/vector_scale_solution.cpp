@@ -2,7 +2,7 @@
  * vector_scale_solution.cpp -- Solution: vector scale on the GPU
  *
  * Compile:  hipcc -O2 -o vector_scale vector_scale_solution.cpp
- * Run:      srun --partition=mi2101x --time=2:00 --ntasks=1 ./vector_scale
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_scale
  */
 
 #include <hip/hip_runtime.h>

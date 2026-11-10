@@ -5,7 +5,7 @@
  * Each thread computes one element of the output vector y.
  *
  * Compile:  hipcc -O2 -o matvec_hip matvec_hip.cpp
- * Run:      srun --partition=mi2101x --time=2:00 --ntasks=1 ./matvec_hip
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./matvec_hip
  */
 
 #include <hip/hip_runtime.h>

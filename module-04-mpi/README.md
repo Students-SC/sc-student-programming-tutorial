@@ -11,6 +11,7 @@ By the end of this module, you will be able to:
 - Explain point-to-point communication (`MPI_Send` / `MPI_Recv`)
 - Recognize a deadlock and order messages to avoid it
 - Use collective operations (`MPI_Reduce`)
+- Test an agent's MPI code for a deadlock that a normal run can hide
 
 ---
 
@@ -18,10 +19,24 @@ By the end of this module, you will be able to:
 
 ### Why MPI?
 
-OpenMP threads share memory. **MPI (Message Passing Interface)** uses
-**multiple processes** that communicate by **sending and receiving messages**.
-In this module, we run 1 to 16 MPI processes on the CPU cores of one compute
-node.
+As you saw in Module 3, OpenMP threads work together through **shared
+memory**, so they must all run on one compute node: each node has its own
+memory, and threads can't see another node's. **MPI (Message Passing
+Interface)** takes a different approach. A program runs as **multiple
+processes**, called **ranks**, and each rank has its own private memory.
+Ranks coordinate by explicitly **sending and receiving messages**, and because
+messages can travel over the network, an MPI program can run across many
+compute nodes.
+
+That is how programs grow beyond one node. The same program can run across
+many nodes of a real cluster, for example as 64 ranks with
+`srun --nodes=4 --ntasks-per-node=16 ./program`. Ranks on the same node
+exchange messages through shared memory, while ranks on different nodes send
+them over the high-speed network from Module 1.
+
+In this tutorial, we focus on MPI within a single node: our tutorial partition
+allows one node per job, so in this module you run 1 to 16 ranks on the CPU
+cores of one compute node.
 
 ```
   One compute node
@@ -33,18 +48,10 @@ node.
   └───────────────────────────────────────────────────┘
 ```
 
-Each process is called a **rank** and has its own private memory, even though
-all ranks run on the same node. Ranks coordinate by explicitly sending and
-receiving data.
-
-**Why learn MPI if one node is enough today?** Because MPI is how programs
-grow beyond one node. The same program can run across many nodes of a real
-cluster, for example as 64 ranks with
-`srun --nodes=4 --ntasks-per-node=16 ./program`. Ranks on the same node
-exchange messages through shared memory, while ranks on different nodes send
-them over the high-speed network from Module 1. OpenMP threads can't do that,
-because they all have to share one node's memory. Our tutorial partition
-allows one node per job, so today all of your ranks share one node.
+Single-node MPI is still useful. Each rank keeps its own private memory even
+though all ranks share a node, so you practice exactly the programming model
+that runs across nodes, and the programs you write today would run on many
+nodes without changes.
 
 ### MPI Basics
 
@@ -110,17 +117,19 @@ if (rank == 0)
 
 ### Compiling and Running
 
-Compile these small programs on the login node with `mpicc`, then use `srun`
-to execute them on a compute node:
+MPI programs are compiled with `mpicc`, a wrapper around `gcc` that adds the
+MPI headers and libraries, and run with `srun`, which starts one copy of the
+program for each rank. In general, for a program in `program.c`:
 
 ```bash
-mpicc -O2 -o program program.c
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program
+mpicc -O2 -o program program.c                                       # Compile (fine on the login node)
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program  # Run 4 ranks on a compute node
 ```
 
 `--nodes=1` places all ranks on one compute node. `--ntasks=4` tells `srun`
-to launch four ranks, each running one copy of your program. Use up to 16
-ranks to explore the node's 16 CPU cores.
+to launch four ranks, each running one copy of the program. A node has 16 CPU
+cores, so you can use up to 16 ranks. You'll compile and run real programs
+this way in the exercises below.
 
 ---
 
@@ -197,7 +206,6 @@ There are **4 TODOs** to fill in:
 3. **TODO 3**: Use `MPI_Reduce` to sum the partial results
 4. **TODO 4**: Finalize MPI
 
-Replace the placeholder rank/size setup instead of adding a second declaration.
 Place the reduction after the declaration of `global_sum` and outside the
 rank-0 printing condition so every rank participates.
 
@@ -369,6 +377,50 @@ Compile and run it separately:
 mpicc -O2 -o ring_solution solutions/ring_solution.c
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./ring_solution
 ```
+
+---
+
+### Agent Practice: Test the Agent's Ring
+
+Code that runs once isn't necessarily correct. In Step 2 you saw a ring that
+deadlocks when messages aren't buffered. Now have the agent write a ring, and
+use the same trick to prove whether its version can deadlock.
+
+#### Step 1: Ask for a Ring
+
+Start Qwen Code:
+
+```bash
+bash ../../setup/launch_qwen.sh
+```
+
+Ask it:
+
+> Write ring_agent.c: an MPI program in which every rank sends its rank number to the next rank (the last rank sends to rank 0) and receives from the previous rank, then prints a line 'Rank <r> received <v>'. Use MPI_Send and MPI_Recv.
+
+Before you approve the file, read the sends and receives. Predict: would this
+version deadlock if MPI couldn't buffer the messages?
+
+#### Step 2: Test It Without Buffering
+
+Make a copy that uses `MPI_Ssend`, then compile and run it with a short time
+limit:
+
+```bash
+sed 's/MPI_Send(/MPI_Ssend(/g' ring_agent.c > ring_ssend.c
+mpicc -O2 -o ring_ssend ring_ssend.c
+srun --partition=mi2101x --nodes=1 --time=1:00 --ntasks=4 ./ring_ssend
+```
+
+If it hangs, the agent's ordering relies on buffering: press `Ctrl-C` twice,
+tell the agent what happened, and ask it to fix the ordering. When it works,
+run it again with `--ntasks=8` and check every rank's received value.
+
+**Questions:**
+- Which ordering did the agent use? Is it the same idea as yours?
+- Did it follow the instruction to use `MPI_Send` and `MPI_Recv`? If not, did
+  you notice before running it?
+- Why does the `MPI_Ssend` test tell you more than a run that happens to work?
 
 ---
 

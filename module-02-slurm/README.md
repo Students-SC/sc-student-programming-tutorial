@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Write a Slurm batch script with appropriate `#SBATCH` directives
 - Submit, monitor, and cancel jobs using `sbatch`, `squeue`, and `scancel`
 - Run quick commands on compute nodes with `srun`
+- Check an agent-written batch script against the cluster's rules
 
 ---
 
@@ -38,7 +39,7 @@ most widely used scheduler in HPC.
 | `sbatch script.sh` | Submit a batch job | `sbatch my_job.sh` |
 | `squeue` | View the job queue | `squeue -u $USER` |
 | `scancel <jobid>` | Cancel a job | `scancel 12345` |
-| `srun <command>` | Run a command on a compute node | `srun --partition=mi2101x --time=1:00 hostname` |
+| `srun <command>` | Run a command on a compute node | `srun --partition=mi2101x --nodes=1 --time=1:00 hostname` |
 | `sinfo` | View partition/node status | `sinfo -p mi2101x` |
 | `scontrol show job <id>` | Detailed info about a job | `scontrol show job 12345` |
 | `sacct -j <id>` | Accounting info after completion | `sacct -j 12345` |
@@ -67,7 +68,7 @@ echo "Hello from $(hostname) at $(date)"
 | Directive | Meaning |
 |-----------|---------|
 | `--partition` | Target node group. **Required on this cluster.** Use `mi2101x` for this tutorial. |
-| `--nodes` | How many nodes. Use `1` for most exercises. |
+| `--nodes` | How many nodes. **Required on this cluster**, and `1` is the most a job can use here. |
 | `--ntasks` | Number of MPI ranks (processes). Use `1` unless doing MPI. |
 | `--cpus-per-task` | CPU cores per task. Useful for OpenMP threading. |
 | `--time` | Maximum run time. **Required on this cluster.** Keep short (5--10 min) to share nodes fairly. |
@@ -174,7 +175,9 @@ cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 ```
 
 ```{tip}
-`ls -lt *.out | head` shows the most recent output files.
+`ls -lt *.out | head` shows the most recent output files, which helps when you
+have several `.out` and `.err` files from earlier jobs, such as the one you
+submitted and cancelled in Steps 2-4.
 ```
 
 `squeue` lists only jobs that are pending or running. To look up jobs that have
@@ -201,6 +204,12 @@ cat hello_compute.c
 ```
 
 This program prints information about the compute node, including GPU details.
+
+```{note}
+You don't need to understand the C code at this point. Skim it to see what it
+prints; the point of this exercise is compiling it and running it through
+Slurm. You'll write your own C programs starting in Module 3.
+```
 
 #### Step 2: Compile on the Login Node
 
@@ -300,6 +309,63 @@ cat check_gpu_<JOBID>.out           # After the job leaves the queue
 The output file appears in this directory, because a batch job writes its
 output where you submitted it. If the check still doesn't pass, ask an
 instructor.
+
+---
+
+### Agent Practice: A Batch Script from a Spec
+
+You have written and read batch scripts yourself; now give the agent a
+specification and check its script the way the cluster will. This time you
+let the agent edit files, but only after you approve each change.
+
+#### Step 1: Give the Agent the Spec
+
+Start Qwen Code from this directory:
+
+```bash
+bash ../../setup/launch_qwen.sh
+```
+
+Ask it:
+
+> Create agent_job.sh: a Slurm batch script that runs ./hello_compute with 8 CPU cores for at most 3 minutes and writes its output to agent-job_<job ID>.out.
+
+The agent may read other files first; watch which ones. When it asks to create
+the file, read the script before you approve it.
+
+#### Step 2: Check It Before Slurm Does
+
+Compare the script with the [key directives](#anatomy-of-a-batch-script)
+above. Does it name the partition, the node count, and a time limit? Does it
+ask for anything this cluster doesn't allow, such as `--gpus`? Check every
+directive against the table, not just the required ones. Predict whether
+Slurm will accept it.
+
+#### Step 3: Submit and Iterate
+
+If the agent offers to run `sbatch agent_job.sh`, you can approve that, or
+`/quit` and run it yourself. If the filter rejects the job, give the agent the
+lines that start with `-->` and ask it to fix the script. When the job
+finishes, check its output:
+
+```bash
+cat agent-job_<JOBID>.out
+```
+
+**Questions:**
+- In the output, what is `SLURM_NTASKS`? Is that what the spec asked for?
+- Why does the program still see 16 CPU cores?
+- Which directives came from your notes in `QWEN.md`, and which did the agent
+  copy from files in this directory?
+- What did you, or the filter, have to correct?
+
+If you or the filter had to correct anything, add it to the tutorial's agent
+notes so the agent gets it right next time (from this directory, the
+repository's `QWEN.md` is two levels up):
+
+```bash
+echo "- <what you learned>" >> ../../QWEN.md
+```
 
 ---
 

@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Add OpenMP directives to parallelize a serial C program
 - Control the number of threads and measure speedup
 - Identify and fix race conditions in shared-memory code
+- Check an agent's script against results you measured yourself
 
 ---
 
@@ -192,6 +193,17 @@ cat ../examples/openmp_hello.c
 gcc -fopenmp -o openmp_hello ../examples/openmp_hello.c
 ```
 
+```{note}
+C is a *compiled* language: before you can run a C program, a compiler (here
+`gcc`) translates the source file into an executable program. In the command
+above, `-o openmp_hello` names the executable, and `-fopenmp` turns on OpenMP:
+the compiler acts on the `#pragma omp` lines and links in the OpenMP runtime
+library, which creates and manages the threads. Without `-fopenmp`, `gcc`
+ignores the pragmas, so a program would quietly run on one thread -- and this
+one wouldn't build at all, because it calls OpenMP functions such as
+`omp_get_thread_num()`.
+```
+
 #### Step 2: Run on a Compute Node
 
 Use `srun` to execute the compiled program on a compute node:
@@ -260,7 +272,14 @@ an existing VS Code Remote SSH connection.
 
 There are **2 TODOs** to fill in:
 
-1. **TODO 1**: Add the OpenMP header include.
+1. **TODO 1**: Add the OpenMP header include. C programs start with
+   `#include` lines that bring in **header files**, which declare the
+   functions a library provides so the compiler knows how to call them. For
+   example, `pi_serial.c` includes `<stdio.h>` for `printf()`. OpenMP's
+   functions, such as `omp_get_num_threads()`, are declared in `<omp.h>`; the
+   hello-world program in Exercise 1 includes it right after `<stdio.h>`. If you
+   leave it out, `gcc` warns about an "implicit declaration of function
+   `omp_get_num_threads`".
 2. **TODO 2**: Parallelize the loop using the **split** form of `parallel for`
    so you can also capture the thread count. Specifically: wrap the for loop
    in a `#pragma omp parallel` region; inside that region but outside the
@@ -306,8 +325,13 @@ the 1-thread time divided by the N-thread time:
 | 16      |          |         |
 
 **Questions:**
-- Does the answer change with different thread counts? (It shouldn't!)
-- How does the time change? What speedup do you get with 16 threads vs. 1?
+- Does the **answer** change with different thread counts? Compare the last
+  few digits of `Computed pi` and the `Error` line. With more threads, each
+  thread adds up a smaller share of the steps, and the partial sums are
+  combined at the end, so the additions happen in a different order. Why
+  would the order of additions change the result on a computer, when it
+  doesn't in math?
+- How does the **time** change? What speedup do you get with 16 threads vs. 1?
 - Is the speedup perfect (16x)? Why or why not? Think back to
   [Amdahl's law](../module-01-hpc-foundations/README.md#how-much-faster-amdahls-law)
   from Module 1: which parts of this program don't run in parallel?
@@ -341,6 +365,48 @@ about what each thread does with `sum` when it finishes its share of the
 loop.)
 
 A fixed version, with an explanation, is in `solutions/pi_race_solution.c`.
+
+---
+
+### Agent Practice: Delegate the Bookkeeping
+
+You filled in the speedup table from Exercise 3 by hand. That's the kind of
+chore developers hand to an agent -- and then check against numbers they
+already know.
+
+#### Step 1: Ask for a Script
+
+Start Qwen Code:
+
+```bash
+bash ../../setup/launch_qwen.sh
+```
+
+Ask it, using your job ID from Exercise 3:
+
+> Write speedup.py, which reads an output file like openmp-pi_<JOBID>.out (given as a command-line argument) and prints a table of threads, time, and speedup (the 1-thread time divided by the N-thread time).
+
+Read the script before you approve it. Which lines find the thread count and
+the time in the output file?
+
+#### Step 2: Run It and Compare
+
+This script only reads a small text file, so it's fine to run on the login
+node (approve it if the agent offers, or run it yourself):
+
+```bash
+python3 speedup.py openmp-pi_<JOBID>.out
+```
+
+Does it match the table you filled in by hand? If it crashes or prints wrong
+numbers, show the agent the output and ask it to fix the script.
+
+**Questions:**
+- Where does the script get each thread count: from the
+  `=== OMP_NUM_THREADS=N ===` header that the batch script prints, or from
+  the `Threads = N` line that your program prints? When could those two
+  disagree, and which one tells you how many threads actually ran?
+- What would it do if the 1-thread run were missing from the file?
 
 ---
 
