@@ -83,6 +83,22 @@ auto-update, usage statistics, or telemetry. It takes about 20 seconds and
 produces a 324 MB install. Re-run it after changing the version or the
 defaults file.
 
+The defaults also turn off features that cost context-window space and server
+time without helping the tutorial. Measured in a student's clone on the
+interactive screen, a one-word question took 16,274 prompt tokens per request,
+plus 4 background requests (28,291 tokens) from auto-memory. With these
+features off it takes 11,536 tokens and no background requests:
+
+- **Auto-memory** (`memory.enableManagedAutoMemory`, `enableManagedAutoDream`):
+  background requests after every turn, and memory files under `~/.qwen`.
+  Students keep their notes in the repository's `QWEN.md` instead.
+- **Bundled skills** (`skills.disabledLevels`): a catalog of about 3,000
+  characters added to every conversation.
+- **Unused tools** (`tools.disabled`): `skill`, `artifact`, `notebook_edit`,
+  `display_image`, and `enter_plan_mode` (students switch modes with
+  Shift+Tab). Don't turn off `tool_search`: without it Qwen Code declares
+  every deferred tool up front, and requests grow to about 21,800 tokens.
+
 Qwen Code calls tools natively, so the vLLM server must run with tool
 calling enabled, as `start_server.sh` does.
 

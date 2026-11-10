@@ -13,8 +13,10 @@
 #
 # The install also gets a copy of qwen-code-defaults.json, which
 # setup/launch_qwen.sh passes to Qwen Code as its lowest-precedence settings
-# (ask-permissions mode by default, no auto-update or usage statistics, and the
-# server's 32K context window). Re-run this script after editing that file.
+# (ask-permissions mode by default, no auto-update or usage statistics, the
+# server's 32K context window, and no auto-memory, bundled skills, or unused
+# tools, which would otherwise fill much of that window). Re-run this script
+# after editing that file.
 #
 # Run:  bash setup/shared-env/build_qwen_code.sh
 # ---------------------------------------------------------------------------
