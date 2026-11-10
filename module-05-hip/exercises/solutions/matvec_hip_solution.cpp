@@ -14,12 +14,14 @@
 #define K 4096
 #define BLOCK_SIZE 256
 
+/* Check a HIP call's return value. On failure, report which call failed,
+ * where, and why, then exit with a nonzero status. */
 #define HIP_CHECK(call)                                                     \
     do {                                                                    \
-        hipError_t err = call;                                              \
-        if (err != hipSuccess) {                                            \
-            fprintf(stderr, "HIP error at %s:%d: %s\n",                    \
-                    __FILE__, __LINE__, hipGetErrorString(err));             \
+        hipError_t err_ = (call);                                           \
+        if (err_ != hipSuccess) {                                           \
+            fprintf(stderr, "HIP error at %s:%d: %s failed: %s\n",         \
+                    __FILE__, __LINE__, #call, hipGetErrorString(err_));    \
             exit(1);                                                        \
         }                                                                   \
     } while (0)
@@ -51,6 +53,8 @@ int main(void) {
             h_A[i * K + j] = (double)(i + j) / K;
     for (int j = 0; j < K; j++)
         h_x[j] = 1.0;
+    for (int i = 0; i < M; i++)
+        h_y[i] = NAN;   /* so validation fails if no result is copied back */
 
     for (int i = 0; i < M; i++) {
         h_ref[i] = 0.0;
@@ -81,6 +85,7 @@ int main(void) {
     HIP_CHECK(hipEventRecord(start));
     for (int rep = 0; rep < reps; rep++)
         matvec_kernel<<<blocks, BLOCK_SIZE>>>(d_A, d_x, d_y, M, K);
+    HIP_CHECK(hipGetLastError());
     HIP_CHECK(hipEventRecord(stop));
     HIP_CHECK(hipEventSynchronize(stop));
 
@@ -90,19 +95,25 @@ int main(void) {
 
     HIP_CHECK(hipMemcpy(h_y, d_y, bytes_y, hipMemcpyDeviceToHost));
 
+    /* Validate against the CPU reference. NaN fails every comparison, so
+     * reject non-finite values explicitly. */
+    int mismatches = 0;
     double max_error = 0.0;
     for (int i = 0; i < M; i++) {
         double error = fabs(h_y[i] - h_ref[i]);
-        if (error > max_error) max_error = error;
+        if (!std::isfinite(h_y[i]) || error > 1e-6) mismatches++;
+        else if (error > max_error) max_error = error;
     }
+    int passed = (mismatches == 0);
 
     printf("Matrix-Vector Multiply (%d x %d) on GPU\n", M, K);
-    printf("  Launch:       %d blocks x %d threads\n", blocks, BLOCK_SIZE);
-    printf("  Kernel time:  %.3f ms (average of %d)\n", kernel_ms, reps);
-    printf("  Bandwidth:    %.1f GB/s (A, x, and y)\n",
+    printf("  Launch:               %d blocks x %d threads\n", blocks, BLOCK_SIZE);
+    printf("  Kernel time:          %.3f ms (average of %d)\n", kernel_ms, reps);
+    printf("  Effective bandwidth:  %.1f GB/s (reads A and x, writes y)\n",
            (bytes_A + bytes_x + bytes_y) / (kernel_ms / 1e3) / 1e9);
-    printf("  Max error:    %.2e\n", max_error);
-    printf("  Status:       %s\n", max_error < 1e-6 ? "PASSED" : "FAILED");
+    printf("  Max error:            %.2e\n", max_error);
+    printf("  Mismatches:           %d of %d\n", mismatches, M);
+    printf("  Status:               %s\n", passed ? "PASSED" : "FAILED");
 
     HIP_CHECK(hipEventDestroy(start));
     HIP_CHECK(hipEventDestroy(stop));
@@ -114,5 +125,5 @@ int main(void) {
     free(h_y);
     free(h_ref);
 
-    return 0;
+    return passed ? 0 : 1;
 }
