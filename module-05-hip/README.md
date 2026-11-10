@@ -262,25 +262,35 @@ hipcc -O2 -o vector_add ../examples/vector_add.cpp
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_add
 ```
 
+```{note}
+`srun` waits for a free node before it runs your program, so a command may sit
+for a while when the partition is busy. Its `--time` limit counts only the time
+your program runs, not the time it waits in the queue.
+```
+
 #### Step 4: Study the HIP Workflow
 
 Study the code carefully. Note the pattern:
 1. Allocate host arrays and initialize them
 2. Allocate device arrays with `hipMalloc`
 3. Copy input data to device with `hipMemcpy`
-4. Launch the kernel with `<<<blocks, threads>>>`
+4. Launch the kernel with `<<<blocks, threads>>>`, checking for errors
 5. Copy results back to host
 6. Verify and free memory
 
 #### Step 5: Compare Copy and Kernel Times
 
-The program times the copies as well as the kernel. In your output, compare
-**Copy to GPU** with **Kernel time**.
+The program times the copies as well as the kernel. **Copy to GPU** covers
+copying both inputs (`a` and `b`) to the GPU, and **Copy to CPU** covers copying
+the result (`c`) back. **Copies + one kernel** adds them to one kernel's time.
+It isn't the program's total run time, which also includes allocating and
+initializing memory.
 
 **Questions:**
-- How many times longer do the copies take than the kernel?
-- If you only needed to add these two vectors once, would the GPU be worth
-  it? What if you ran many kernels on the same data?
+- What fraction of the measured copy-plus-kernel time is spent transferring
+  data?
+- How might that fraction change if several kernels reused data already on
+  the GPU?
 
 ---
 
@@ -310,6 +320,10 @@ There are **4 TODOs** to fill in:
 3. **TODO 3**: Calculate grid dimensions and launch the kernel
 4. **TODO 4**: Copy results from device back to host
 
+TODO 3 checks the launch with `HIP_CHECK(hipGetLastError())`, and the template
+then waits with `HIP_CHECK(hipDeviceSynchronize())`: the pattern from
+[Kernel Launches Are Asynchronous](#kernel-launches-are-asynchronous).
+
 #### Step 3: Compile the Program
 
 ```bash
@@ -328,9 +342,12 @@ sbatch submit_hip.sh
 cat hip-exercise_<JOBID>.out
 ```
 
-The program verifies the results against a CPU reference. If everything is
-correct, you'll see "PASSED". It also reports the kernel's average time and
-memory bandwidth, which you'll compare across block sizes in Exercise 3.
+The program checks every element against the expected value (`alpha` times the
+input). It prints `PASSED` only if all of them match; otherwise it prints
+`FAILED` and the number of mismatches, and exits with a nonzero status. It also
+reports the kernel's average time and effective bandwidth (see
+[How the Programs Measure Performance](#how-the-programs-measure-performance)),
+which you'll compare across block sizes in Exercise 3.
 
 ---
 
@@ -349,30 +366,63 @@ for b in 64 128 256 512 1024; do
 done
 ```
 
+The vector length can be set the same way (`-DN=...`). Build one more version
+with a length that isn't divisible by the block size, 1,000,003 elements
+(3,906 blocks of 256, plus 67), to test the bounds check:
+
+```bash
+hipcc -O2 -DN=1000003 -o vector_scale_oddN vector_scale.cpp
+```
+
 #### Step 2: Run Them All in One Job
+
+This runs the block sizes twice, to see whether the differences repeat, and
+then the odd-length version, all in one job:
 
 ```bash
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 \
-  bash -c 'for b in 64 128 256 512 1024; do ./vector_scale_$b; done'
+  bash -c 'for pass in 1 2; do for b in 64 128 256 512 1024; do ./vector_scale_$b; done; done; ./vector_scale_oddN' \
+  | grep -E "N:|Block size|bandwidth|Status"
 ```
 
 **Questions:**
-- Does the block size affect correctness?
-- Does it affect performance? Which block sizes are fastest?
-- Why might the smallest blocks be slower? (Hint: each compute unit can hold
-  only a limited number of blocks at once. How many threads can it keep busy
-  if every block is a single 64-thread wavefront? See
-  [What Makes GPU Code Fast](#what-makes-gpu-code-fast).)
+- Does the block size affect correctness? Does the 1,000,003-element version
+  pass? In TODO 3 the number of blocks is rounded up, and the kernel checks
+  `if (i < n)`: what would go wrong without each of them?
+- Are the performance differences consistent across the two passes?
+- If smaller blocks are slower, what might explain the result? Possible
+  factors include blocks that leave part of a wavefront's lanes idle, limits
+  on how many blocks a compute unit can hold at once, and each block's
+  register and shared-memory needs. Which of these could apply to a kernel
+  this simple?
+- Compare the bandwidths with the MI210's 1.6 TB/s peak. Could the kernel
+  already have enough parallelism to use the available memory bandwidth
+  effectively?
 
 ---
 
 ### Agent Practice: Automate the Experiment, Honestly
 
 A sweep like Exercise 3's is a natural job for an agent. Ask for a slightly
-bigger one -- including a block size you know is too large -- and check that
+bigger one that includes a block size you know is too large, and check that
 the agent's script follows your spec and reports failures honestly.
 
-#### Step 1: Ask for a Sweep Script
+#### Step 1: Write the Spec, Then Ask for a Script
+
+Save the specification in a file the agent can read:
+
+```bash
+cat > sweep_spec.md << 'EOF'
+# sweep.sh specification
+- On the login node, compile vector_scale.cpp once for each of these block sizes (-DBLOCK_SIZE): 32, 64, 128, 256, 512, 1024, and 2048.
+- Run every configuration that compiled within exactly one srun, on partition mi2101x.
+- Keep useful compiler and program error messages.
+- For each configuration, report whether it failed to compile, failed to run, or failed validation, and keep going with the rest of the sweep.
+- Print the bandwidth only for runs that succeeded and passed validation.
+- Never silently skip a failed configuration, and never run a leftover executable from an earlier build.
+- Exit with a nonzero status if any configuration failed.
+EOF
+```
 
 Start Qwen Code:
 
