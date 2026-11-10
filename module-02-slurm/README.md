@@ -149,18 +149,17 @@ scontrol show job <JOBID>           # Detailed job info
 squeue -p mi2101x                   # All jobs on our partition
 ```
 
-Slurm will be part of your day-to-day work on an HPC cluster, so it's worth
-learning how to tailor its commands to the information you need. For example,
-`squeue` gives usernames only eight characters by default. Student accounts
-such as `sc26students097` all appear as `sc26stud`, making it hard to tell
-whose jobs you're looking at. Widen the username column to 16 characters:
+Slurm is part of day-to-day work on an HPC cluster, so it's worth learning how
+to tailor its commands to get the information you need. For example, `squeue`
+truncates long usernames by default, sometimes making it hard to tell whose
+jobs you're looking at. Widen the username column to 16 characters:
 
 ```bash
-squeue -p mi2101x -o "%.18i %.9P %.8j %.16u %.2t %.10M %.6D %R"
+squeue -o "%.18i %.9P %.8j %.16u %.2t %.10M %.6D %R"
 ```
 
 `-o` selects the output format. This keeps the default columns and changes
-`%.8u` to `%.16u`, so you can see each full username. See the
+`%.8u` to `%.16u`, so you can see each full student account username. See the
 [squeue documentation](https://slurm.schedmd.com/squeue.html) for more ways to
 customize the display.
 
@@ -226,11 +225,11 @@ This program prints information about the compute node, including GPU details.
 > You don't need to understand the C code at this point. Skim it to see what
 > it prints, then focus on the process: compile on the login node, submit a
 > batch script, and read the output from the compute node. You'll write your
-> own C programs starting in Module 3.
+> own programs starting in Module 3.
 
 #### Step 2: Compile on the Login Node
 
-Compiling is lightweight, so it is OK to do on the login node:
+Compiling is usually lightweight, so it is OK to do on the login node:
 
 ```bash
 gcc -o hello_compute hello_compute.c
@@ -403,9 +402,10 @@ should see timing results for each value of N, showing how compute time grows.
 
 **In practice:** for sweeps over many independent values, HPC users usually
 submit a **job array** instead of a loop. Adding `#SBATCH --array=0-3` runs
-four copies of the script as separate jobs, which can run on different nodes at
-the same time, and each copy reads its own index from `$SLURM_ARRAY_TASK_ID`.
-We use a loop today so that 80+ students don't flood the queue.
+four copies of the script as separate Slurm jobs, which can run on different
+nodes at the same time, and each copy reads its own index from
+`$SLURM_ARRAY_TASK_ID`.  We use a loop today so that 80+ students don't flood
+the queue.
 
 #### Challenge B: Explore Resource Requests
 
