@@ -499,7 +499,13 @@ Implement a HIP kernel for matrix-vector multiplication: `y[i] = sum_j(A[i][j] *
 
 Each thread computes one element of the output vector y. This means each
 thread must iterate over an entire row of the matrix. Name the kernel
-`matvec_kernel`, as in the template's TODO. Then compile and run it:
+`matvec_kernel`, as in the template's TODO.
+
+Before you run it, work out from the program's settings how many blocks it
+launches: the matrix has `M` = 4096 rows, each thread computes one row, and
+`BLOCK_SIZE` is 256. How many of the MI210's 104 compute units can that many
+blocks use at once? (The program prints its launch configuration, so you can
+check your answer.) Then compile and run it:
 
 ```bash
 hipcc -O2 -o matvec_hip matvec_hip.cpp
@@ -507,23 +513,26 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./matvec_hip
 ```
 
 **Questions:**
-- Compare the bandwidth with `vector_add`'s from Exercise 1. Why is it so much
-  lower? (Hints: how many blocks does the program launch, and how many compute
-  units does the MI210 have? At each step of the loop, how far apart in memory
-  are the elements that neighboring threads read?)
+- Compare the effective bandwidth with `vector_add`'s from Exercise 1. Why is
+  it so much lower? Two separate things limit it. (Hints: how many blocks
+  does the program launch, compared with the number of compute units? The
+  matrix is stored row by row, so at each step of the loop, how far apart in
+  memory are the elements that neighboring threads read?)
 
 A completed version is in `solutions/matvec_hip_solution.cpp`.
 
 **Make it faster (optional):** store the matrix transposed, so that element
 (i, j) is at `A[j * M + i]`; update the initialization, the CPU reference, and
 the kernel. Then at each step of the loop, neighboring threads read
-neighboring addresses, and the GPU can combine their reads. How much faster
-is it? A completed version is in
-`solutions/matvec_hip_transposed_solution.cpp`. The other limit, too few
-threads, needs a different design: a whole block per row, combining partial
-sums in shared memory, like the reduction in Module 7's capstone.
+neighboring addresses, and the GPU can combine their reads. This fixes the
+access pattern, but it doesn't change the number of output threads or blocks,
+so the first limit remains. Measure how much it helps. A completed version is
+in `solutions/matvec_hip_transposed_solution.cpp`. The other limit, too few
+blocks, needs a different design: a whole block per row, combining partial
+sums in shared memory, like the reduction in Module 7's
+[capstone](../module-07-ai-agents/exercises/capstone.md).
 
-### Challenge B: Ask the Agent
+### Challenge B (Optional): Ask the Agent
 
 Give your AI agent this serial C loop and ask it to convert it to a HIP
 kernel:
@@ -538,7 +547,7 @@ for (int i = 0; i < n; i++) {
 ```
 
 Review the generated code. Does the thread indexing make sense? Did it handle
-the `if (i < n)` bounds check?
+the `if (i < n)` bounds check? Does it check the launch for errors?
 
 ---
 
@@ -549,8 +558,9 @@ the `if (i < n)` bounds check?
 | `hipMalloc(&ptr, bytes)` | Allocate GPU memory |
 | `hipFree(ptr)` | Free GPU memory |
 | `hipMemcpy(dst, src, bytes, dir)` | Copy data (host↔device) |
-| `hipDeviceSynchronize()` | Wait for GPU to finish |
+| `hipDeviceSynchronize()` | Wait for the GPU to finish, and report errors from its work |
 | `hipGetLastError()` | Check for kernel launch errors |
+| `hipEventRecord()` / `hipEventElapsedTime()` | Time GPU work |
 
 | Kernel Syntax | |
 |--------------|---|
@@ -563,6 +573,7 @@ the `if (i < n)` bounds check?
 | Compile & Run | |
 |--------------|---|
 | `hipcc -O2 -o prog prog.cpp` | Compile HIP code |
+| `hipcc -O2 -DBLOCK_SIZE=128 -DN=1000003 -o prog prog.cpp` | Compile with a different block size or length (`vector_scale.cpp`) |
 | `srun --partition=mi2101x --nodes=1 --time=2:00 ./prog` | Run on a GPU node |
 
 ---
