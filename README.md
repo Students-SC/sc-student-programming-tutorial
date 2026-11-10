@@ -91,12 +91,9 @@ to use. See "Using AI Assistants" below.
 
 ## Getting Help
 
-If you get stuck, ask for help early. Instructors will be in the room throughout
-the tutorial and can help with cluster access, Slurm jobs, code errors, and
-conceptual questions.
-
-We may also provide an online help channel, such as Slack, for questions during
-or after the session. Details will be added here before the tutorial.
+If you get stuck, raise your hand. Instructors are in the room throughout the
+tutorial to help with cluster access, Slurm jobs, code errors, and conceptual
+questions.
 
 ## Compute (virtual) Node Details
 
