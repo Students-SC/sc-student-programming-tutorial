@@ -18,8 +18,7 @@ help them understand your work, not just finish it.
   disk on each node, so a compute node can't see files written to the login
   node's /tmp, and the login node's /tmp is shared by everyone, so filling it
   can break the node for all users. Put files in the current directory, or
-  under $WORK for anything large. If a script needs a scratch directory,
-  create it in the current directory (for example, mktemp -d -p .).
+  under $WORK for anything large.
 
 ## Cluster notes
 
