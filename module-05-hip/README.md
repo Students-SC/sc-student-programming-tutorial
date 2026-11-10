@@ -446,9 +446,8 @@ can work out the answer before any program runs:
 | 3 to 15 | 62,500 |
 | Total across all bins | 1,000,003 |
 
-Write down these expected counts before you ask the agent anything. A correct
-total doesn't show that the counts are in the correct bins: a program could
-put counts in the wrong bins and still add up to 1,000,003.
+A correct total doesn't show that the counts are in the correct bins: a
+program could put counts in the wrong bins and still add up to 1,000,003.
 
 #### Step 2: Ask for a Basic Program
 
@@ -482,8 +481,8 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_basic
 
 #### Step 3: Decide What the Output Establishes
 
-Compare the output with the expected counts you wrote down, and use this table
-to decide what it tells you:
+Compare the output with the expected counts in Step 1, and use this table to
+decide what it tells you:
 
 | Observed output | Conclusion |
 |-----------------|------------|
@@ -496,7 +495,7 @@ If the output doesn't show all 16 bin counts, ask the agent:
 
 > Update histogram_basic.cpp to print all 16 bin counts. Keep the histogram computation unchanged.
 
-Then rebuild, run, and compare every bin with your expected counts.
+Then rebuild, run, and compare every bin with the expected counts.
 
 If the program fails to compile or run, give the agent the error message and
 ask it to fix that one problem. If it still doesn't work after one or two
