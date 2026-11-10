@@ -380,16 +380,21 @@ with a length that isn't divisible by the block size, 1,000,003 elements
 hipcc -O2 -DN=1000003 -o vector_scale_oddN vector_scale.cpp
 ```
 
-#### Step 2: Run Them All in One Job
+#### Step 2: Run Them All in One Batch Job
 
-This runs the block sizes twice, to see whether the differences repeat, and
-then the odd-length version, all in one job:
+`submit_blocksizes.sh` runs every block size twice, to see whether the
+differences repeat, then the odd-length version, all in one job. Instead of
+each program's full output, it prints one table with the two runs side by
+side:
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 \
-  bash -c 'for pass in 1 2; do for b in 64 128 256 512 1024; do ./vector_scale_$b; done; done; ./vector_scale_oddN' \
-  | grep -E "N:|Block size|bandwidth|Status"
+sbatch submit_blocksizes.sh
+squeue -u $USER                     # The job disappears when it finishes
+cat hip-blocksizes_<JOBID>.out
 ```
+
+If a program is missing or fails, the table shows `MISSING` or `ERROR`, and
+the reason is listed below it.
 
 **Questions:**
 - Does the block size affect correctness? Does the 1,000,003-element version
@@ -398,9 +403,10 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 \
 - Are the performance differences consistent across the two passes?
 - If smaller blocks are slower, what might explain the result? Possible
   factors include blocks that leave part of a wavefront's lanes idle, limits
-  on how many blocks a compute unit can hold at once, and each block's
-  register and shared-memory needs. Which of these could apply to a kernel
-  this simple?
+  on how many blocks a compute unit can hold at once, each block's register
+  and shared-memory needs, and the cost of starting and finishing a very
+  large number of tiny blocks. Which of these could apply to a kernel this
+  simple?
 - Compare the bandwidths with the MI210's 1.6 TB/s peak. Could the kernel
   already have enough parallelism to use the available memory bandwidth
   effectively?
