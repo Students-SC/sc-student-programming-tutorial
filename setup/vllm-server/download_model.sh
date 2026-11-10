@@ -22,18 +22,21 @@
 set -euo pipefail
 
 # Create new files group-writable and group-only (no "other" access) so any
-# member of the sc26dev group can manage the shared artifacts. This pairs with
-# the setgid bit on $SC26_SHARED_DIR, which makes new files inherit the group.
+# member of the sc26dev group can manage the shared artifacts and students
+# cannot read them. This pairs with the setgid bit on $AGENT_DIR, which makes
+# new files inherit the sc26dev group.
 umask 0007
 
 # Shared tutorial resources live under $SC26_SHARED_DIR so the weights are
-# downloaded once and reused by start_server.sh on tutorial day. Override
-# SC26_SHARED_DIR to test in a different location.
-SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
+# downloaded once and reused by start_server.sh on tutorial day. The agent
+# server's files are in the sc26_agent/ subdirectory, which the sc26dev group
+# can write. Override SC26_SHARED_DIR to test in a different location.
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
+AGENT_DIR="$SC26_SHARED_DIR/sc26_agent"
 
-SIF_FILE="$SC26_SHARED_DIR/sc26_containers/vllm-openai-rocm.sif"
+SIF_FILE="$AGENT_DIR/sc26_containers/vllm-openai-rocm.sif"
 MODEL_NAME="Qwen/Qwen3-Coder-30B-A3B-Instruct"
-CACHE_DIR="$SC26_SHARED_DIR/sc26_model_cache"
+CACHE_DIR="$AGENT_DIR/sc26_model_cache"
 
 if [[ ! -f "$SIF_FILE" ]]; then
     echo "ERROR: Container image not found at $SIF_FILE"

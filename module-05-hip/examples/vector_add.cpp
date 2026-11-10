@@ -4,7 +4,7 @@
  * Computes c[i] = a[i] + b[i] for N elements.
  *
  * Compile:  hipcc -O2 -o vector_add vector_add.cpp
- * Run:      srun --partition=mi2101x --time=2:00 --ntasks=1 ./vector_add
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_add
  */
 
 #include <hip/hip_runtime.h>
@@ -53,15 +53,30 @@ int main(void) {
     HIP_CHECK(hipMalloc(&d_b, bytes));
     HIP_CHECK(hipMalloc(&d_c, bytes));
 
-    /* Copy inputs from host to device */
+    hipEvent_t copy_start, copy_stop;
+    HIP_CHECK(hipEventCreate(&copy_start));
+    HIP_CHECK(hipEventCreate(&copy_stop));
+
+    /* Copy inputs from host to device (timed) */
+    HIP_CHECK(hipEventRecord(copy_start));
     HIP_CHECK(hipMemcpy(d_a, h_a, bytes, hipMemcpyHostToDevice));
     HIP_CHECK(hipMemcpy(d_b, h_b, bytes, hipMemcpyHostToDevice));
+    HIP_CHECK(hipEventRecord(copy_stop));
+    HIP_CHECK(hipEventSynchronize(copy_stop));
+    float h2d_ms = 0.0f;
+    HIP_CHECK(hipEventElapsedTime(&h2d_ms, copy_start, copy_stop));
 
     /* Launch kernel */
     int blocks = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
     printf("Launching kernel: %d blocks x %d threads = %d total threads\n",
            blocks, BLOCK_SIZE, blocks * BLOCK_SIZE);
     printf("Problem size: %d elements (%.1f MB)\n\n", N, bytes / 1e6);
+
+    /* Warm-up launch: the first launch in a program includes one-time setup,
+     * so time a second launch instead. */
+    vector_add_kernel<<<blocks, BLOCK_SIZE>>>(d_a, d_b, d_c, N);
+    HIP_CHECK(hipGetLastError());
+    HIP_CHECK(hipDeviceSynchronize());
 
     hipEvent_t start, stop;
     HIP_CHECK(hipEventCreate(&start));
@@ -75,8 +90,13 @@ int main(void) {
     float kernel_ms = 0.0f;
     HIP_CHECK(hipEventElapsedTime(&kernel_ms, start, stop));
 
-    /* Copy results back to host */
+    /* Copy results back to host (timed) */
+    HIP_CHECK(hipEventRecord(copy_start));
     HIP_CHECK(hipMemcpy(h_c, d_c, bytes, hipMemcpyDeviceToHost));
+    HIP_CHECK(hipEventRecord(copy_stop));
+    HIP_CHECK(hipEventSynchronize(copy_stop));
+    float d2h_ms = 0.0f;
+    HIP_CHECK(hipEventElapsedTime(&d2h_ms, copy_start, copy_stop));
 
     /* Verify: sin^2(x) + cos^2(x) should equal 1.0 */
     double max_error = 0.0;
@@ -89,12 +109,16 @@ int main(void) {
     printf("  Kernel time:  %.3f ms\n", kernel_ms);
     printf("  Bandwidth:    %.1f GB/s (kernel only)\n",
            3.0 * bytes / (kernel_ms / 1e3) / 1e9);
+    printf("  Copy to GPU:  %.3f ms (a and b)\n", h2d_ms);
+    printf("  Copy to CPU:  %.3f ms (c)\n", d2h_ms);
     printf("  Max error:    %.2e\n", max_error);
     printf("  Status:       %s\n", max_error < 1e-10 ? "PASSED" : "FAILED");
 
     /* Clean up */
     HIP_CHECK(hipEventDestroy(start));
     HIP_CHECK(hipEventDestroy(stop));
+    HIP_CHECK(hipEventDestroy(copy_start));
+    HIP_CHECK(hipEventDestroy(copy_stop));
     HIP_CHECK(hipFree(d_a));
     HIP_CHECK(hipFree(d_b));
     HIP_CHECK(hipFree(d_c));

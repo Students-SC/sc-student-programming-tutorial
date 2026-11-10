@@ -15,7 +15,7 @@
 #include <math.h>
 #include <mpi.h>
 
-#define TOTAL_ELEMENTS 100000000L
+#define TOTAL_ELEMENTS 1000000000L
 
 int main(int argc, char **argv) {
 
@@ -30,7 +30,6 @@ int main(int argc, char **argv) {
      *   MPI_Comm_rank(???, ???);
      *   MPI_Comm_size(???, ???);
      */
-    int rank = 0, size = 1;  /* Replace with real MPI calls */
 
     /* Divide the work: each rank handles a contiguous chunk */
     long my_count = TOTAL_ELEMENTS / size;

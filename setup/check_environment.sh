@@ -61,6 +61,22 @@ check "squeue available" which squeue
 check "sinfo available" which sinfo
 check "mi2101x partition visible" bash -c 'sinfo -p mi2101x 2>&1 | grep -q mi2101x'
 
+# ---- Tutorial environment ----
+echo ""
+echo "--- Tutorial Environment ---"
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
+check "WORK directory set and present" test -d "${WORK:-/nonexistent}"
+check "Shared Python environment readable" test -r "$SC26_SHARED_DIR/sc26_venv/bin/activate"
+check "Shared AI agent (Qwen Code) installed" test -x "$SC26_SHARED_DIR/sc26_qwen_code/bin/qwen"
+check "Shared model cache readable" test -r "$SC26_SHARED_DIR/sc26_hf_cache/hub"
+# The agent server may not be running yet, so this is a warning, not a failure.
+if [[ -r "$SC26_SHARED_DIR/sc26_agent/sc26_agent_server_url" ]]; then
+    echo "  [PASS]  AI agent server running"
+    ((PASS++))
+else
+    echo "  [WARN]  AI agent server not running yet (instructors start it before the tutorial)"
+fi
+
 # ---- Summary ----
 echo ""
 echo "============================================="

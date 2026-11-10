@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Write a Slurm batch script with appropriate `#SBATCH` directives
 - Submit, monitor, and cancel jobs using `sbatch`, `squeue`, and `scancel`
 - Run quick commands on compute nodes with `srun`
+- Check an agent-written batch script against the cluster's rules
 
 ---
 
@@ -38,7 +39,7 @@ most widely used scheduler in HPC.
 | `sbatch script.sh` | Submit a batch job | `sbatch my_job.sh` |
 | `squeue` | View the job queue | `squeue -u $USER` |
 | `scancel <jobid>` | Cancel a job | `scancel 12345` |
-| `srun <command>` | Run a command on a compute node | `srun hostname` |
+| `srun <command>` | Run a command on a compute node | `srun --partition=mi2101x --nodes=1 --time=1:00 hostname` |
 | `sinfo` | View partition/node status | `sinfo -p mi2101x` |
 | `scontrol show job <id>` | Detailed info about a job | `scontrol show job 12345` |
 | `sacct -j <id>` | Accounting info after completion | `sacct -j 12345` |
@@ -66,12 +67,16 @@ echo "Hello from $(hostname) at $(date)"
 
 | Directive | Meaning |
 |-----------|---------|
-| `--partition` | Target node group. Use `mi2101x` for this tutorial. |
-| `--nodes` | How many nodes. Use `1` for most exercises. |
+| `--partition` | Target node group. **Required on this cluster.** Use `mi2101x` for this tutorial. |
+| `--nodes` | How many nodes. **Required on this cluster**, and `1` is the most a job can use here. |
 | `--ntasks` | Number of MPI ranks (processes). Use `1` unless doing MPI. |
 | `--cpus-per-task` | CPU cores per task. Useful for OpenMP threading. |
-| `--time` | Maximum run time. Keep short (5--10 min) to share nodes fairly. |
+| `--time` | Maximum run time. **Required on this cluster.** Keep short (5--10 min) to share nodes fairly. |
 | `--output` / `--error` | Where stdout/stderr go. `%j` is replaced with the job ID. |
+
+When your job runs, Slurm also sets environment variables that describe it,
+such as `SLURM_JOB_ID`, `SLURM_JOB_NODELIST`, and `SLURM_CPUS_ON_NODE`. Scripts
+and programs can read them; the programs in Exercises 1 and 2 print several.
 
 ### The Job Lifecycle
 
@@ -82,6 +87,17 @@ sbatch submit → PENDING (waiting for nodes) → RUNNING (on a node) → COMPLE
 ```
 
 You can also cancel at any stage with `scancel`.
+
+While a job is `PENDING`, the last column of `squeue` (`NODELIST(REASON)`)
+says why it is waiting:
+
+| Reason | Meaning |
+|--------|---------|
+| `Resources` | Waiting for a node to become free |
+| `Priority` | Other jobs are ahead of it in the queue |
+
+With 80+ students sharing about 20 nodes, expect to see these today. Waiting
+is normal: Slurm starts your job as soon as a node is free.
 
 ---
 
@@ -112,6 +128,13 @@ sbatch first_job.sh
 
 Slurm will print something like `Submitted batch job 12345`. Note the **job ID**.
 
+> **Note**
+>
+> Before that line, you'll see a block of checks from the cluster's
+> job-submission filter (lines starting with `-->`). That's normal, and you'll
+> see it for every `sbatch` and `srun`. If the filter rejects a job, the block
+> says why, for example `runtime limit is required` when a job has no `--time`.
+
 #### Step 3: Check the Queue
 
 ```bash
@@ -125,6 +148,20 @@ squeue -u $USER                     # Your jobs
 scontrol show job <JOBID>           # Detailed job info
 squeue -p mi2101x                   # All jobs on our partition
 ```
+
+Slurm is part of day-to-day work on an HPC cluster, so it's worth learning how
+to tailor its commands to get the information you need. For example, `squeue`
+truncates long usernames by default, sometimes making it hard to tell whose
+jobs you're looking at. Widen the username column to 16 characters:
+
+```bash
+squeue -o "%.18i %.9P %.8j %.16u %.2t %.10M %.6D %R"
+```
+
+`-o` selects the output format. This keeps the default columns and changes
+`%.8u` to `%.16u`, so you can see each full student account username. See the
+[squeue documentation](https://slurm.schedmd.com/squeue.html) for more ways to
+customize the display.
 
 #### Step 4: Cancel the Job
 
@@ -146,14 +183,27 @@ Submit it again and let it finish. Then read the output:
 
 ```bash
 sbatch first_job.sh
-# Wait ~70 seconds for it to complete...
+# Once it starts, it runs for about 50 seconds (it may wait in the queue first)
 squeue -u $USER                     # Should disappear when done
 cat first-job_<JOBID>.out           # Replace <JOBID> with your job ID
 ```
 
-```{tip}
-`ls -lt *.out | head` shows the most recent output files.
+> **Tip**
+>
+> `ls -lt *.out | head` lists the most recently modified output files first.
+> Each submission gets a new job ID, so your cancelled job and this new run
+> have different output files. Match the ID in `first-job_<JOBID>.out` to the
+> ID printed by `sbatch` to make sure you're reading the right run.
+
+`squeue` lists only jobs that are pending or running. To look up jobs that have
+finished, including the one you cancelled in Step 4, use `sacct`:
+
+```bash
+sacct -X -j <JOBID> --format=JobID,JobName%15,State,Elapsed   # Try both job IDs from this exercise
 ```
+
+`-X` shows one line per job. `State` shows `COMPLETED` or `CANCELLED`, and
+`Elapsed` shows how long the job ran.
 
 ---
 
@@ -170,9 +220,16 @@ cat hello_compute.c
 
 This program prints information about the compute node, including GPU details.
 
+> **Note**
+>
+> You don't need to understand the C code at this point. Skim it to see what
+> it prints, then focus on the process: compile on the login node, submit a
+> batch script, and read the output from the compute node. You'll write your
+> own programs starting in Module 3.
+
 #### Step 2: Compile on the Login Node
 
-Compiling is lightweight, so it is OK to do on the login node:
+Compiling is usually lightweight, so it is OK to do on the login node:
 
 ```bash
 gcc -o hello_compute hello_compute.c
@@ -220,59 +277,110 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 hostname
 
 ```bash
 srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 lscpu | grep "Model name"
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | head -30
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | grep -E "Marketing Name|Device Type"
 ```
 
-```{note}
-`srun` waits for a node, runs the command, and returns. If the partition is
-busy, you may wait a moment.
-```
+On the login node, the same `rocminfo` command lists two CPUs and two GPUs.
+Your compute node has one of each.
+
+> **Note**
+>
+> `srun` waits for a node, runs the command, and returns. If the partition is
+> busy, you may wait a moment.
+
+> **Important**
+>
+> Every job, even a one-line `srun`, gets a whole compute node to itself until it
+> finishes. That makes `srun` great for quick commands, but please don't start
+> an interactive shell on a compute node today (for example, `srun --pty bash`):
+> an idle shell holds a node that five of your classmates could be using.
 
 ---
 
-### Exercise 4: Python Environment Checkpoint
+### Exercise 4: Checkpoint -- The GPU Check Job
 
-During Getting Started, you submitted `setup/setup_venv.sh` as a Slurm job.
-Now that you've seen `sbatch`, `squeue`, and output files, that command should
-make more sense: it requested a compute node and installed the Python packages
-used by the tutorial agent and the afternoon AI modules.
+During Getting Started, you submitted `setup/check_gpu.sh` as a Slurm job. Now
+that you've written batch scripts yourself, that job should make more sense.
 
-#### Step 1: Verify the Environment
-
-First, verify that the venv exists:
+#### Step 1: Read the Script
 
 ```bash
-source "$WORK/sc26_venv/bin/activate"
-python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
-deactivate
+cat ../../setup/check_gpu.sh
 ```
 
-#### Step 2: Create the Environment if Needed
+**Questions:**
+- Which partition and time limit does it request?
+- Which line chose the name of its output file, and what did `%j` become?
 
-If the verification works, you're done. If you skipped the Python environment
-setup or the venv is missing, create it now with the repository's setup script:
+#### Step 2: Run It if You Skipped It
+
+If you didn't run it during Getting Started, or it didn't print
+`Status: PASSED`, run it now from this directory:
 
 ```bash
-sbatch "$HOME/sc-student-programming-tutorial/setup/setup_venv.sh"
+sbatch ../../setup/check_gpu.sh
+cat check_gpu_<JOBID>.out           # After the job leaves the queue
 ```
 
-#### Step 3: Monitor the Setup Job
+The output file appears in this directory, because a batch job writes its
+output where you submitted it. If the check still doesn't pass, ask an
+instructor.
 
-This takes a few minutes. Check progress with:
+---
+
+### Agent Practice: A Batch Script from a Spec
+
+You have written and read batch scripts yourself; now give the agent a
+specification and check its script the way the cluster will. This time you
+let the agent edit files, but only after you approve each change.
+
+#### Step 1: Give the Agent the Spec
+
+Start Qwen Code from this directory:
 
 ```bash
-squeue -u $USER
-tail -f setup_venv_<JOBID>.out      # Watch the log (Ctrl+C to stop)
+bash ../../setup/launch_qwen.sh
 ```
 
-#### Step 4: Verify the Completed Setup
+Ask it:
 
-Once the job finishes, run the verification commands again:
+> Create agent_job.sh: a Slurm batch script that runs ./hello_compute with 8 CPU cores for at most 3 minutes and writes its output to agent-job_<job ID>.out.
+
+The agent may read other files first; watch which ones. When it asks to create
+the file, read the script before you approve it.
+
+#### Step 2: Check It Before Slurm Does
+
+Compare the script with the [key directives](#anatomy-of-a-batch-script)
+above. Does it name the partition, the node count, and a time limit? Does it
+ask for anything this cluster doesn't allow, such as `--gpus`? Check every
+directive against the table, not just the required ones. Predict whether
+Slurm will accept it.
+
+#### Step 3: Submit and Iterate
+
+If the agent offers to run `sbatch agent_job.sh`, you can approve that, or
+`/quit` and run it yourself. If the filter rejects the job, give the agent the
+lines that start with `-->` and ask it to fix the script. When the job
+finishes, check its output:
 
 ```bash
-source "$WORK/sc26_venv/bin/activate"
-python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
-deactivate
+cat agent-job_<JOBID>.out
+```
+
+**Questions:**
+- In the output, what is `SLURM_NTASKS`? Is that what the spec asked for?
+- Why does the program still see 16 CPU cores?
+- Which directives came from your notes in `QWEN.md`, and which did the agent
+  copy from files in this directory?
+- What did you, or the filter, have to correct?
+
+If you or the filter had to correct anything, add it to the tutorial's agent
+notes so the agent gets it right next time (from this directory, the
+repository's `QWEN.md` is two levels up):
+
+```bash
+echo "- <what you learned>" >> ../../QWEN.md
 ```
 
 ---
@@ -291,6 +399,13 @@ cat sweep_compute.py        # The Python script (TODO: add the loop)
 
 Fill in the TODO sections in **both** files and submit the batch script. You
 should see timing results for each value of N, showing how compute time grows.
+
+**In practice:** for sweeps over many independent values, HPC users usually
+submit a **job array** instead of a loop. Adding `#SBATCH --array=0-3` runs
+four copies of the script as separate Slurm jobs, which can run on different
+nodes at the same time, and each copy reads its own index from
+`$SLURM_ARRAY_TASK_ID`.  We use a loop today so that 80+ students don't flood
+the queue.
 
 #### Challenge B: Explore Resource Requests
 

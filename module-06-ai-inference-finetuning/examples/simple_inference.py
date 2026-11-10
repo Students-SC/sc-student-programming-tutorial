@@ -6,9 +6,9 @@ This script demonstrates the basic pattern for LLM inference on a GPU:
   2. Move the model to the GPU
   3. Tokenize prompts, generate responses, decode back to text
 
-Usage (inside a Slurm job):
-  source /work1/<group>/<username>/sc26_venv/bin/activate
-  python3 simple_inference.py
+Usage (from the exercises directory; the batch script activates the shared
+Python environment):
+  sbatch submit_inference.sh
 """
 
 import time
@@ -34,7 +34,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME,
-        torch_dtype=torch.float16,
+        dtype=torch.float16,
         device_map=device,
     )
     load_time = time.time() - t0
@@ -73,6 +73,7 @@ def main():
             outputs = model.generate(
                 **inputs,
                 max_new_tokens=128,
+                max_length=None,  # use max_new_tokens only (avoids a warning)
                 temperature=0.7,
                 do_sample=True,
                 top_p=0.9,
@@ -88,6 +89,10 @@ def main():
         print(f"\n--- Prompt {i+1}: \"{prompt}\" ---")
         print(f"Response: {response.strip()}")
         print(f"[{new_tokens} tokens in {elapsed:.2f}s = {tokens_per_sec:.1f} tok/s]")
+
+    if device == "cuda":
+        print(f"\nPeak GPU memory while generating: "
+              f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
 
     print(f"\n{'=' * 60}")
     print("  Done!")

@@ -14,6 +14,14 @@
 #   4. Removes the URL file on exit (success, scancel, timeout, or error)
 #      via a trap.
 #
+# The site's job-submission filter caps mi3001x jobs at 4 hours, so on tutorial
+# day the server runs as two chained jobs in the instructor reservation, with
+# the second starting automatically when the first ends over lunch (see
+# README.md, "Tutorial Day"):
+#
+#   JOB1=$(sbatch --parsable --reservation=sc26agent setup/vllm-server/start_server.sh)
+#   sbatch --reservation=sc26agent --dependency=afterany:$JOB1 setup/vllm-server/start_server.sh
+#
 # Submit:  sbatch setup/vllm-server/start_server.sh
 # Watch:   tail -f vllm-server_<JOBID>.out
 # Stop:    scancel --name=vllm-server
@@ -29,24 +37,33 @@
 
 set -euo pipefail
 
-# Create the URL file group-writable and group-only (no "other" access) so any
-# member of the sc26dev group can read it and the next instructor can replace
-# it. This pairs with the setgid bit on $SC26_SHARED_DIR, which makes new files
-# inherit the group.
+# Create new files group-writable and group-only (no "other" access) so any
+# member of the sc26dev group can manage them. This pairs with the setgid bit
+# on $AGENT_DIR, which makes new files inherit the sc26dev group. The URL file
+# is the one exception: students must read it, so it is published with "other"
+# read permission (see "Publish the URL" below).
 umask 0007
 
 # --- Configuration ----------------------------------------------------------
-# All shared tutorial resources -- container SIF, model cache, and the server
-# URL file that students read -- live under $SC26_SHARED_DIR. The default is
-# the tutorial project's shared directory; override SC26_SHARED_DIR to test
-# against a different location.
-SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
+# Shared tutorial resources live under $SC26_SHARED_DIR, which only the
+# proj_sc26students group (students and instructors) can enter. The agent
+# server's files -- container SIF, model cache, and the URL file -- live in its
+# sc26_agent/ subdirectory, which is writable by the sc26dev group so any
+# instructor can restart the server. Override SC26_SHARED_DIR to test against
+# a different location.
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
+AGENT_DIR="$SC26_SHARED_DIR/sc26_agent"
 
-SIF_FILE="$SC26_SHARED_DIR/sc26_containers/vllm-openai-rocm.sif"
+SIF_FILE="$AGENT_DIR/sc26_containers/vllm-openai-rocm.sif"
 MODEL_NAME="Qwen/Qwen3-Coder-30B-A3B-Instruct"
-CACHE_DIR="$SC26_SHARED_DIR/sc26_model_cache"
+CACHE_DIR="$AGENT_DIR/sc26_model_cache"
 PORT=8321
-URL_FILE="$SC26_SHARED_DIR/sc26_agent_server_url"
+# Agents that call tools natively (Qwen Code) need vLLM to parse the model's
+# tool calls. aider and Module 7's simple agents don't send tools, so they
+# are unaffected. To try this model's other parser:
+#   TOOL_CALL_PARSER=qwen3_coder sbatch setup/vllm-server/start_server.sh
+TOOL_CALL_PARSER="${TOOL_CALL_PARSER:-qwen3_xml}"
+URL_FILE="$AGENT_DIR/sc26_agent_server_url"
 READY_TIMEOUT=900   # max seconds to wait for vLLM to become ready
 
 # --- Helpers ----------------------------------------------------------------
@@ -82,6 +99,7 @@ log "=== vLLM Inference Server (Apptainer) ==="
 log "Node:         $NODE_HOSTNAME ($NODE_IP)"
 log "Model:        $MODEL_NAME"
 log "Port:         $PORT"
+log "Tool parser:  $TOOL_CALL_PARSER"
 log "URL (target): $SERVER_URL"
 log "URL file:     $URL_FILE"
 log "Container:    $SIF_FILE"
@@ -108,6 +126,8 @@ apptainer run \
     --max-model-len 32768 \
     --gpu-memory-utilization 0.90 \
     --download-dir /model_cache \
+    --enable-auto-tool-choice \
+    --tool-call-parser "$TOOL_CALL_PARSER" \
     --trust-remote-code &
 
 VLLM_PID=$!
@@ -142,11 +162,15 @@ while true; do
 done
 
 # --- Publish the URL --------------------------------------------------------
-echo "$SERVER_URL" > "$URL_FILE"
+# Students are not in sc26dev, so they read this file through its "other"
+# permission bits. Nobody outside proj_sc26students can reach it, because
+# $SC26_SHARED_DIR grants no "other" access.
+(umask 0002; echo "$SERVER_URL" > "$URL_FILE")
 log "[READY] Server URL written to $URL_FILE"
 log "[READY] Server reachable at $SERVER_URL"
 log ""
-log "Server will run until the job ends (max walltime ${SBATCH_TIMELIMIT:-8h})."
+TIME_LIMIT=$(squeue -h -j "${SLURM_JOB_ID:-}" -o %l 2>/dev/null || true)
+log "Server will run until the job ends (time limit: ${TIME_LIMIT:-unknown})."
 log "To stop early: scancel --name=vllm-server"
 log ""
 

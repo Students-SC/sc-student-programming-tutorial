@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Add OpenMP directives to parallelize a serial C program
 - Control the number of threads and measure speedup
 - Identify and fix race conditions in shared-memory code
+- Check an agent's script against results you measured yourself
 
 ---
 
@@ -185,6 +186,36 @@ copy of `sum`. At the end of the loop, the value of `sum` from all the threads a
 get the final value of `sum`.
 
 
+### Shared and Private Variables
+
+Inside a parallel region, every variable is either **shared** (one copy that
+all threads see) or **private** (each thread has its own copy). By default:
+
+- Variables declared **outside** the parallel region are **shared**.
+- Variables declared **inside** the region, including inside a loop body, are
+  **private**.
+- The loop index of an `omp for` loop is **private**.
+
+In the pi program you'll parallelize below, `sum` and `step` are declared
+before the loop, so they are shared, while `x` is declared inside the loop
+body, so each thread has its own. Many threads can safely *read* a shared
+variable like `step`. When several threads *write* one, like `sum`, you get a
+race condition unless something coordinates the writes. That is what
+`reduction` does: it gives each thread a private copy of `sum` and adds the
+copies together at the end.
+
+You can also make a variable private explicitly with the `private` clause, for
+example if `x` were declared before the loop:
+
+```c
+double x;
+#pragma omp parallel for private(x) reduction(+:sum)
+for (long i = 0; i < NUM_STEPS; i++) {
+    x = (i + 0.5) * step;
+    sum += 4.0 / (1.0 + x * x);
+}
+```
+
 ### Decomposing `parallel for`
 
 The combined `parallel for` is really *two* directives fused together for
@@ -217,7 +248,8 @@ loop. A common use is capturing the team size:
 int nthreads = 1;
 #pragma omp parallel
 {
-    nthreads = omp_get_num_threads();    // Inside parallel: returns team size
+    #pragma omp single
+    nthreads = omp_get_num_threads();    // One thread records the team size
 
     #pragma omp for reduction(+:sum)
     for (...) {
@@ -234,6 +266,10 @@ so there's no place to call it cleanly with the combined `parallel for`.
 To avoid multiple threads writing the same shared variable, an OpenMP pattern is to use `#pragma omp single` which ensures only one thread from among the team of OpenMP threads performs that action.
 
 By default, OpenMP waits for all threads at the end of a for loop and at the end of a parallel region before continuing.
+`nthreads` is shared (it's declared outside the region), so if every thread
+assigned it, that would be a race, even though they would all write the same
+value. `#pragma omp single` makes exactly one thread run the next statement
+while the others wait for it to finish, so only one thread writes `nthreads`.
 
 ### Compiling and Running
 
@@ -267,6 +303,17 @@ cat ../examples/openmp_hello.c
 gcc -fopenmp -o openmp_hello ../examples/openmp_hello.c
 ```
 
+> **Note**
+>
+> C is a *compiled* language: before you can run a C program, a compiler (here
+> `gcc`) translates the source file into an executable program. In the command
+> above, `-o openmp_hello` names the executable, and `-fopenmp` turns on OpenMP:
+> the compiler acts on the `#pragma omp` lines and links in the OpenMP runtime
+> library, which creates and manages the threads. Without `-fopenmp`, `gcc`
+> ignores the pragmas, so a program would quietly run on one thread -- and this
+> one wouldn't build at all, because it calls OpenMP functions such as
+> `omp_get_thread_num()`.
+
 #### Step 2: Run on a Compute Node
 
 Use `srun` to execute the compiled program on a compute node:
@@ -278,7 +325,16 @@ srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
 
 #### Step 3: Experiment with Thread Counts
 
-Try changing the thread count (1, 4, 8, 16) and observe the output.
+Run the program with 1, 4, 8, and 16 threads in a single job and observe the
+output:
+
+```bash
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+  bash -c 'for t in 1 4 8 16; do export OMP_NUM_THREADS=$t; ./openmp_hello; done'
+```
+
+Looping inside one `srun` uses one job instead of four, which keeps the queue
+moving for everyone.
 
 ---
 
@@ -326,13 +382,20 @@ an existing VS Code Remote SSH connection.
 
 There are **2 TODOs** to fill in:
 
-1. **TODO 1**: Add the OpenMP header include.
+1. **TODO 1**: Add the OpenMP header include. C programs start with
+   `#include` lines that bring in **header files**, which declare the
+   functions a library provides so the compiler knows how to call them. For
+   example, `pi_serial.c` includes `<stdio.h>` for `printf()`. OpenMP's
+   functions, such as `omp_get_num_threads()`, are declared in `<omp.h>`; the
+   hello-world program in Exercise 1 includes it right after `<stdio.h>`. If you
+   leave it out, `gcc` warns about an "implicit declaration of function
+   `omp_get_num_threads`".
 2. **TODO 2**: Parallelize the loop using the **split** form of `parallel for`
    so you can also capture the thread count. Specifically: wrap the for loop
-   in a `#pragma omp parallel` region, set `nthreads = omp_get_num_threads()`
-   inside that region but outside the loop, and put `#pragma omp for
-   reduction(+:sum)` on the loop itself. See "Decomposing `parallel for`"
-   above for the pattern.
+   in a `#pragma omp parallel` region; inside that region but outside the
+   loop, have one thread record `nthreads = omp_get_num_threads()` using
+   `#pragma omp single`; and put `#pragma omp for reduction(+:sum)` on the
+   loop itself. See "Decomposing `parallel for`" above for the pattern.
 
 #### Step 3: Compile the Program
 
@@ -360,20 +423,110 @@ Check the output:
 cat openmp-pi_<JOBID>.out
 ```
 
+Copy this table into your notes and fill it in from the output. Speedup is
+the 1-thread time divided by the N-thread time:
+
+| Threads | Time (s) | Speedup |
+|---------|----------|---------|
+| 1       |          | 1.0     |
+| 2       |          |         |
+| 4       |          |         |
+| 8       |          |         |
+| 16      |          |         |
+
 **Questions:**
-- Does the answer change with different thread counts? (It shouldn't!)
-- How does the time change? What speedup do you get with 16 threads vs. 1?
-- Is the speedup perfect (16x)? Why or why not?
+- Does the **answer** change with different thread counts? Compare the last
+  few digits of `Computed pi` and the `Error` line. With more threads, each
+  thread adds up a smaller share of the steps, and the partial sums are
+  combined at the end, so the additions happen in a different order. Why
+  would the order of additions change the result on a computer, when it
+  doesn't in math?
+- How does the **time** change? What speedup do you get with 16 threads vs. 1?
+- Is the speedup perfect (16x)? Why or why not? Think back to
+  [Amdahl's law](../module-01-hpc-foundations/README.md#how-much-faster-amdahls-law)
+  from Module 1: which parts of this program don't run in parallel?
+
+---
+
+### Exercise 4: Find and Fix a Race Condition
+
+#### Step 1: Compile and Run the Program
+
+The file `pi_race.c` has a **deliberate bug** -- a race condition. Compile and
+run it:
+
+```bash
+gcc -fopenmp -O2 -o pi_race pi_race.c -lm
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+  bash -c 'export OMP_NUM_THREADS=8; for run in 1 2 3; do ./pi_race; done'
+```
+
+This runs the program three times in one job. The answer is wrong, and it may
+change from run to run.
+
+#### Step 2: Find and Fix the Bug
+
+Can you spot and fix the bug? (Hint: compare it to your working `pi_openmp.c`.)
+Edit `pi_race.c`, then recompile and run it again with the commands from
+Step 1. When the bug is fixed, the answer matches pi for any thread count.
+
+**Question:** The wrong answers are much smaller than pi. Why? (Hint: think
+about what each thread does with `sum` when it finishes its share of the
+loop.)
+
+A fixed version, with an explanation, is in `solutions/pi_race_solution.c`.
+
+---
+
+### Agent Practice: Delegate the Bookkeeping
+
+You filled in the speedup table from Exercise 3 by hand. That's the kind of
+chore developers hand to an agent -- and then check against numbers they
+already know.
+
+#### Step 1: Ask for a Script
+
+Start Qwen Code:
+
+```bash
+bash ../../setup/launch_qwen.sh
+```
+
+Ask it, using your job ID from Exercise 3:
+
+> Write speedup.py, which reads an output file like openmp-pi_<JOBID>.out (given as a command-line argument) and prints a table of threads, time, and speedup (the 1-thread time divided by the N-thread time).
+
+Read the script before you approve it. Which lines find the thread count and
+the time in the output file?
+
+#### Step 2: Run It and Compare
+
+This script only reads a small text file, so it's fine to run on the login
+node (approve it if the agent offers, or run it yourself):
+
+```bash
+python3 speedup.py openmp-pi_<JOBID>.out
+```
+
+Does it match the table you filled in by hand? If it crashes or prints wrong
+numbers, show the agent the output and ask it to fix the script.
+
+**Questions:**
+- Where does the script get each thread count: from the
+  `=== OMP_NUM_THREADS=N ===` header that the batch script prints, or from
+  the `Threads = N` line that your program prints? When could those two
+  disagree, and which one tells you how many threads actually ran?
+- What would it do if the 1-thread run were missing from the file?
 
 ---
 
 ### Additional Challenges
 
-After you complete the rest of the main modules, checkout the [Challenges directory](../challenges#module-3---openmp-challenges) for additional OpenMP exercises that you can try.
+If you finish the exercises above early, try the [Module 3 challenges](../challenges/README.md#module-3---openmp-challenges): parallelizing a matrix-vector multiply and exploring other `omp for` clauses. You can also come back to them after the tutorial.
 
 ### Advanced: OpenMP Offload
 
-OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, visit the [OpenMP Offload bonus module in the challenges directory](../challenges/bonus-openmp-offload) to learn about additional OpenMP directives that can be used to accomplish tasks on the GPU.
+OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, visit the [OpenMP Offload bonus module in the challenges directory](../challenges/bonus-openmp-offload/README.md) to learn how additional OpenMP directives can be used to accomplish tasks on the GPU.
 
 
 

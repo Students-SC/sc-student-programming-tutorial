@@ -4,7 +4,7 @@
 >
 > - Sunday, November 15, 2026
 > - 8:30 AM to 4:30 PM CST
-> - McCormick Place, Chicago, IL
+> - McCormick Place, Chicago, IL · [Room W180](https://sc26.conference-program.com/map/?location=rW180)
 
 ---
 
@@ -58,73 +58,53 @@ Run the environment check script to confirm everything is set up:
 bash setup/check_environment.sh
 ```
 
-You should see [PASS] for all items. If anything fails, ask an instructor for help.
+You should see [PASS] for all items. A [WARN] that the AI agent server isn't
+running yet is fine before the tutorial starts. If anything fails, ask an
+instructor for help.
 
-### 4. Set Up Your Python Environment
+### 4. Check That Your Jobs Can Use a GPU
 
-Create the Python virtual environment now, before starting the modules. You will
-use this same environment several times throughout the day, including for the
-tutorial-provided AI agent and the afternoon AI exercises.
-
-From the repository root:
-
-```bash
-sbatch setup/setup_venv.sh
-```
-
-This runs as a Slurm batch job, so it may take a few minutes. You will learn what
-`sbatch` is doing in Module 2; for now, submit the job and wait for it to finish:
+Your instructors have already installed the Python environment for the
+afternoon's AI exercises (PyTorch and friends) in a shared location, so there
+is nothing for you to install. Instead, run a quick job that checks that you
+can use it and a GPU. From the repository root:
 
 ```bash
-squeue -u $USER
-tail -f setup_venv_<JOBID>.out      # Watch the log (Ctrl+C to stop)
+sbatch setup/check_gpu.sh
 ```
 
-When the job completes, verify the environment:
+This runs as a Slurm batch job on a compute node. You will learn what `sbatch`
+is doing in Module 2; for now, submit the job, wait for it to leave the queue,
+and read its output:
 
 ```bash
-source "$WORK/sc26_venv/bin/activate"
-python3 -c "import torch; print(f'PyTorch {torch.__version__} installed')"
-deactivate
+squeue -u $USER                     # Your job disappears when it finishes
+cat check_gpu_<JOBID>.out           # Replace <JOBID> with the number sbatch printed
 ```
 
-You only need to create this venv once. Module 2 includes a checkpoint that
-explains the Slurm command you used here and helps anyone who skipped this step
-catch up.
+You should see `Status: PASSED` and the GPU's name. Module 2 includes a
+checkpoint that explains this job and helps anyone who skipped this step catch
+up.
 
-### 5. Install the AI Agent
-
-The coding agent (Aider) lives in its own small environment, separate from the
-AI/ML venv above. This install is quick and runs right on the login node (no
-Slurm job needed):
-
-```bash
-bash setup/install_aider.sh
-```
-
-You only need to do this once. You'll launch the agent with
-`setup/launch_aider.sh` (see "Using AI Assistants" below).
+The tutorial's AI coding agent (Qwen Code) is also preinstalled, so it's ready
+to use. See "Using AI Assistants" below.
 
 ## Getting Help
 
-If you get stuck, ask for help early. Instructors will be in the room throughout
-the tutorial and can help with cluster access, Slurm jobs, code errors, and
-conceptual questions.
-
-We may also provide an online help channel, such as Slack, for questions during
-or after the session. Details will be added here before the tutorial.
+If you get stuck, raise your hand. Instructors are in the room throughout the
+tutorial to help with cluster access, Slurm jobs, code errors, and conceptual
+questions.
 
 ## Compute (virtual) Node Details
 
 In this tutorial, a **virtual compute node** is a slice of a larger physical
-compute node. You can think of it like having your own assigned portion of a
-shared machine: each virtual node gets a fraction of the physical node's CPU
-cores, memory, and GPU resources, while Slurm keeps different users' jobs
-separated from each other.
+server with its own CPU cores, memory, and GPU.
+[Module 1](module-01-hpc-foundations/README.md#inside-a-compute-node) explains
+how this works.
 
 | Resource | Details |
 |----------|---------|
-| CPU | AMD EPYC (16 cores per virtual node) |
+| CPU | AMD EPYC 7V13 (16 cores per virtual node) |
 | GPU | 1x AMD Instinct MI210 (64 GB HBM2e) per virtual node |
 | RAM | 64 GB system DRAM per virtual node |
 | Partition | `mi2101x` |
@@ -132,58 +112,72 @@ separated from each other.
 | Compiler | GCC 12.2, `hipcc` (ROCm 7.2) |
 | MPI | OpenMPI 4.1.8 |
 
-```{important}
-Do not run compute workloads on the login node. All programs must be
-submitted through Slurm (`sbatch` or `srun`). This is both good practice and
-necessary so that all 80+ participants can share the cluster fairly alongside
-the production research and education workloads being run on the system.
-```
+> **Important**
+>
+> Do not run compute workloads on the login node. All programs must be
+> submitted through Slurm (`sbatch` or `srun`). This is both good practice and
+> necessary so that all 80+ participants can share the cluster fairly alongside
+> the production research and education workloads being run on the system.
 
 ## Using AI Assistants
 
-You are encouraged to use AI coding assistants throughout the tutorial -- just
-as you would in modern development practice. The ground rule:
+You are encouraged to use AI coding agents throughout the tutorial -- just as
+you would in modern development practice. The ground rule:
 
 > **Use the agent, but own the answer.**
 
-Let the AI help you write code, debug errors, and explain concepts -- but make
-sure *you* understand what the code does before moving on. Exercises are
-designed so you need to verify and reason about the AI's output.
+Let the agent help you write code, debug errors, and explain concepts -- but
+make sure *you* understand what the code does before moving on. Each module
+ends with an **Agent Practice** step: after you have done the exercise
+yourself, you hand a related task to the agent, predict what should happen,
+and check its work with the same tests you used on your own code. Agents
+make mistakes; the point is to catch them.
 
-### The tutorial agent: Aider + a self-hosted coding model
+### The tutorial agent: Qwen Code + a self-hosted coding model
 
 We provide a CLI coding agent for you to use throughout the day -- no accounts,
-no API keys, no cost. It's [Aider](https://aider.chat) (a popular open-source
-coding agent) pointed at **Qwen3-Coder-30B-A3B-Instruct**, served on a
-dedicated MI300X compute node by your instructors. Exercises that say *"ask
+no API keys, no cost. It's [Qwen Code](https://github.com/QwenLM/qwen-code), an
+open-source coding agent, pointed at **Qwen3-Coder-30B-A3B-Instruct**, served on
+a dedicated MI300X compute node by your instructors. Exercises that say *"ask
 your AI agent..."* refer to this tool.
 
-Launch it from inside the repo after completing the setup steps above:
-
+It's preinstalled for everyone. Start it in the directory you are working in:
 
 ```bash
-# In a new terminal, navigate to the tutorial directory
 cd ~/sc-student-programming-tutorial
-
-
-# Launch aider (uses the agent you installed during Getting Started, pointed at the local model)
-bash ~/sc-student-programming-tutorial/setup/launch_aider.sh
+bash setup/launch_qwen.sh
 ```
 
-Inside Aider, type questions in plain English. By default the agent runs in
-**ask mode**: it reads the files you give it and explains what to do, but it
-does not edit them -- understanding and writing the code is your job. After starting 
-Aider, add files or directories to your context with the `/read` command (e.g. run
-`/read module-03-slurm` to get Aider to read its contents so it can answer questions
-about it). Type
-`/help` to see commands, `/exit` to quit.
+Type requests in plain English. Unlike a chatbot, Qwen Code reads and searches
+the files in the directory it starts in, and -- when you allow it -- edits files
+and runs commands. When it starts anywhere in the tutorial repository, it also
+reads `QWEN.md` at the repository's top level: notes for the agent about this
+tutorial, which you add to starting in Module 1. It has three modes; press
+**Shift+Tab** to switch between them:
 
-```{note}
-If you'd rather use your own coding assistant (Cursor, GitHub Copilot, ChatGPT,
-Claude, etc.), feel free -- the exercises don't require ours. But the
-tutorial-provided one works for everyone with no setup beyond what's already in
-this README.
-```
+| Mode | What the agent may do | When to use it |
+|------|-----------------------|----------------|
+| **Ask permissions** (the tutorial's default) | Read files and answer; edit files and run commands, each only after you approve it | Questions, explanations, and the Agent Practice steps |
+| **Plan** | Read files and research before answering; no edits, no commands | Planning a bigger change before letting the agent make it |
+| **Auto-edit** | Edit files without asking; still asks before every command | Module 7's capstone, if you want fewer interruptions |
+
+To start a read-only session, pass `--approval-mode plan`:
+`bash setup/launch_qwen.sh --approval-mode plan`.
+
+Read everything before you approve it. Approve an edit only if you understand
+the change, and a command only if you would run it yourself. In particular,
+programs belong on compute nodes (`srun` or `sbatch`), never on the login node;
+compiling and reading files on the login node are fine.
+
+Inside Qwen Code, `/diff` shows the changes it has made, `/restore` undoes them,
+`/stats model` shows how many tokens your session has used, and `/quit` exits.
+
+> **Note**
+>
+> If you'd rather use your own coding assistant (Cursor, GitHub Copilot, ChatGPT,
+> Claude, etc.), feel free -- the exercises don't require ours. But the
+> tutorial-provided one works for everyone with no setup beyond what's already in
+> this README.
 
 ### How the agent backend works (preview of Module 7)
 

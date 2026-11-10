@@ -23,6 +23,7 @@ def generate_response(model, tokenizer, prompt, device, max_new_tokens=128,
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
+            max_length=None,  # use max_new_tokens only (avoids a warning)
             temperature=temperature,
             do_sample=True,
             top_p=0.9,
@@ -52,7 +53,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME,
-        torch_dtype=torch.float16,
+        dtype=torch.float16,
         device_map=device,
     )
 
@@ -63,7 +64,7 @@ def main():
 
     # TODO 2: SOLVED
     max_new_tokens = 128
-    temperature = 0.7
+    temperatures = [0.1, 0.7, 1.5]
 
     # TODO 3: SOLVED -- custom prompts added
     prompts = [
@@ -74,31 +75,35 @@ def main():
         "Write a short poem about debugging code.",
     ]
 
-    print(f"\n{'=' * 60}")
-    print(f"  Generating responses")
-    print(f"  max_new_tokens={max_new_tokens}, temperature={temperature}")
-    print(f"{'=' * 60}")
-
     total_tokens = 0
     total_time = 0.0
 
-    for i, prompt in enumerate(prompts):
-        response, n_tokens, elapsed, tok_s = generate_response(
-            model, tokenizer, prompt, device,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-        )
-        total_tokens += n_tokens
-        total_time += elapsed
+    for temperature in temperatures:
+        print(f"\n{'=' * 60}")
+        print(f"  Generating responses")
+        print(f"  max_new_tokens={max_new_tokens}, temperature={temperature}")
+        print(f"{'=' * 60}")
 
-        print(f"\n--- Prompt {i+1}: \"{prompt}\" ---")
-        print(f"Response: {response}")
-        print(f"[{n_tokens} tokens in {elapsed:.2f}s = {tok_s:.1f} tok/s]")
+        for i, prompt in enumerate(prompts):
+            response, n_tokens, elapsed, tok_s = generate_response(
+                model, tokenizer, prompt, device,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+            )
+            total_tokens += n_tokens
+            total_time += elapsed
+
+            print(f"\n--- Prompt {i+1}: \"{prompt}\" ---")
+            print(f"Response: {response}")
+            print(f"[{n_tokens} tokens in {elapsed:.2f}s = {tok_s:.1f} tok/s]")
 
     print(f"\n{'=' * 60}")
     print(f"  Summary: {total_tokens} tokens in {total_time:.2f}s "
           f"= {total_tokens/total_time:.1f} tok/s average")
     print(f"{'=' * 60}")
+    if device == "cuda":
+        print(f"Peak GPU memory while generating: "
+              f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
 
 
 if __name__ == "__main__":

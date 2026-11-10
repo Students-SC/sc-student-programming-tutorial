@@ -8,15 +8,9 @@
 **Session details**
 
 - **Format:** Hands-on cluster exercises and challenges
-- **Venue:** SC26, Chicago · Room TBD
+- **Venue:** SC26, McCormick Place, Chicago, IL · [Room W180](https://sc26.conference-program.com/map/?location=rW180)
 
 **[Start the Tutorial](README.md)**
-
-## Getting Help
-
-If you get stuck, ask for help early. Instructors will be in the room throughout
-the tutorial, and we may also provide an online help channel such as Slack. Final
-help-channel details will be added before the tutorial.
 
 ## Course Path
 
@@ -30,6 +24,12 @@ help-channel details will be added before the tutorial.
 | [6](module-06-ai-inference-finetuning/README.md) | AI on HPC | Run inference and fine-tune models using GPU-backed batch jobs. |
 | [7](module-07-ai-agents/README.md) | AI Agents | Build a tool-using agent and pull the day's HPC skills together. |
 | [8](module-08-openmp-offload/README.md) | (Bonus) OpenMP | Use OpenMP directives to write programs for the GPU |
+
+## Getting Help
+
+If you get stuck, raise your hand. Instructors are in the room throughout the
+tutorial to help with cluster access, Slurm jobs, code errors, and conceptual
+questions.
 
 ```{toctree}
 :hidden:

@@ -15,6 +15,14 @@ grouped by workflow and link back to the module where they first appear.
 | List newest output files first | `ls -lt *.out \| head` |
 | Print a file | `cat <file>` |
 | Watch a job output file update | `tail -f <file>.out` |
+| Redraw the terminal screen at the shell prompt | Ctrl+L |
+
+> **Tip**
+>
+> On a laptop, screen space is limited. At the shell prompt, press Ctrl+L
+> instead of running `clear` to get a fresh screen while keeping earlier
+> output in your terminal's scrollback. You can scroll up to check job IDs,
+> commands, and errors.
 
 ## Cluster And Filesystem
 
@@ -39,10 +47,10 @@ walkthrough.
 | List available modules | `module avail` |
 | Inspect the tutorial base module | `module show hpcfund` |
 
-```{note}
-The tutorial environment is preconfigured. Do not run `module purge` unless an
-instructor tells you to.
-```
+> **Note**
+>
+> The tutorial environment is preconfigured. Do not run `module purge` unless an
+> instructor tells you to.
 
 ## Slurm Jobs
 
@@ -66,7 +74,7 @@ See [Module 2](module-02-slurm/README.md) for the Slurm walkthrough.
 |--------------|---------|
 | Run `hostname` on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 hostname` |
 | Check CPU model on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 lscpu \| grep "Model name"` |
-| Preview ROCm GPU info on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo \| head -30` |
+| List the CPUs and GPUs on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo \| grep -E "Marketing Name\|Device Type"` |
 | Run a program on one compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./program` |
 | Run with 4 MPI ranks | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program` |
 | Run with 16 CPU cores for one task | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 ./program` |
@@ -88,9 +96,8 @@ See [Module 2](module-02-slurm/README.md) for the Slurm walkthrough.
 
 | I want to... | Command |
 |--------------|---------|
-| Create the tutorial virtual environment from the repo root | `sbatch setup/setup_venv.sh` |
-| Create the venv from inside a module exercise directory | `sbatch ../../setup/setup_venv.sh` |
-| Activate the venv | `source "$WORK/sc26_venv/bin/activate"` |
+| Check that your jobs can use a GPU (from the repo root) | `sbatch setup/check_gpu.sh` |
+| Activate the shared Python environment | `source "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_venv/bin/activate"` |
 | Verify PyTorch | `python3 -c "import torch; print(torch.__version__)"` |
 | Verify ROCm is visible to PyTorch | `python3 -c "import torch; print(torch.cuda.is_available())"` |
 | Leave the venv | `deactivate` |
@@ -145,6 +152,7 @@ Useful MPI calls from [Module 4](module-04-mpi/README.md):
 | Check whether `hipcc` is available | `which hipcc` |
 | Show the HIP compiler version | `hipcc --version` |
 | Show ROCm system info | `rocminfo \| head -20` |
+| List the CPUs and GPUs that ROCm can see | `rocminfo \| grep -E "Marketing Name\|Device Type"` |
 | Show GPU memory usage | `rocm-smi --showmeminfo vram` |
 | Compile a HIP program | `hipcc -O2 -o program program.cpp` |
 | Compile with a block-size macro | `hipcc -O2 -DBLOCK_SIZE=256 -o program program.cpp` |
@@ -169,7 +177,8 @@ Useful HIP calls and syntax from [Module 5](module-05-hip/README.md):
 
 | I want to... | Command |
 |--------------|---------|
-| Run the inference batch script | `sbatch submit_inference.sh` |
+| Run the inference example | `sbatch submit_inference.sh` |
+| Run your inference exercise | `sbatch submit_inference.sh run_inference.py` |
 | Read inference output | `cat inference_<JOBID>.out` |
 | Run the fine-tuning batch script | `sbatch submit_finetune.sh` |
 | Read fine-tuning output | `cat finetune_<JOBID>.out` |
@@ -185,11 +194,17 @@ fine-tuning details.
 
 | I want to... | Command |
 |--------------|---------|
-| Show the shared agent server URL | `cat "$WORK/sc26_agent_server_url"` |
-| Export the agent server URL for interactive testing | `export AGENT_API_URL=$(cat "$WORK/sc26_agent_server_url")` |
+| Show the shared agent server URL | `cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url"` |
+| Export the agent server URL for interactive testing | `export AGENT_API_URL=$(cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url")` |
 | Run the agent exercise | `sbatch submit_agent.sh` |
-| Launch the tutorial-provided CLI agent | `bash ../../setup/launch_aider.sh` |
-| Launch Aider from an arbitrary working directory | `bash <repo-path>/setup/launch_aider.sh` |
+| Launch the tutorial's CLI agent (Qwen Code); it asks before every edit and command | `bash ../../setup/launch_qwen.sh` |
+| Launch it read-only (plan mode: no edits, no commands) | `bash ../../setup/launch_qwen.sh --approval-mode plan` |
+| Launch it from any other directory | `bash ~/sc-student-programming-tutorial/setup/launch_qwen.sh` |
+| Switch modes inside Qwen Code (plan, ask permissions, auto-edit) | Shift+Tab |
+| See or undo the agent's changes | `/diff`, `/restore` |
+| See how many tokens your session has used | `/stats model` |
+| Add a fact to the agent's notes for this tutorial | `echo "- <fact>" >> ~/sc-student-programming-tutorial/QWEN.md` |
+| Exit Qwen Code | `/quit` |
 
 See [Module 7](module-07-ai-agents/README.md) for the agent exercises.
 
@@ -197,7 +212,7 @@ See [Module 7](module-07-ai-agents/README.md) for the agent exercises.
 
 | Job or exercise | Output file pattern |
 |-----------------|---------------------|
-| Venv setup | `setup_venv_<JOBID>.out` |
+| GPU check | `check_gpu_<JOBID>.out` |
 | Slurm first job | `first-job_<JOBID>.out` |
 | Compute-node hello | `hello-compute_<JOBID>.out` |
 | OpenMP pi | `openmp-pi_<JOBID>.out` |

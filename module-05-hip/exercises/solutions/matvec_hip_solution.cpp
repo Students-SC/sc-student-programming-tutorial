@@ -2,7 +2,7 @@
  * matvec_hip_solution.cpp -- Solution: matrix-vector multiply on the GPU
  *
  * Compile:  hipcc -O2 -o matvec_hip matvec_hip_solution.cpp
- * Run:      srun --partition=mi2101x --time=2:00 --ntasks=1 ./matvec_hip
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./matvec_hip
  */
 
 #include <hip/hip_runtime.h>
@@ -68,18 +68,25 @@ int main(void) {
 
     int blocks = (M + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
+    matvec_kernel<<<blocks, BLOCK_SIZE>>>(d_A, d_x, d_y, M, K);
+    HIP_CHECK(hipGetLastError());
+    HIP_CHECK(hipDeviceSynchronize());
+
+    /* Time the kernel. The first launch includes one-time setup, so time 10
+     * more launches and report the average. */
+    const int reps = 10;
     hipEvent_t start, stop;
     HIP_CHECK(hipEventCreate(&start));
     HIP_CHECK(hipEventCreate(&stop));
-
     HIP_CHECK(hipEventRecord(start));
-    matvec_kernel<<<blocks, BLOCK_SIZE>>>(d_A, d_x, d_y, M, K);
-    HIP_CHECK(hipGetLastError());
+    for (int rep = 0; rep < reps; rep++)
+        matvec_kernel<<<blocks, BLOCK_SIZE>>>(d_A, d_x, d_y, M, K);
     HIP_CHECK(hipEventRecord(stop));
     HIP_CHECK(hipEventSynchronize(stop));
 
-    float kernel_ms = 0.0f;
-    HIP_CHECK(hipEventElapsedTime(&kernel_ms, start, stop));
+    float total_ms = 0.0f;
+    HIP_CHECK(hipEventElapsedTime(&total_ms, start, stop));
+    float kernel_ms = total_ms / reps;
 
     HIP_CHECK(hipMemcpy(h_y, d_y, bytes_y, hipMemcpyDeviceToHost));
 
@@ -90,7 +97,10 @@ int main(void) {
     }
 
     printf("Matrix-Vector Multiply (%d x %d) on GPU\n", M, K);
-    printf("  Kernel time:  %.3f ms\n", kernel_ms);
+    printf("  Launch:       %d blocks x %d threads\n", blocks, BLOCK_SIZE);
+    printf("  Kernel time:  %.3f ms (average of %d)\n", kernel_ms, reps);
+    printf("  Bandwidth:    %.1f GB/s (A, x, and y)\n",
+           (bytes_A + bytes_x + bytes_y) / (kernel_ms / 1e3) / 1e9);
     printf("  Max error:    %.2e\n", max_error);
     printf("  Status:       %s\n", max_error < 1e-6 ? "PASSED" : "FAILED");
 

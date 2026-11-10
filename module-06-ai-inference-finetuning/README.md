@@ -10,6 +10,7 @@ By the end of this module, you will be able to:
 - Run inference with a pre-trained language model on the MI210 GPU
 - Fine-tune a text classification model using LoRA (parameter-efficient fine-tuning)
 - Reason about GPU memory usage during inference vs. training
+- Check an agent's change with measurements and the job's warnings
 
 ---
 
@@ -66,8 +67,10 @@ small trainable "adapter" matrices:
   Effective weight: W + A × B
 ```
 
-For a model with 110M parameters, LoRA might only train ~0.5M parameters --
-a 200x reduction. This means fine-tuning fits on a single GPU and runs fast.
+The DistilBERT model you'll fine-tune has about 67 million parameters. With
+this exercise's LoRA settings, only about 0.74 million (1.1%) are trained --
+about 90x fewer. That is why fine-tuning fits easily on one GPU and finishes
+in seconds.
 
 ### Why GPUs for AI?
 
@@ -76,7 +79,12 @@ massively parallel operation GPUs excel at:
 
 - The MI210 has **6656 stream processors** running in parallel
 - **64 GB HBM2e** with **1.6 TB/s bandwidth** for fast data access
-- This is why GPUs make inference 10-100x faster than CPUs
+- Generating text for one prompt at a time uses only a sliver of that
+  parallelism, so the GPU may be only slightly faster than the CPU (you can
+  measure this in Exercise 3). GPUs pull far ahead when they process many
+  prompts together, which is called **batching** (this module's Agent
+  Practice). Batching is how the shared AI server behind the tutorial's agent
+  answers a whole classroom at once.
 
 ---
 
@@ -88,39 +96,41 @@ First, navigate to the exercises directory for this module:
 cd module-06-ai-inference-finetuning/exercises
 ```
 
-```{important}
-All exercises run as **batch jobs** that produce output files. Submit your
-script, wait for it to complete, then examine the output while others use the
-nodes.
-```
+> **Important**
+>
+> All exercises run as **batch jobs** that produce output files. Submit your
+> script, wait for it to complete, then examine the output while others use the
+> nodes.
 
-### Exercise 1: Verify Your Python Environment
+### Exercise 1: Meet the Shared Python Environment
 
-#### Step 1: Check the Existing Environment
+The AI exercises use Python packages such as PyTorch (built for AMD GPUs with
+ROCm), Hugging Face `transformers` and `datasets`, and `peft`. Together they
+take 16 GB, so your instructors installed them once in a shared, read-only
+Python environment (a **virtual environment**, or venv) that everyone uses.
+Each batch script in this module activates it for you, and you already tested
+it with the GPU check in Getting Started.
 
-You should already have the venv from the Getting Started Python environment
-setup (checked again in Module 2). Verify it before starting the AI exercises:
+#### Step 1: Look Inside
 
-```bash
-source "$WORK/sc26_venv/bin/activate"
-python3 -c "import torch; print(f'PyTorch {torch.__version__}, ROCm: {torch.cuda.is_available()}')"
-```
-
-#### Step 2: Create the Environment if Needed
-
-If the venv is missing, set it up now from this module's `exercises` directory:
+On the login node, activate the environment and list a few of its packages:
 
 ```bash
-sbatch ../../setup/setup_venv.sh
-# Wait for the job to finish, then activate it:
-source "$WORK/sc26_venv/bin/activate"
+source "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_venv/bin/activate"
+pip list 2>/dev/null | grep -iE '^(torch|transformers|datasets|peft) '
+deactivate
 ```
 
-```{note}
-The venv lives under `$WORK` (your `/work1/<project>/<username>/` directory)
-because `/work1` has much more storage space than `$HOME`. The `$WORK`
-environment variable is set automatically when you log in.
-```
+> **Note**
+>
+> The shared environment is read-only, so `pip install` won't work in it.
+> Everything the exercises need is already installed. If a script reports that
+> the environment is missing, ask an instructor.
+
+The models and the dataset these exercises use are pre-downloaded too, so your
+jobs load them from a shared cache instead of downloading them from Hugging
+Face. The first fine-tuning job you run copies the dataset (128 MB) into your
+`$WORK` directory, because the `datasets` library needs to write next to it.
 
 ---
 
@@ -150,6 +160,9 @@ responses to a few prompts. Examine how it:
 sbatch submit_inference.sh
 ```
 
+With no argument, `submit_inference.sh` runs this example. In Exercise 3,
+you'll give it the name of your own script.
+
 #### Step 4: Examine the Output
 
 Check the output when it finishes:
@@ -160,7 +173,8 @@ cat inference_<JOBID>.out
 
 **Questions:**
 - How fast does the model generate text (tokens/sec)?
-- How much GPU memory does the model use?
+- How much GPU memory does the model use after loading, and at its peak while
+  generating?
 - Do the generated responses make sense?
 
 ---
@@ -169,34 +183,55 @@ cat inference_<JOBID>.out
 
 #### Step 1: Open the Exercise
 
-Open the inference exercise:
+Open the inference exercise in an editor on the login node:
 
 ```bash
-cat run_inference.py
+vim run_inference.py
 ```
 
-#### Step 2: Complete the TODOs
+In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
+`:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
+or an existing VS Code Remote SSH connection.
+
+#### Step 2: (Optional) Try the CPU First
+
+Until you complete TODO 1, the template runs the model on the CPU
+(`device = "cpu"`). To get a baseline, submit it once before editing anything:
+
+```bash
+sbatch submit_inference.sh run_inference.py
+```
+
+Note the tokens/sec it reports, so you can compare with the GPU in Step 5.
+
+#### Step 3: Complete the TODOs
 
 There are **3 TODOs**:
 
 1. **TODO 1**: Load the model onto the GPU (choose the right device)
-2. **TODO 2**: Set generation parameters (max tokens, temperature)
+2. **TODO 2**: Choose the generation settings: `max_new_tokens`, and a list of
+   `temperatures` to compare (try `[0.1, 0.7, 1.5]`)
 3. **TODO 3**: Add your own custom prompts to the prompt list
 
-#### Step 3: Submit the Batch Job
+#### Step 4: Submit the Batch Job
 
-Edit the file, add your own prompts, and submit:
+Edit the file, add your own prompts, and submit it by naming the script after
+the batch file:
 
 ```bash
-sbatch submit_inference.sh
+sbatch submit_inference.sh run_inference.py
 ```
 
-#### Step 4: Experiment with Temperature
+#### Step 5: Compare Temperatures
 
-Try varying the `temperature` parameter:
-- `temperature=0.1` -- very focused, repetitive
-- `temperature=0.7` -- balanced creativity
-- `temperature=1.5` -- wild and unpredictable
+Your script runs every prompt at each temperature in `temperatures`, so one
+job gives you a side-by-side comparison. With the suggested values, expect:
+- `0.1` -- very focused, repetitive
+- `0.7` -- balanced creativity
+- `1.5` -- wild and unpredictable
+
+Which temperature gives the most useful answers to your prompts? If you ran
+the CPU baseline in Step 2, how many times faster is the GPU?
 
 ---
 
@@ -205,12 +240,12 @@ Try varying the `temperature` parameter:
 Now let's adapt a pre-trained model to a new task. We'll fine-tune a text
 classification model (DistilBERT) on a sentiment analysis dataset using LoRA.
 
-#### Step 1: Examine the Fine-Tuning Script
+#### Step 1: Open the Fine-Tuning Script
 
-Look at the script:
+Open the script in an editor, as in Exercise 3:
 
 ```bash
-cat finetune_lora.py
+vim finetune_lora.py
 ```
 
 #### Step 2: Complete the TODOs
@@ -238,6 +273,59 @@ cat finetune_<JOBID>.out
 - What accuracy after fine-tuning?
 - How long did training take?
 - How many parameters were actually trained (vs. total)?
+- What was the peak GPU memory during training? Training stores gradients and
+  optimizer state as well as the model, so why is the number still small?
+
+---
+
+### Agent Practice: Batch Your Prompts
+
+So far the model answers one prompt at a time. Each step of generation reads
+all of the model's weights from GPU memory, so the GPU does much more useful
+work per step when it generates for many prompts together. Have the agent make
+that change, and check it with measurements and the job's warnings.
+
+#### Step 1: Ask for the Change
+
+Copy your completed script from Exercise 3, then start Qwen Code:
+
+```bash
+cp run_inference.py batch_agent.py
+bash ../../setup/launch_qwen.sh
+```
+
+Ask it:
+
+> Change batch_agent.py so it generates the responses for all prompts at each temperature in a single model.generate() call, and prints the total tokens per second.
+
+Read the change before you approve it. Predict: will the total tokens per
+second go up or down? Will each individual response arrive sooner or later?
+
+#### Step 2: Run It and Check
+
+```bash
+sbatch submit_inference.sh batch_agent.py
+```
+
+When the job finishes, check three things:
+- Is the total tokens per second higher than in Exercise 3?
+- Do the responses still make sense?
+- Does `inference_<JOBID>.err` contain a warning about padding?
+
+If something is wrong, give the agent the warning or the output and ask it to
+fix the script.
+
+**Questions:**
+- Prompts have different lengths, so they are padded to the same length.
+  Which side did the agent pad on? Why does a text generation model need the
+  padding on the left?
+- The shared AI server behind Qwen Code answers the whole class at once. How
+  does batching help it?
+- Type `/stats model` in Qwen Code. How many tokens has your session used?
+  Every request behind those numbers was an inference job like yours.
+
+A solution that measures both ways is in
+`solutions/batch_inference_solution.py`.
 
 ---
 
@@ -251,19 +339,26 @@ Experiment with different LoRA settings in `finetune_lora.py`:
 
 How do these affect final accuracy and training time?
 
-### Challenge B: GPU Memory Profiling
+### Challenge B: LoRA vs. Full Fine-Tuning
 
-Add `rocm-smi` monitoring to your batch script to see GPU memory usage during
-inference vs. training:
+How much does LoRA actually save? Fine-tune the same model without it:
 
-```bash
-# Add to your batch script before and during model loading:
-rocm-smi --showmeminfo vram
-# ... load model ...
-rocm-smi --showmeminfo vram
-```
+1. Copy your completed script: `cp finetune_lora.py finetune_full.py`
+2. In `finetune_full.py`, delete the line that wraps the model with
+   `get_peft_model`, so that every weight is trained.
+3. Submit it: `sbatch submit_finetune.sh finetune_full.py`
 
-How much GPU memory does the model use during inference vs. fine-tuning?
+Compare the two runs: trainable parameters, peak GPU memory during training,
+training time, and accuracy after fine-tuning. How do both peaks compare with
+the peak memory for inference in Exercise 2?
+
+Then change `LEARNING_RATE` in `finetune_full.py` from `2e-4` to `2e-5` and
+run it again. Why does training *all* of the weights need a smaller learning
+rate than training only the LoRA adapters? (Hint: think about how far each
+update moves the pre-trained weights.)
+
+A full fine-tuning solution with the smaller learning rate is in
+`solutions/finetune_full_solution.py`.
 
 ---
 
@@ -276,7 +371,7 @@ How much GPU memory does the model use during inference vs. fine-tuning?
 | **Fine-tuning** | Adapting a pre-trained model to a specific task |
 | **LoRA** | Parameter-efficient fine-tuning using low-rank adapters |
 | **Tokenizer** | Converts text to/from numerical tokens the model understands |
-| **Temperature** | Controls randomness in text generation (0 = deterministic, >1 = creative) |
+| **Temperature** | Controls randomness when sampling: lower is more focused, higher (>1) more random. Must be above 0; for deterministic output, turn sampling off with `do_sample=False` |
 
 | PyTorch / HuggingFace | Purpose |
 |-----------------------|---------|

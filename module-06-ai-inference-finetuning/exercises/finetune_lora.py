@@ -6,9 +6,8 @@ EXERCISE: Fill in the 3 TODOs to fine-tune DistilBERT for sentiment analysis.
 We use the IMDB dataset (positive/negative movie reviews) and LoRA to
 efficiently adapt the model with very few trainable parameters.
 
-Usage (inside a Slurm job):
-  source /work1/<group>/<username>/sc26_venv/bin/activate
-  python3 finetune_lora.py
+Usage (the batch script activates the shared Python environment):
+  sbatch submit_finetune.sh
 """
 
 import time
@@ -166,6 +165,9 @@ def main():
 
     train_time = time.time() - t_train_start
     print(f"Training completed in {train_time:.1f}s")
+    if device == "cuda":
+        print(f"Peak GPU memory during training: "
+              f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
 
     # TODO 3: Evaluate after fine-tuning and print the accuracy.
     #

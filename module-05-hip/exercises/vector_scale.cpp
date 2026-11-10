@@ -4,7 +4,7 @@
  * EXERCISE: Fill in the 4 TODOs to complete this HIP program.
  *
  * Compile:  hipcc -O2 -o vector_scale vector_scale.cpp
- * Run:      srun --partition=mi2101x --time=2:00 --ntasks=1 ./vector_scale
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_scale
  */
 
 #include <hip/hip_runtime.h>
@@ -31,7 +31,8 @@
 /* TODO 1: Write the kernel function.
  *
  * It should:
- *   - Be marked __global__
+ *   - Be marked __global__ and be named vector_scale_kernel (the timing code
+ *     in main() launches it by that name)
  *   - Take parameters: const double *input, double *result, double alpha, int n
  *   - Compute the global thread index: i = blockIdx.x * blockDim.x + threadIdx.x
  *   - If i < n, set result[i] = alpha * input[i]
@@ -49,6 +50,7 @@ int main(void) {
     double *h_result = (double *)malloc(bytes);
     for (int i = 0; i < N; i++) {
         h_input[i] = (double)i;
+        h_result[i] = -1.0;  /* so the check below fails if no result is copied back */
     }
 
     /* Allocate device memory */
@@ -72,11 +74,27 @@ int main(void) {
      *   HIP_CHECK(hipGetLastError());
      *
      * Hint: blocks = (N + BLOCK_SIZE - 1) / BLOCK_SIZE   (round up)
+     * Keep the name 'blocks': the timing code below uses it.
      *
      * YOUR CODE HERE:
      */
 
     HIP_CHECK(hipDeviceSynchronize());
+
+    /* Time the kernel. The first launch includes one-time setup, so time 10
+     * more launches and report the average. */
+    const int reps = 10;
+    hipEvent_t start, stop;
+    HIP_CHECK(hipEventCreate(&start));
+    HIP_CHECK(hipEventCreate(&stop));
+    HIP_CHECK(hipEventRecord(start));
+    for (int rep = 0; rep < reps; rep++)
+        vector_scale_kernel<<<blocks, BLOCK_SIZE>>>(d_input, d_result, alpha, N);
+    HIP_CHECK(hipEventRecord(stop));
+    HIP_CHECK(hipEventSynchronize(stop));
+    float total_ms = 0.0f;
+    HIP_CHECK(hipEventElapsedTime(&total_ms, start, stop));
+    float kernel_ms = total_ms / reps;
 
     /* TODO 4: Copy d_result back to h_result using hipMemcpy.
      *
@@ -96,10 +114,14 @@ int main(void) {
     printf("Vector Scale: result[i] = %.1f * input[i]\n", alpha);
     printf("  N:          %d\n", N);
     printf("  Block size: %d\n", BLOCK_SIZE);
+    printf("  Time:       %.3f ms per launch (average of %d)\n", kernel_ms, reps);
+    printf("  Bandwidth:  %.1f GB/s\n", 2.0 * bytes / (kernel_ms / 1e3) / 1e9);
     printf("  Max error:  %.2e\n", max_error);
     printf("  Status:     %s\n", max_error < 1e-10 ? "PASSED" : "FAILED");
 
     /* Clean up */
+    HIP_CHECK(hipEventDestroy(start));
+    HIP_CHECK(hipEventDestroy(stop));
     HIP_CHECK(hipFree(d_input));
     HIP_CHECK(hipFree(d_result));
     free(h_input);

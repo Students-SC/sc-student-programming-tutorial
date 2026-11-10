@@ -3,9 +3,8 @@ run_inference.py -- LLM inference exercise
 
 EXERCISE: Fill in the 3 TODOs to run inference with a text generation model.
 
-Usage (inside a Slurm job):
-  source /work1/<group>/<username>/sc26_venv/bin/activate
-  python3 run_inference.py
+Usage (the batch script activates the shared Python environment):
+  sbatch submit_inference.sh run_inference.py
 """
 
 import time
@@ -30,6 +29,7 @@ def generate_response(model, tokenizer, prompt, device, max_new_tokens=128,
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
+            max_length=None,  # use max_new_tokens only (avoids a warning)
             temperature=temperature,
             do_sample=True,
             top_p=0.9,
@@ -65,7 +65,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME,
-        torch_dtype=torch.float16,
+        dtype=torch.float16,
         device_map=device,
     )
 
@@ -74,15 +74,15 @@ def main():
     if device == "cuda":
         print(f"GPU memory: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
 
-    # TODO 2: Set generation parameters.
-    # Experiment with these values!
-    # - max_new_tokens: how many tokens to generate (try 64, 128, 256)
-    # - temperature: creativity level (try 0.1, 0.7, 1.5)
+    # TODO 2: Choose the generation settings to compare.
+    # - max_new_tokens: how many tokens to generate per response (try 64, 128, 256)
+    # - temperatures: a list of sampling temperatures; every prompt runs at each
+    #   one, so you can compare them side by side (try [0.1, 0.7, 1.5])
     #
     # max_new_tokens = ???
-    # temperature = ???
+    # temperatures = [???]
     max_new_tokens = 128
-    temperature = 0.7
+    temperatures = [0.7]
 
     # TODO 3: Add your own prompts to this list!
     # Keep the existing ones and add 2-3 of your own.
@@ -92,31 +92,35 @@ def main():
         # Add your own prompts below:
     ]
 
-    print(f"\n{'=' * 60}")
-    print(f"  Generating responses")
-    print(f"  max_new_tokens={max_new_tokens}, temperature={temperature}")
-    print(f"{'=' * 60}")
-
     total_tokens = 0
     total_time = 0.0
 
-    for i, prompt in enumerate(prompts):
-        response, n_tokens, elapsed, tok_s = generate_response(
-            model, tokenizer, prompt, device,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-        )
-        total_tokens += n_tokens
-        total_time += elapsed
+    for temperature in temperatures:
+        print(f"\n{'=' * 60}")
+        print(f"  Generating responses")
+        print(f"  max_new_tokens={max_new_tokens}, temperature={temperature}")
+        print(f"{'=' * 60}")
 
-        print(f"\n--- Prompt {i+1}: \"{prompt}\" ---")
-        print(f"Response: {response}")
-        print(f"[{n_tokens} tokens in {elapsed:.2f}s = {tok_s:.1f} tok/s]")
+        for i, prompt in enumerate(prompts):
+            response, n_tokens, elapsed, tok_s = generate_response(
+                model, tokenizer, prompt, device,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+            )
+            total_tokens += n_tokens
+            total_time += elapsed
+
+            print(f"\n--- Prompt {i+1}: \"{prompt}\" ---")
+            print(f"Response: {response}")
+            print(f"[{n_tokens} tokens in {elapsed:.2f}s = {tok_s:.1f} tok/s]")
 
     print(f"\n{'=' * 60}")
     print(f"  Summary: {total_tokens} tokens in {total_time:.2f}s "
           f"= {total_tokens/total_time:.1f} tok/s average")
     print(f"{'=' * 60}")
+    if device == "cuda":
+        print(f"Peak GPU memory while generating: "
+              f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
 
 
 if __name__ == "__main__":

@@ -15,14 +15,12 @@
 echo "AI Agent Exercise -- Job $SLURM_JOB_ID on $(hostname)"
 echo ""
 
-if [[ -z "${WORK:-}" ]]; then
-    echo "ERROR: The WORK environment variable is not set. Ask an instructor for help." >&2
-    exit 1
-fi
-VENV_DIR="$WORK/sc26_venv"
-if [[ ! -d "$VENV_DIR" ]]; then
-    echo "ERROR: Python venv not found at $VENV_DIR" >&2
-    echo "       Create it from the repo root with: sbatch setup/setup_venv.sh" >&2
+# The shared, read-only Python environment that the instructors built
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
+VENV_DIR="$SC26_SHARED_DIR/sc26_venv"
+if [[ ! -f "$VENV_DIR/bin/activate" ]]; then
+    echo "ERROR: shared Python environment not found at $VENV_DIR" >&2
+    echo "       Please ask an instructor for help." >&2
     exit 1
 fi
 source "$VENV_DIR/bin/activate"
@@ -30,8 +28,7 @@ source "$VENV_DIR/bin/activate"
 # Auto-discover the shared vLLM server URL from the instructor-provided file.
 # The server writes its URL to this file (under the shared tutorial directory)
 # once it's ready to accept requests.
-SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/sc26dev/shared}"
-SERVER_URL_FILE="$SC26_SHARED_DIR/sc26_agent_server_url"
+SERVER_URL_FILE="$SC26_SHARED_DIR/sc26_agent/sc26_agent_server_url"
 
 if [ -f "$SERVER_URL_FILE" ]; then
     export AGENT_API_URL=$(cat "$SERVER_URL_FILE")
