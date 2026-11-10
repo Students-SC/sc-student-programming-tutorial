@@ -432,14 +432,16 @@ bash ../../setup/launch_qwen.sh
 
 Ask it:
 
-> Write sweep.sh, which compiles vector_scale.cpp with -DBLOCK_SIZE set to 32, 64, 128, 256, 512, 1024, and 2048, runs all of them in a single srun on our partition, and prints a table of block size, bandwidth, and status.
+> Write sweep.sh to meet the specification in @sweep_spec.md.
 
 #### Step 2: Review Before Running
 
-Before you approve the script, answer two questions:
+Before you approve the script, answer three questions:
 - What should happen at 2048? (See Exercise 3.)
-- How many times will this script call `srun`? You asked for one; each extra
-  `srun` is another wait in the queue.
+- How many times will this script call `srun`, and does every GPU run happen
+  inside it? Each extra `srun` is another wait in the queue.
+- Where will the compiled programs be, and can the compute node see that
+  directory?
 
 If the script doesn't match your spec, tell the agent what to fix before you
 approve it.
@@ -447,13 +449,19 @@ approve it.
 #### Step 3: Run It and Check
 
 ```bash
-bash sweep.sh
+bash sweep.sh; echo "exit status: $?"
 ```
 
 The script compiles on the login node and then runs on a compute node. Check
-its table: do the bandwidths match Exercise 3? What does the 2048 row say --
-an error, or a blank or plausible-looking number? A script that hides a
-failure is worse than one that crashes.
+its table against your spec:
+- Do the bandwidths match Exercise 3?
+- 2048 threads is more than the MI210's limit of 1024 per block, so the 2048
+  row must report a failure. It doesn't matter which stage rejects it (here,
+  the kernel launch does), but is the row an error, or a blank or
+  plausible-looking number?
+- Did the script exit with a nonzero status?
+
+A script that hides a failure is worse than one that crashes.
 
 **Questions:**
 - What did you have to correct in the agent's script?
@@ -461,12 +469,25 @@ failure is worse than one that crashes.
 
 **Finish early?** Check the checker: ask the agent, *"Could vector_scale.cpp
 print PASSED even if the result were never copied back from the GPU?"* Then
-test its answer: comment out the copy back to the host (TODO 4), recompile,
-and run it.
+test its answer. Save your working version first, comment out the copy back to
+the host (your TODO 4 line), build and run it, and then restore your working
+version:
+
+```bash
+cp vector_scale.cpp vector_scale_working.cpp
+vim vector_scale.cpp       # Comment out the hipMemcpy in TODO 4
+hipcc -O2 -o vector_scale_nocopy vector_scale.cpp
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_scale_nocopy; echo "exit status: $?"
+cp vector_scale_working.cpp vector_scale.cpp
+```
+
+What does the program report? Look at how `h_result` is filled before the
+kernel runs and how the check treats values that aren't finite. Why does it
+need both?
 
 ---
 
-### Challenge A: Matrix-Vector Multiply on the GPU
+### Challenge A (Optional): Matrix-Vector Multiply on the GPU
 
 Open the challenge template:
 
