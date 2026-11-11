@@ -3,6 +3,7 @@
     "approvalMode": "default",
     "disabled": ["skill", "artifact", "notebook_edit", "display_image", "enter_plan_mode"]
   },
+  "permissions": { "deny": ["Read(**/solutions/**)"] },
   "ui": { "allowedApprovalModes": ["plan", "default", "auto-edit"] },
   "model": {
     "generationConfig": {

@@ -99,6 +99,15 @@ features off it takes 11,536 tokens and no background requests:
   Shift+Tab). Don't turn off `tool_search`: without it Qwen Code declares
   every deferred tool up front, and requests grow to about 21,800 tokens.
 
+The defaults also keep the agent out of the exercises' worked solutions with a
+deny rule, `Read(**/solutions/**)` under `permissions.deny`. Asked only by
+`QWEN.md`, the agent opened a solution in 7 of 18 test sessions, and
+`.qwenignore` (which hides files from search but not from `read_file`) still
+let 3 of 6 through. With the rule, every attempt, including a shell command
+that read a solution, is refused, and the agent finishes the task without it.
+Students can still open the solutions themselves. The rule must be in this
+file: the same rule in a project's `.qwen/settings.json` had no effect.
+
 Qwen Code calls tools natively, so the vLLM server must run with tool
 calling enabled, as `start_server.sh` does.
 
