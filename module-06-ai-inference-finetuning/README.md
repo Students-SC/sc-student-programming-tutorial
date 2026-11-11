@@ -600,10 +600,20 @@ job's warnings.
 
 #### Step 1: Ask for the Change
 
-Copy your completed script from Exercise 3, then start Qwen Code:
+If you ran the optional CPU comparison in Exercise 3, first change the device
+in `run_inference.py` back to `"cuda"`. Then copy your script, switch the copy
+to all of the prompts, and check both settings:
 
 ```bash
 cp run_inference.py batch_agent.py
+sed -i 's/^NUM_PROMPTS = .*/NUM_PROMPTS = len(PROMPTS)/' batch_agent.py
+grep -nE '^NUM_PROMPTS|device = ' batch_agent.py
+```
+
+The `grep` output should show `NUM_PROMPTS = len(PROMPTS)` and
+`device = "cuda"`. Then start Qwen Code:
+
+```bash
 bash ../../setup/launch_qwen.sh
 ```
 
@@ -658,9 +668,13 @@ The comparison table should have columns like these:
 | Batched | ... | ... | ... | ... |
 
 When the job finishes, check:
+- Does the output say `Device: cuda` and name the GPU, and does the table show
+  all of your prompts in each mode? A CPU run is not a GPU benchmark.
 - Do the batched responses make sense and answer their prompts?
 - Does `inference_<JOBID>.err` contain a warning about padding? A warning is
-  useful evidence, but no warning doesn't prove the code is right.
+  useful evidence, but no warning doesn't prove the code is right. (A warning
+  that `temperature` or `top_p` "may be ignored" is harmless: greedy decoding
+  doesn't use them.)
 
 If something is wrong, give the agent the warning or the output and ask it to
 fix that one problem.
@@ -688,32 +702,45 @@ A solution that measures both modes is in
 
 ### Challenge A (Optional): LoRA Hyperparameters
 
-Experiment with different LoRA settings in `finetune_lora.py`:
+Start with a prediction. In `finetune_lora.py`, change `r=8` and
+`lora_alpha=16` to `r=16` and `lora_alpha=32`. Before you submit, predict the
+output's parameter counts: the LoRA adapter parameters, the other trainable
+(classification) parameters, and the total trainable parameters.
 
-- `r=4` (rank 4) vs. `r=16` (rank 16) vs. `r=64` (rank 64)
+Then check your prediction. For this model and these target layers, you should
+see 294,912 adapter parameters, twice as many as before, because `r` sets the
+size of each adapter; the classification layers are unchanged at 592,130; and
+the total is 887,042. `lora_alpha / r` is still 2. Note the training-loop time
+and peak memory as well.
+
+Then try other settings, changing one at a time and noting both `r` and
+`lora_alpha` for each run:
+
+- `r=4` vs. `r=64`
 - `lora_alpha=16` vs. `lora_alpha=32`
 - `NUM_EPOCHS=1` vs. `NUM_EPOCHS=3` vs. `NUM_EPOCHS=5`
 
-Change one setting at a time and note both `r` and `lora_alpha` for each run,
-so you know what caused a difference. LoRA scales its update by
-`lora_alpha / r`, so changing `r` alone also changes that scale; to change only
-the rank, change both (for example, `r=16` with `lora_alpha=32`). A few runs are
-enough to see a pattern.
+LoRA scales its update by `lora_alpha / r`, so changing `r` alone also changes
+that scale. A few runs are enough to see a pattern.
 
-How do these affect final accuracy and the training-loop time? Why does the
-training time hardly change with the rank? The seed is fixed, so rerunning a
-setting gives the same result, but a different seed could move the accuracy by
-a point or two, so don't read too much into small differences.
+How do these settings affect the final accuracy? Does the training time change
+with the rank? What might explain your result? A different seed could move the
+accuracy by a point or two, so don't read too much into small differences.
 
 ### Challenge B (Optional): LoRA vs. Full Fine-Tuning
 
 How much does LoRA actually save? Fine-tune the same model without it:
 
-1. Copy your completed script: `cp finetune_lora.py finetune_full.py`
-2. In `finetune_full.py`, delete the line that wraps the model with
-   `get_peft_model`, so that every weight is trained. The output's trainable
-   parameter count confirms it.
+1. Copy your completed script, with all three blocks enabled and their flags
+   set to `True`: `cp finetune_lora.py finetune_full.py`
+2. In `finetune_full.py`, delete two things: the line
+   `model = get_peft_model(model, lora_config)`, and the check that stops the
+   job when no LoRA parameters are trainable (the `if lora_params == 0:` block).
+   Every weight is then trained.
 3. Submit it: `sbatch submit_finetune.sh finetune_full.py`
+
+In the output, confirm that all 66,955,010 parameters are trainable (100%).
+The count after wrapping now equals the original, because nothing was wrapped.
 
 Compare the two runs: trainable parameters, peak allocated GPU memory during
 training, training-loop time, and accuracy after fine-tuning.
@@ -750,7 +777,9 @@ A full fine-tuning solution with the smaller learning rate is in
 | `AutoModelForCausalLM.from_pretrained(name)` | Load a pre-trained text generation model |
 | `AutoTokenizer.from_pretrained(name)` | Load the matching tokenizer |
 | `model.to("cuda")` | Move a model to the GPU (`"cuda"` on AMD GPUs too) |
-| `model.eval()`, `torch.inference_mode()` | Switch off training behavior and gradient tracking for inference |
+| `model.train()` / `model.eval()` | Select training or evaluation behavior (such as dropout on or off) |
+| `torch.inference_mode()` | Turn off gradient tracking while evaluating or generating |
+| `optimizer.zero_grad()`, `loss.backward()`, `optimizer.step()` | Clear gradients, compute gradients, update the trainable parameters |
 | `model.generate(**inputs, ...)` | Generate text |
 | `torch.cuda.synchronize()` | Wait for queued GPU work to finish, before reading a timer |
 | `get_peft_model(model, lora_config)` | Wrap a model with LoRA adapters |
