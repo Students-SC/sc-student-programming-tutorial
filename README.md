@@ -197,7 +197,6 @@ module-04-mpi/                      Distributed-memory parallelism
 module-05-hip/                      GPU programming with HIP
 module-06-ai-inference-finetuning/  AI inference & fine-tuning
 module-07-ai-agents/                AI agents & capstone challenge
-module-08-openmp-offload/           OpenMP for GPU programming
 ```
 
 Each module directory contains a `README.md` with instructions and an `exercises/`
