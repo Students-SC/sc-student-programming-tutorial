@@ -33,6 +33,15 @@ applications copy their data to the GPU once and keep it there across many
 kernels, which reduces the transfer overhead. You'll measure this in
 Exercise 1.
 
+CPU:
+![topology of a 16 core CPU](/_static/lstopooutput.png)
+
+GPU:
+![topology of a A100 GPU](/_static/gpudiagram.png)
+
+However, a GPU cannot do more specialized tasks like managing IO, network communication[^1], interacting
+with other devices. You still need a CPU for that.
+
 ### The AMD MI210
 
 Our compute nodes each have an **AMD Instinct MI210** GPU:
@@ -47,6 +56,57 @@ Our compute nodes each have an **AMD Instinct MI210** GPU:
 | Memory Bandwidth | 1.6 TB/s |
 | Architecture | CDNA2 (gfx90a) |
 
+#### Stream Processor
+
+Stream processor is a term used to reference any individual arithmatic unit present in a GPU. In Nvidia
+GPUs, they might be called CUDA cores. You can think of them as equivalent to a "core" on a CPU in
+which a single thread can run to execute instructions. They can be specialized for specific datatypes, for example 
+AMD GPUs have matrix cores which are specialized for performing operations on matrices efficiently.
+
+
+#### Compute Unit
+
+A compute unit is a collection of these stream processors or cores, along with other
+infrastructure that they need to schedule threads and run instructions on these stream processors. For example, here is a diagram of a compute unit from an AMD MI250X
+GPU. 
+
+![block diagram of AMD MI250X compute unit](/_static/computeunit.png)
+
+
+
+You can read more about these two concepts in the [ROCm documentation](https://rocm.docs.amd.com/projects/rocprofiler-compute/en/latest/conceptual/cdna/compute-unit.html)
+and [in these slides](https://www.olcf.ornl.gov/wp-content/uploads/2019/09/AMD_GPU_HIP_training_20190906.pdf)
+
+
+#### Wavefront
+
+This refers to a group of threads that are always scheduled together. It is the smallest unit of
+execution on an AMD GPU (you might see this referred to as a 'warp' on Nvidia GPUs). All threads in a wavefront
+execute the same instruction in lockstep on different data elements. On AMD GPUs, a wavefront is 64
+threads. 
+
+#### Memory and Memory Bandwidth
+
+A GPU obviously needs to operate on some data, and this data needs to live somewhere. Every computer
+has RAM, but that is too far away and would be too slow to access by the GPU. So a GPU usually comes with with
+its own RAM that is close to the chip. Because usually GPUs are meant for high throughput computing, it is useful for the GPUs
+RAM to be large enough to store a large amount of data to avoid having to reach out to the CPU
+memory frequently. And also because computational parts of GPUs are able to churn through a large amount of data 
+quickly, the GPU should not be bottlenecked by how much data can be read from the GPU memory at a
+time, so the GPU memory should be high bandwidth so that large amounts of data at a time can be read
+from the memory.
+
+
+#### Architecture
+
+Architecture refers to the overall design of the GPU. The individual decisions and compromises that are made to
+allow the GPU to do what it does efficiently, including things like number of cores and compute
+units in a GPU, what specialized cores are included, how much memory and bandwidth it has, etc. Architectures are always iterated on and improved
+between different generations of GPUs, based on the lessons learned in previous generations and to
+move with the times of how GPUs are being used. For example, matrix cores (or tensor cores on Nvidia
+GPUs) are prevalent now in datacenter GPUs as it became clear hardware support for matrix
+multiplications is useful for machine learning workloads.
+
 ### HIP: Portable GPU Programming
 
 **HIP (Heterogeneous-compute Interface for Portability)** is AMD's GPU
@@ -56,12 +116,16 @@ take work when it makes assumptions about the hardware (such as the wavefront
 size), depends on vendor-specific libraries, or uses a feature that one
 platform doesn't support.
 
+HIP allows you to write high level code in C++ that can be compiled down to a binary that will
+run on the CPU or GPU (depending on the code). 
+
 ### The Programming Model
 
 A HIP program has two parts:
 
-- **Host code** (runs on CPU): manages memory, launches kernels
-- **Device code** (runs on GPU): the **kernel** function that runs in parallel
+- **Host code** (runs on CPU): manages memory (allocates memory on GPU, copies data to GPU memory), launches kernels
+- **Device code** (runs on GPU): consists of the **kernel**. This is the function that you write
+ that will run in parallel with many threads on the GPU
 
 ```
   Host (CPU)                    Device (GPU)
@@ -86,11 +150,44 @@ into a hierarchy:
   └── ...
 ```
 
+All of these threads are (conceptually) running at the same time i.e. each thread is executing the same
+code. So you need to be able to tell each thread which portion of the data it should operate on when executing the
+code based on the thread's id. 
+
+Say you have two arrays, `a` and `b` and you want to do an elementwise sum and store them in array
+`c`. 
+
+```
+# assume N is some super large number
+int a[N] = {1,2,3,4,5 ...... N};
+int b[N] = {1,2,3,4,5 ...... N};
+int c[N];
+```
+
+In a sequential code, we would write a for loop
+```
+for(int i=0; i<N; i++) {
+c[i] = a[i] + b[i];
+}
+```
+
+Because threads in a GPU run in parallel, we can have thousands of threads with each thread can do the below operation.
+
+```
+# addition of two array elements
+c[i] = a[i] + b[i];
+```
+
+In order to do that, you need to allow each thread to have it's own value of `i`. But you have to
+make sure two different threads aren't using the same `i` value. How can we do that?
+
+
 Each thread computes its **global index** to know which data element to process:
 
 ```cpp
 int i = blockIdx.x * blockDim.x + threadIdx.x;
 ```
+
 
 | Variable | Meaning |
 |----------|---------|
@@ -98,6 +195,22 @@ int i = blockIdx.x * blockDim.x + threadIdx.x;
 | `blockIdx.x` | Block index within the grid |
 | `blockDim.x` | Number of threads per block |
 | `gridDim.x` | Number of blocks in the grid |
+
+
+<a href="/_static/thread_index_visualizer.html">Let's try to visualize with a visualization.</a>
+
+This `i` now effectively identifies the thread differentiating it from all the threads in the grid. So in your kernel,
+if you have the operation 
+
+```
+# addition of two array elements
+c[i] = a[i] + b[i];
+```
+
+The 'i'th thread performs this operation for the 'i'th elements of a,b, and c.
+
+
+<a href="/_static/thread_index_with_vecadd_visualizer.html">Let's see the visualization again, this time with the array addition</a>.
 
 **How this maps to the hardware.** On the MI210, threads execute in groups of
 64 called **wavefronts**. Each thread block runs entirely on one compute unit,
@@ -125,6 +238,14 @@ int blocks = (n + threads_per_block - 1) / threads_per_block;
 add_vectors<<<blocks, threads_per_block>>>(d_a, d_b, d_c, n);
 ```
 
+We create our kernel function `add_vectors` which adds two arrays together and stores the result in
+a third array `c`.
+
+We see here that we setup the number of threads per block, the total number of blocks, derived from
+the value n which is the size of our arrays (you'll see this in the example).
+
+We "launch" the `add_vectors` kernel with the `kernelname<<< >>>` syntax. We specify the grid size
+(i.e. number of blocks) and the block size (i.e. number of threads per block) 
 The number of blocks comes from the length of the vectors (`n`) and the number
 of threads per block. Dividing `n` by `threads_per_block` alone would round
 down and leave the last few elements without a thread, so the code computes
@@ -134,6 +255,46 @@ threads than elements, and the `if (i < n)` check keeps those extra threads
 from reading or writing past the end of the arrays.
 
 ### Memory Management
+
+
+We talked about the computing part of this array addition so far. But what about the data. Obviously
+that has to come from somewhere. How does that data get to the GPU? We talked earlier that GPUs have
+their own RAM as it is faster for GPUs to access and use RAM integrated onto their device instead of
+needing to go to a different device. So any data that exists on disk or in CPU RAM needs to copied over to the GPU RAM.
+And just like CPU RAM, we need to allocate space on the GPU RAM first before we can copy anything to
+it.
+
+So expanding on the previous code snippet a little bit, we can do something like this:
+
+```
+// assume we already have arrays h_a, h_b, h_c allocated in CPU memory
+
+/* Allocate device (GPU) memory */
+double *d_a, *d_b, *d_c;
+HIP_CHECK(hipMalloc(&d_a, bytes));
+HIP_CHECK(hipMalloc(&d_b, bytes));
+HIP_CHECK(hipMalloc(&d_c, bytes));
+
+/* Copy inputs from host to device */
+HIP_CHECK(hipMemcpy(d_a, h_a, bytes, hipMemcpyHostToDevice));
+HIP_CHECK(hipMemcpy(d_b, h_b, bytes, hipMemcpyHostToDevice));
+
+// Launch from host
+int threads_per_block = 256;
+int blocks = (n + threads_per_block - 1) / threads_per_block;
+add_vectors<<<blocks, threads_per_block>>>(d_a, d_b, d_c, n);
+
+/* Copy results back to host */
+HIP_CHECK(hipMemcpy(h_c, d_c, bytes, hipMemcpyDeviceToHost));
+```
+
+There are some advances with modern GPUs. Some are able to transparently copy data from CPU memory
+and cache it on GPU memory whenever you try to access something in the CPU memory from the GPU,
+saving you the need to explicitly allocate memory and copy data. Some devices are combine a CPU and
+GPU in one device and share the same RAM between both of them (called "unified memory"), so there is
+no difference between a CPU reading and writing to a memory location and a GPU doing it. But it is
+still valuable to understand the data movement behavior even if you might not
+explicitly be using it in your code.
 
 | Function | Purpose |
 |----------|---------|
@@ -751,3 +912,8 @@ sums in shared memory, like the reduction in Module 7's
 ---
 
 **Next up:** [Module 6 -- AI on HPC: Inference & Fine-Tuning](../module-06-ai-inference-finetuning/README.md)
+
+[^1]: with some nuances. Some GPUs can be directly connected to the network rather than having to
+    pass their data to the CPU first before communicating with another node. This speeds up some
+    massive applications that need to be split across hundreds of nodes, by taking away the extra
+    step of copying data to the CPU first before doing network communication.
