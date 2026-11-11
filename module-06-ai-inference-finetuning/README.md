@@ -391,10 +391,11 @@ selection and starting weights.
 
 ### Agent Practice: Batch Your Prompts
 
-So far the model answers one prompt at a time. Each step of generation reads
-all of the model's weights from GPU memory, so the GPU does much more useful
-work per step when it generates for many prompts together. Have the agent make
-that change, and check it with measurements and the job's warnings.
+So far the model answers one prompt at a time. Batching lets the GPU work on
+all the prompts in the same steps (see [Why GPUs for AI?](#why-gpus-for-ai)).
+Have the agent add batched generation and compare it with one-at-a-time
+generation in the same job, then check its work with the measurements and the
+job's warnings.
 
 #### Step 1: Ask for the Change
 
@@ -405,37 +406,81 @@ cp run_inference.py batch_agent.py
 bash ../../setup/launch_qwen.sh
 ```
 
-Ask it:
+Copy this whole prompt (the copy button at the top right of the box copies all
+of it) and paste it into Qwen Code. Because it is long, Qwen Code shows it as
+`[Pasted Content ... chars]`; press `Enter` to send it.
 
-> Change batch_agent.py so it generates the responses for all prompts at each temperature in a single model.generate() call, and prints the total tokens per second.
+```text
+Update batch_agent.py to compare sequential and batched text generation on the same prompts using the same model.
 
-Read the change before you approve it. Predict: will the total tokens per
-second go up or down? Will each individual response arrive sooner or later?
+Use greedy decoding with do_sample=False for this comparison. Keep the model, precision, prompts, and maximum new-token limit the same in both modes. Load the model once and warm up both modes before timing.
 
-#### Step 2: Run It and Check
+In sequential mode, generate one response at a time. In batched mode, generate all responses in one model.generate() call.
+
+Use appropriate padding for this decoder-only model. Print each prompt and its generated continuation.
+
+Report a comparison table containing mode, number of prompts, actual generated-token count, generation time, and aggregate output tokens per second. Exclude model loading, warm-up, tokenization, and decoding from generation timing. Synchronize the GPU around wall-clock measurements.
+
+Count only actual generated tokens, excluding prompt tokens and padding after a response finishes. Explain any output differences rather than assuming the two modes must be identical.
+
+Preserve the existing shared environment, local model cache, and Slurm workflow.
+```
+
+#### Step 2: Review Before You Approve
+
+If the agent shows only part of the change, press `Ctrl+S` to see all of it.
+Before you approve it, check:
+- **Padding.** The prompts have different lengths, so a batch is padded to the
+  longest one. Which side does the agent pad on, and is a pad token set? (A
+  text generation model continues from the *end* of its input.)
+- **Attention mask.** Is it passed to `model.generate()`, so the model ignores
+  the padding?
+- **Matching.** Does each continuation stay with its prompt, and is the prompt
+  part (with its padding) removed before decoding?
+- **Counting and timing.** Are generated tokens counted with
+  `count_generated_tokens()`, and is the timer around `model.generate()` alone,
+  with `synchronize()` before and after?
+- **Fair comparison.** Do both modes use the same prompts, `max_new_tokens`,
+  and greedy decoding, with the inputs on the GPU?
+
+#### Step 3: Run It and Check
 
 ```bash
 sbatch submit_inference.sh batch_agent.py
 ```
 
-When the job finishes, check three things:
-- Is the total tokens per second higher than in Exercise 3?
-- Do the responses still make sense?
-- Does `inference_<JOBID>.err` contain a warning about padding?
+The comparison table should have columns like these:
+
+| Mode | Prompts | Generated tokens | Generation time (s) | Aggregate output tokens/s |
+|------|---------|------------------|---------------------|---------------------------|
+| Sequential | ... | ... | ... | ... |
+| Batched | ... | ... | ... | ... |
+
+When the job finishes, check:
+- Do the batched responses make sense and answer their prompts?
+- Does `inference_<JOBID>.err` contain a warning about padding? A warning is
+  useful evidence, but no warning doesn't prove the code is right.
 
 If something is wrong, give the agent the warning or the output and ask it to
-fix the script.
+fix that one problem.
 
 **Questions:**
-- Prompts have different lengths, so they are padded to the same length.
-  Which side did the agent pad on? Why does a text generation model need the
-  padding on the left?
-- The shared AI server behind Qwen Code answers the whole class at once. How
-  does batching help it?
-- Type `/stats model` in Qwen Code. How many tokens has your session used?
-  Every request behind those numbers was an inference job like yours.
+- Did batching improve aggregate throughput in this run? Did both modes
+  generate comparable numbers of tokens?
+- Are the two modes' responses identical? If not, why might they differ, even
+  with greedy decoding?
+- What extra GPU memory does a batch need? (The solution below measures each
+  mode's peak.)
+- What does this measurement tell you about the time to finish the whole set
+  of prompts? What doesn't it tell you about how soon each response starts
+  arriving?
+- How does batching help a shared inference service like the one behind
+  Qwen Code?
+- Type `/stats model` in Qwen Code to see how many tokens your session has
+  sent and received. The server reuses cached work for text it has seen
+  before, so this isn't the same as the work the GPU did.
 
-A solution that measures both ways is in
+A solution that measures both modes is in
 `solutions/batch_inference_solution.py`.
 
 ---
