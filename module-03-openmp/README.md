@@ -540,6 +540,7 @@ OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, 
 | `#pragma omp for` | Distribute loop iterations across threads |
 | `#pragma omp parallel for` | Combined: fork + distribute |
 | `reduction(+:var)` | Safely sum `var` across threads |
+| `private(var)` | Ensures each thread maintains its own copy of `var` |
 | `omp_get_thread_num()` | Get current thread's ID (0-based) |
 | `omp_get_num_threads()` | Get team size (must be called inside a parallel region; returns 1 outside) |
 
