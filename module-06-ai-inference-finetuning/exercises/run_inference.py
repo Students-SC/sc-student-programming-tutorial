@@ -1,8 +1,8 @@
 """
 run_inference.py -- LLM inference exercise
 
-EXERCISE: Fill in the 3 TODOs to compare generation settings and run the
-model on the GPU.
+EXERCISE: Complete TODOs 1-3 to run the model on the GPU and compare
+temperatures. TODO 4 (adding your own prompts) is optional.
 
 Usage (the batch script activates the shared Python environment):
   sbatch submit_inference.sh run_inference.py
@@ -16,6 +16,19 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 MODEL_NAME = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 DTYPE = torch.float16
 TOP_P = 0.9
+
+PROMPTS = [
+    "What is the difference between a CPU and a GPU?",
+    "Explain MPI in simple terms.",
+    "What is a neural network?",
+    "Why do supercomputers use Linux?",
+    "Write a short poem about debugging code.",
+    # TODO 4 (optional): add your own prompts here, and raise NUM_PROMPTS.
+]
+
+# How many of PROMPTS to use, starting from the first. The temperature
+# comparison uses the first 2; the Agent Practice uses all 5.
+NUM_PROMPTS = 2
 
 
 def synchronize(device):
@@ -83,28 +96,21 @@ def main():
     print("  LLM Inference Exercise")
     print("=" * 60)
 
-    # TODO 1: Choose the generation settings to compare.
-    # - max_new_tokens: the most tokens to generate per response (try 64, 128, 256)
-    # - temperatures: a list of sampling temperatures; every prompt runs at each
-    #   one, so you can compare them side by side (try [0.1, 0.7, 1.5])
-    #
-    # max_new_tokens = ???
-    # temperatures = [???]
-    max_new_tokens = 128
+    # TODO 1: Choose the device. Change "cpu" to "cuda" to run on the GPU.
+    # PyTorch built for AMD GPUs (ROCm) still calls the GPU "cuda". Use "cpu"
+    # only for the optional CPU baseline.
+    device = "cpu"
+
+    # TODO 2: Choose the response-length limit: change it to 64. This is the
+    # most tokens to generate per response; a response can end sooner.
+    # Longer limits take more time and can need more memory.
+    max_new_tokens = 32
+
+    # TODO 3: Choose the temperatures to compare: change this to [0.1, 0.7, 1.5].
+    # Every prompt runs at each temperature, so you can compare them side by side.
     temperatures = [0.7]
 
-    # TODO 2: Add your own prompts to this list!
-    # Keep the existing ones and add 2-3 of your own.
-    prompts = [
-        "What is the difference between a CPU and a GPU?",
-        "Explain MPI in simple terms.",
-        # Add your own prompts below:
-    ]
-
-    # TODO 3: Run on the GPU.
-    # Change "cpu" to "cuda". PyTorch built for AMD GPUs (ROCm) still calls
-    # the GPU "cuda". Leave it as "cpu" for the optional CPU baseline.
-    device = "cpu"  # Replace this!
+    prompts = PROMPTS[:NUM_PROMPTS]
 
     if device == "cuda" and not torch.cuda.is_available():
         sys.exit('ERROR: device is "cuda", but no GPU is available. '
@@ -127,8 +133,8 @@ def main():
     if device == "cuda":
         print(f"Allocated GPU memory after loading: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
 
-    print(f"\nSettings: max_new_tokens={max_new_tokens}, temperatures={temperatures}, "
-          f"top_p={TOP_P}, sampling on")
+    print(f"\nSettings: {len(prompts)} prompts, max_new_tokens={max_new_tokens}, "
+          f"temperatures={temperatures}, top_p={TOP_P}, sampling on")
 
     # The first generate() call includes one-time setup, so run a short,
     # untimed warm-up first.

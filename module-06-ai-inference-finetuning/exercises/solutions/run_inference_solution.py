@@ -14,6 +14,18 @@ MODEL_NAME = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 DTYPE = torch.float16
 TOP_P = 0.9
 
+PROMPTS = [
+    "What is the difference between a CPU and a GPU?",
+    "Explain MPI in simple terms.",
+    "What is a neural network?",
+    "Why do supercomputers use Linux?",
+    "Write a short poem about debugging code.",
+]
+
+# How many of PROMPTS to use, starting from the first. The temperature
+# comparison uses the first 2; the Agent Practice uses all 5.
+NUM_PROMPTS = 2
+
 
 def synchronize(device):
     """Wait for all queued GPU work to finish, so a wall-clock timer covers it."""
@@ -81,20 +93,15 @@ def main():
     print("=" * 60)
 
     # TODO 1: SOLVED
-    max_new_tokens = 128
-    temperatures = [0.1, 0.7, 1.5]
+    device = "cuda"
 
-    # TODO 2: SOLVED -- custom prompts added
-    prompts = [
-        "What is the difference between a CPU and a GPU?",
-        "Explain MPI in simple terms.",
-        "What is a neural network?",
-        "Why do supercomputers use Linux?",
-        "Write a short poem about debugging code.",
-    ]
+    # TODO 2: SOLVED
+    max_new_tokens = 64
 
     # TODO 3: SOLVED
-    device = "cuda"
+    temperatures = [0.1, 0.7, 1.5]
+
+    prompts = PROMPTS[:NUM_PROMPTS]
 
     if device == "cuda" and not torch.cuda.is_available():
         sys.exit('ERROR: device is "cuda", but no GPU is available. '
@@ -117,8 +124,8 @@ def main():
     if device == "cuda":
         print(f"Allocated GPU memory after loading: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
 
-    print(f"\nSettings: max_new_tokens={max_new_tokens}, temperatures={temperatures}, "
-          f"top_p={TOP_P}, sampling on")
+    print(f"\nSettings: {len(prompts)} prompts, max_new_tokens={max_new_tokens}, "
+          f"temperatures={temperatures}, top_p={TOP_P}, sampling on")
 
     # The first generate() call includes one-time setup, so run a short,
     # untimed warm-up first.
