@@ -659,7 +659,9 @@ the program is reporting the defect you planted.
 
 What did the basic program report? If it printed PASSED for this wrong
 answer, find its check, near the line that prints PASSED, and see what it
-actually compares.
+actually compares. If it printed no PASSED or FAILED at all, the program
+can't tell you anything is wrong: only your comparison with the expected
+counts in Step 1 catches the defect.
 
 #### Closing Questions
 
