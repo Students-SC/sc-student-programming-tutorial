@@ -234,8 +234,8 @@ The programs in this module measure performance the same way:
 
 Suggested pacing: about 7 minutes for Exercise 1, 15 minutes for Exercise 2,
 and 8 minutes for Exercise 3. The Agent Practice takes about 15 to 20 minutes;
-if you are short on time, stop after its Step 5. Challenges A and B are
-optional extensions.
+if you are short on time, stop after its Step 5. The challenge at the end is
+an optional extension.
 
 The compiler (`hipcc`) and tools are already set up on the cluster. If
 `hipcc --version` doesn't work, run the environment check from
@@ -674,7 +674,7 @@ actually compares.
 
 ---
 
-### Challenge A (Optional): Matrix-Vector Multiply on the GPU
+### Challenge (Optional): Matrix-Vector Multiply on the GPU
 
 Open the challenge template:
 
@@ -718,23 +718,6 @@ in `solutions/matvec_hip_transposed_solution.cpp`. The other limit, too few
 blocks, needs a different design: a whole block per row, combining partial
 sums in shared memory, like the reduction in Module 7's
 [capstone](../module-07-ai-agents/exercises/capstone.md).
-
-### Challenge B (Optional): Ask the Agent
-
-Give your AI agent this serial C loop and ask it to convert it to a HIP
-kernel:
-
-```c
-for (int i = 0; i < n; i++) {
-    y[i] = 0.0;
-    for (int j = 0; j < n; j++) {
-        y[i] += A[i * n + j] * x[j];
-    }
-}
-```
-
-Review the generated code. Does the thread indexing make sense? Did it handle
-the `if (i < n)` bounds check? Does it check the launch for errors?
 
 ---
 
