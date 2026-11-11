@@ -415,59 +415,62 @@ In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
 `:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
 or an existing VS Code Remote SSH connection.
 
-#### Step 2: Complete TODOs 1 and 2
+#### Step 2: Change the Settings
 
-There are **3 TODOs**. Do the first two now:
+The script runs as it is; its settings are working values for you to change
+(see [Generating Text with Hugging Face](#generating-text-with-hugging-face)).
+There are **3 TODOs**, plus an optional fourth:
 
-1. **TODO 1**: Choose the generation settings: `max_new_tokens`, and a list of
-   `temperatures` to compare (try `[0.1, 0.7, 1.5]`)
-2. **TODO 2**: Add your own prompts to the prompt list
+1. **TODO 1**: Choose the device: change `"cpu"` to `"cuda"`.
+2. **TODO 2**: Choose the response-length limit: change `max_new_tokens` to
+   `64`. Longer limits take more time and can need more memory.
+3. **TODO 3**: Choose the temperatures to compare: change `temperatures` to
+   `[0.1, 0.7, 1.5]`.
+4. **TODO 4** (optional): Add your own prompts to `PROMPTS`, and raise
+   `NUM_PROMPTS` to include them.
 
-#### Step 3: (Optional) Run on the CPU First
+The script uses the first `NUM_PROMPTS` of the prompts in `PROMPTS`. Here it
+uses the first 2, so each run stays short; the Agent Practice uses all of
+them.
 
-Until you complete TODO 3, the script runs the model on the CPU. For a
-baseline, submit it once now:
-
-```bash
-sbatch submit_inference.sh run_inference.py
-```
-
-With the suggested settings, this job takes about 4 minutes. Note the tokens
-per second on its `All temperatures` line, and the number of CPU threads it
-used.
-
-#### Step 4: Complete TODO 3 and Run on the GPU
-
-3. **TODO 3**: Change the device from `"cpu"` to `"cuda"`
-
-Then submit the script again:
+#### Step 3: Submit the Batch Job
 
 ```bash
 sbatch submit_inference.sh run_inference.py
 ```
 
-#### Step 5: Compare Temperatures
+When it finishes, check that the output says `Device: cuda` and names the GPU.
+
+#### Step 4: Compare Temperatures
 
 Your script runs every prompt at each temperature in `temperatures`, so one
-job gives you a side-by-side comparison. Temperature only matters when the
-model **samples** its next token at random from the likely ones
-(`do_sample=True`, as here). In general:
+job gives you a side-by-side comparison. In general:
 - `0.1` concentrates the choice on the highest-scoring tokens, so responses
   are focused and can repeat themselves.
 - `0.7` allows more variation.
-- `1.5` flattens the choice, which often adds variation and mistakes. (The
-  script's `top_p=0.9` still drops the least likely tokens, so the text
-  usually stays readable.)
+- `1.5` flattens the choice, which often adds variation and mistakes.
 
-With `do_sample=False`, the model instead always picks the most likely token,
-which is called **greedy decoding**. A lower temperature doesn't make an answer
-more correct, and a model this small can give weak answers at every
-temperature.
+A lower temperature doesn't make an answer more correct, and a model this
+small can give weak answers at every temperature.
 
-**Questions:**
-- Which temperature gives the most useful answers to your prompts?
-- If you ran the CPU baseline, compare the two runs' `All temperatures` lines.
-  They did the same work, so how many times faster is the GPU?
+**Question:** Which temperature gives the most useful answers to your prompts?
+
+#### Step 5 (Optional): Compare with the CPU
+
+Change the device back to `"cpu"`, leave the other settings as they are, and
+submit the script again:
+
+```bash
+sbatch submit_inference.sh run_inference.py
+```
+
+This job takes a minute or two. Both runs used the same settings and prompts,
+but because the model samples, they generate different text and possibly
+different numbers of tokens. Compare the two runs' `All temperatures` lines:
+the number of tokens each generated, and the tokens per second. How many
+times faster is the GPU?
+
+Then change the device back to `"cuda"` for the Agent Practice.
 
 ---
 
@@ -475,6 +478,10 @@ temperature.
 
 Now let's adapt a pre-trained model to a new task. We'll fine-tune a text
 classification model (DistilBERT) on the IMDB sentiment dataset using LoRA.
+This exercise uses the calls explained in
+[What a Training Batch Contains](#what-a-training-batch-contains),
+[One Training Step](#one-training-step), and
+[Configuring LoRA](#configuring-lora).
 
 #### Step 1: Open the Fine-Tuning Script
 
@@ -484,16 +491,65 @@ Open the script in an editor, as in Exercise 3:
 vim finetune_lora.py
 ```
 
-#### Step 2: Complete the TODOs
+#### Step 2: Read and Enable the Three Code Blocks
 
-There are **3 TODOs**:
+The code for each task is already written, but commented out between a
+`BEGIN` and an `END` marker line. Read each block and be ready to explain it.
+Then enable it by deleting exactly the first `#` of each line between the
+markers, which keeps the indentation as it is. Lines that are still comments
+afterward are explanations. For example, before:
 
-1. **TODO 1**: Configure the LoRA adapter parameters
-2. **TODO 2**: Write the training step (clear the gradients, forward pass,
-   loss, backward pass, optimizer step)
-3. **TODO 3**: Evaluate the model after training and print its accuracy
+```python
+    # ----- BEGIN TODO 3 -----
+#    post_accuracy = evaluate(model, eval_loader, device)
+#    print(f"\nAccuracy after fine-tuning: {post_accuracy:.1%}")
+#    print(f"Change: {post_accuracy - pre_accuracy:+.1%}")
+    # ----- END TODO 3 -----
+```
 
-#### Step 3: Submit the Fine-Tuning Job
+and after:
+
+```python
+    # ----- BEGIN TODO 3 -----
+    post_accuracy = evaluate(model, eval_loader, device)
+    print(f"\nAccuracy after fine-tuning: {post_accuracy:.1%}")
+    print(f"Change: {post_accuracy - pre_accuracy:+.1%}")
+    # ----- END TODO 3 -----
+```
+
+The three blocks are:
+
+1. **TODO 1**: The LoRA configuration. Be ready to explain `r` and
+   `target_modules`.
+2. **TODO 2**: The training step for one batch.
+3. **TODO 3**: The evaluation after fine-tuning. The `evaluate()` function is
+   defined at the top of the file; you don't need to write it.
+
+After you enable a block, set its flag at the top of the file to `True`:
+`LORA_CONFIG_READY`, `TRAINING_STEP_READY`, and `EVALUATION_READY`. While any
+flag is still `False`, the job stops right away and names the unfinished
+task. The flags are reminders that you finished, not tests of your code. (The
+script does stop if no LoRA parameters are trainable, which means TODO 1
+isn't enabled.)
+
+> **Tip**
+>
+> In Vim, you can delete the first character of many lines at once. Put the
+> cursor on the first `#` after a `BEGIN` line, press `Ctrl+V` (or `Ctrl+Q` if
+> your terminal pastes instead), press `j` to extend the selection down to the
+> line before `END`, then press `x`.
+
+#### Step 3: Predict, Then Submit
+
+Before you submit, answer:
+- Which call computes the gradients, and which call changes the weights?
+- Does adding LoRA change the total number of parameters, the number of
+  trainable parameters, or both?
+- Why does the training call include the labels? How does `evaluate()` use
+  them differently?
+
+For discussion, or if you finish early: which parameters does the optimizer
+update?
 
 ```bash
 sbatch submit_finetune.sh
@@ -513,20 +569,24 @@ cat finetune_<JOBID>.out
 > classification layers are new, and training them is the point of this
 > exercise.
 
-The script fixes its random seed, so running it again gives the same data
-selection and starting weights.
+Compare the output with your predictions:
+- The parameter counts: the original model, the model after wrapping with
+  LoRA, the trainable parameters (and the percentage of the wrapped model),
+  and how many of those are LoRA adapters and how many are other layers.
+- The training loss in each epoch.
+- The accuracy before and after fine-tuning, and the majority-class baseline
+  (always guessing the more common label). The new classification layers start
+  with random weights, so the starting accuracy is close to a guess, but not
+  exactly 50%. A small run like this one doesn't always improve by the same
+  amount.
+- The peak allocated GPU memory during training. Training stores gradients and
+  optimizer state for the trained parameters, and intermediate results for the
+  whole model. Which of those does LoRA shrink?
 
-**Questions:**
-- Compare the accuracy before fine-tuning with the majority-class baseline
-  (always guessing the more common label). The new classification layers
-  start with random weights, so the starting accuracy is close to a guess, but
-  not exactly 50%.
-- What accuracy does the model reach after fine-tuning?
-- How long did the training loop take?
-- How many parameters were trained, and how many of those are LoRA adapters?
-- What was the peak allocated GPU memory during training? Training stores
-  gradients and optimizer state for the trained parameters, and intermediate
-  results for the whole model. Which of those does LoRA shrink?
+The script fixes its random seed, so on the same setup a rerun selects the
+same data and starts from the same weights. The results can still differ
+slightly between runs, because GPU calculations don't always add up numbers
+in the same order.
 
 ---
 
