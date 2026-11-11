@@ -85,28 +85,35 @@ def main():
         MODEL_NAME, num_labels=2
     )
 
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total parameters: {total_params:,}")
+    original_params = sum(p.numel() for p in model.parameters())
+    print(f"Original model parameters: {original_params:,}")
 
     # --- Apply LoRA ---
     # TODO 1: SOLVED
     lora_config = LoraConfig(
-        task_type=TaskType.SEQ_CLS,
-        r=8,
-        lora_alpha=16,
-        lora_dropout=0.1,
-        target_modules=["q_lin", "v_lin"],
+        task_type=TaskType.SEQ_CLS,         # sequence classification
+        r=8,                                # rank of the low-rank update
+        lora_alpha=16,                      # scales the update by lora_alpha / r = 2
+        lora_dropout=0.1,                   # dropout on the adapters' input, in training
+        target_modules=["q_lin", "v_lin"],  # attention query and value layers
     )
     model = get_peft_model(model, lora_config)
 
-    model.to(device)
-
+    total_params = sum(p.numel() for p in model.parameters())
     trainable = {n: p.numel() for n, p in model.named_parameters() if p.requires_grad}
     trainable_params = sum(trainable.values())
     lora_params = sum(v for n, v in trainable.items() if "lora_" in n)
+    print(f"Parameters after wrapping with LoRA: {total_params:,}")
     print(f"Trainable parameters: {trainable_params:,} "
-          f"({100 * trainable_params / total_params:.2f}%)")
-    print(f"  LoRA adapters: {lora_params:,}, other layers: {trainable_params - lora_params:,}")
+          f"({100 * trainable_params / total_params:.2f}% of {total_params:,})")
+    print(f"  LoRA adapters: {lora_params:,}, other trainable layers: "
+          f"{trainable_params - lora_params:,}")
+    if lora_params == 0:
+        sys.exit("ERROR: no LoRA parameters are trainable, so this would train every "
+                 "weight. Did you enable the TODO 1 block?\n"
+                 "(For Challenge B's full fine-tuning, delete this check.)")
+
+    model.to(device)
     print(f"Allocated GPU memory after model load: "
           f"{torch.cuda.memory_allocated() / 1e9:.2f} GB")
 
@@ -153,14 +160,21 @@ def main():
             labels = batch["label"].to(device)
 
             # TODO 2: SOLVED
+            # Discard gradients from the previous batch.
             optimizer.zero_grad()
+
+            # Predict the labels and compute the classification loss.
             outputs = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 labels=labels,
             )
             loss = outputs.loss
+
+            # Compute gradients for the trainable parameters.
             loss.backward()
+
+            # Update those parameters using the gradients.
             optimizer.step()
 
             epoch_loss += loss.item()

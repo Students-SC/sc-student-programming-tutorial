@@ -1,7 +1,10 @@
 """
 finetune_lora.py -- Fine-tune a text classifier with LoRA
 
-EXERCISE: Fill in the 3 TODOs to fine-tune DistilBERT for sentiment analysis.
+EXERCISE: Read, explain, and enable the 3 commented-out code blocks (TODOs 1-3)
+to fine-tune DistilBERT for sentiment analysis. To enable a block, delete the
+first "#" of each line between its BEGIN and END markers, then set its flag
+below to True.
 
 We use the IMDB dataset (positive/negative movie reviews) and LoRA to
 efficiently adapt the model with very few trainable parameters.
@@ -27,6 +30,12 @@ MAX_LENGTH = 256
 TRAIN_SAMPLES = 2000
 EVAL_SAMPLES = 500
 SEED = 42  # fixes the data selection and the new classifier's starting weights
+
+# Set each flag to True after you have enabled and reviewed its code block.
+# These are reminders that the exercise is finished, not tests of your code.
+LORA_CONFIG_READY = False    # TODO 1
+TRAINING_STEP_READY = False  # TODO 2
+EVALUATION_READY = False     # TODO 3
 
 
 def tokenize_function(examples, tokenizer):
@@ -62,6 +71,16 @@ def main():
     print("  LoRA Fine-Tuning Exercise")
     print("=" * 60)
 
+    unfinished = [name for name, ready in [
+        ("TODO 1 (LoRA configuration)", LORA_CONFIG_READY),
+        ("TODO 2 (training step)", TRAINING_STEP_READY),
+        ("TODO 3 (evaluation)", EVALUATION_READY),
+    ] if not ready]
+    if unfinished:
+        sys.exit("Not finished yet: " + ", ".join(unfinished) + ".\n"
+                 "Enable each code block (delete the first # of each line between its "
+                 "BEGIN and END markers), then set its flag at the top of the file to True.")
+
     # PyTorch built for AMD GPUs (ROCm) still calls the GPU "cuda"
     if not torch.cuda.is_available():
         sys.exit("ERROR: no GPU is available. Submit this script with sbatch "
@@ -90,33 +109,38 @@ def main():
         MODEL_NAME, num_labels=2
     )
 
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total parameters: {total_params:,}")
+    original_params = sum(p.numel() for p in model.parameters())
+    print(f"Original model parameters: {original_params:,}")
 
     # --- Apply LoRA ---
-    # TODO 1: Configure the LoRA adapter.
-    #
-    # Create a LoraConfig with these settings:
-    #   - task_type=TaskType.SEQ_CLS  (sequence classification)
-    #   - r=8                          (rank of the low-rank matrices)
-    #   - lora_alpha=16                (scaling factor)
-    #   - lora_dropout=0.1             (dropout for regularization)
-    #   - target_modules=["q_lin", "v_lin"]  (which layers to adapt)
-    #
-    # Then wrap the model: model = get_peft_model(model, lora_config)
-    #
-    # YOUR CODE HERE:
-    # lora_config = LoraConfig(...)
-    # model = get_peft_model(model, lora_config)
+    # TODO 1: Read the configuration, then enable it. Be ready to explain r and
+    # target_modules (see "Configuring LoRA" in the README).
+    # ----- BEGIN TODO 1 -----
+#    lora_config = LoraConfig(
+#        task_type=TaskType.SEQ_CLS,         # sequence classification
+#        r=8,                                # rank of the low-rank update
+#        lora_alpha=16,                      # scales the update by lora_alpha / r = 2
+#        lora_dropout=0.1,                   # dropout on the adapters' input, in training
+#        target_modules=["q_lin", "v_lin"],  # attention query and value layers
+#    )
+#    model = get_peft_model(model, lora_config)
+    # ----- END TODO 1 -----
 
-    model.to(device)
-
+    total_params = sum(p.numel() for p in model.parameters())
     trainable = {n: p.numel() for n, p in model.named_parameters() if p.requires_grad}
     trainable_params = sum(trainable.values())
     lora_params = sum(v for n, v in trainable.items() if "lora_" in n)
+    print(f"Parameters after wrapping with LoRA: {total_params:,}")
     print(f"Trainable parameters: {trainable_params:,} "
-          f"({100 * trainable_params / total_params:.2f}%)")
-    print(f"  LoRA adapters: {lora_params:,}, other layers: {trainable_params - lora_params:,}")
+          f"({100 * trainable_params / total_params:.2f}% of {total_params:,})")
+    print(f"  LoRA adapters: {lora_params:,}, other trainable layers: "
+          f"{trainable_params - lora_params:,}")
+    if lora_params == 0:
+        sys.exit("ERROR: no LoRA parameters are trainable, so this would train every "
+                 "weight. Did you enable the TODO 1 block?\n"
+                 "(For Challenge B's full fine-tuning, delete this check.)")
+
+    model.to(device)
     print(f"Allocated GPU memory after model load: "
           f"{torch.cuda.memory_allocated() / 1e9:.2f} GB")
 
@@ -162,19 +186,27 @@ def main():
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["label"].to(device)
 
-            # TODO 2: Write the training step.
-            #
-            # Steps:
-            #   1. Zero the gradients:  optimizer.zero_grad()
-            #   2. Forward pass:        outputs = model(input_ids=input_ids,
-            #                                           attention_mask=attention_mask,
-            #                                           labels=labels)
-            #   3. Get the loss:        loss = outputs.loss
-            #   4. Backward pass:       loss.backward()
-            #   5. Update weights:      optimizer.step()
-            #
-            # YOUR CODE HERE:
-            loss = torch.tensor(0.0)  # Replace with real training step!
+            # TODO 2: Read the training step, then enable it (see "One Training
+            # Step" in the README). Lines that are still comments afterward are
+            # explanations.
+            # ----- BEGIN TODO 2 -----
+#            # Discard gradients from the previous batch.
+#            optimizer.zero_grad()
+#
+#            # Predict the labels and compute the classification loss.
+#            outputs = model(
+#                input_ids=input_ids,
+#                attention_mask=attention_mask,
+#                labels=labels,
+#            )
+#            loss = outputs.loss
+#
+#            # Compute gradients for the trainable parameters.
+#            loss.backward()
+#
+#            # Update those parameters using the gradients.
+#            optimizer.step()
+            # ----- END TODO 2 -----
 
             epoch_loss += loss.item()
             num_batches += 1
@@ -188,14 +220,13 @@ def main():
     print(f"Peak allocated GPU memory during training: "
           f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
 
-    # TODO 3: Evaluate after fine-tuning and print the accuracy.
-    #
-    # Call the evaluate() function and print the result.
-    #
-    # YOUR CODE HERE:
-    # post_accuracy = evaluate(model, eval_loader, device)
-    # print(f"\nAccuracy after fine-tuning: {post_accuracy:.1%}")
-    # print(f"Change: {post_accuracy - pre_accuracy:+.1%}")
+    # TODO 3: Enable the evaluation after fine-tuning. evaluate() is defined at
+    # the top of this file; you don't need to write it.
+    # ----- BEGIN TODO 3 -----
+#    post_accuracy = evaluate(model, eval_loader, device)
+#    print(f"\nAccuracy after fine-tuning: {post_accuracy:.1%}")
+#    print(f"Change: {post_accuracy - pre_accuracy:+.1%}")
+    # ----- END TODO 3 -----
 
     print(f"\n{'=' * 60}")
     print("  Fine-tuning complete!")
