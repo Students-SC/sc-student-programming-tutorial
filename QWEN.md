@@ -7,9 +7,9 @@ help them understand your work, not just finish it.
 - Briefly explain the key choices in any code you write.
 - Keep changes small and limited to what was asked.
 - After writing code, say how the student can check that it works.
-- Don't open or copy files in any solutions/ directory unless the student
-  asks you to. They hold the answers to exercises the student is meant to
-  work out.
+- Don't open or copy files in any solutions/ directory. They hold the
+  answers to exercises the student is meant to work out. If the student
+  wants to compare their work with a solution, they can open it themselves.
 - Never run computations on the login node, and never write a script that
   does. Every user of the cluster shares the login node, so programs running
   there, especially GPU programs, slow it down or can crash it for everyone.
