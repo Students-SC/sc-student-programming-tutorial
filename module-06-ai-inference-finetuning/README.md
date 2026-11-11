@@ -6,29 +6,36 @@
 
 By the end of this module, you will be able to:
 
-- Explain the difference between training, fine-tuning, and inference
-- Run inference with a pre-trained language model on the MI210 GPU
+- Explain the difference between inference, pre-training, and fine-tuning
+- Run inference with a pre-trained language model on the MI210 GPU and measure its throughput
 - Fine-tune a text classification model using LoRA (parameter-efficient fine-tuning)
-- Reason about GPU memory usage during inference vs. training
+- Reason about GPU memory usage during inference and training
 - Check an agent's change with measurements and the job's warnings
 
 ---
 
 ## Key Concepts
 
-### What is AI/ML?
+### What is Machine Learning?
 
 Machine learning is about finding patterns in data. Instead of writing explicit
-rules, you show the computer many examples and it learns the rules itself.
+rules, you let the computer learn them from examples. In **supervised
+learning**, the kind this module's fine-tuning exercise uses, each example
+comes with the right answer (a label), and the computer learns a model that
+maps inputs to answers:
 
 ```
-  Traditional Programming:      Machine Learning:
-  Rules + Data → Answers        Data + Answers → Rules (Model)
+  Traditional programming:      Supervised learning:
+  Rules + Data → Answers        Data + Answers → Model
 ```
+
+Not all machine learning needs labeled answers. A language model, for example,
+is first trained on ordinary text by predicting the next word, so the text
+itself provides the targets.
 
 A **neural network** is a mathematical function with millions (or billions) of
-adjustable numbers called **weights**. Training adjusts these weights so the
-function produces good outputs for given inputs.
+adjustable numbers called **weights**, or **parameters**. Training adjusts
+these weights so the function produces good outputs for given inputs.
 
 ### Neural Networks in a Nutshell
 
@@ -38,53 +45,106 @@ function produces good outputs for given inputs.
            weights      weights          weights
 ```
 
-- **Forward pass**: data flows through layers to produce a prediction
-- **Loss**: measures how wrong the prediction is
-- **Backpropagation**: computes how to adjust each weight to reduce the loss
-- **Gradient descent**: actually updates the weights
+Each training step has four parts:
 
-### Inference vs. Training vs. Fine-Tuning
+- **Forward pass**: data flows through the layers to produce predictions.
+- **Loss**: a number that measures how far the predictions are from the
+  training targets.
+- **Backpropagation**: computes the **gradient** of the loss with respect to
+  each trainable parameter, that is, which way and how strongly to nudge it to
+  reduce the loss.
+- **Optimizer step**: uses the gradients to update the trainable parameters.
+  This module uses the **AdamW** optimizer, which keeps two running averages
+  for every trainable parameter (its **optimizer state**) to choose the size of
+  each update.
 
-| | Inference | Training | Fine-Tuning |
+### Inference, Pre-training, and Fine-Tuning
+
+Fine-tuning is a form of training: it continues training a model that has
+already been pre-trained, to adapt it to a new task.
+
+| | Inference | Pre-training | Fine-tuning |
 |---|---|---|---|
-| What | Use a trained model to make predictions | Train a model from scratch | Adapt a pre-trained model to a new task |
-| Weights | Frozen (no changes) | Random → learned | Pre-trained → adjusted |
-| Data needed | Just the input | Massive dataset | Small task-specific dataset |
-| Compute cost | Low | Very high | Moderate |
-| GPU memory | Model weights only | Weights + gradients + optimizer states | Less than full training |
+| Purpose | Produce outputs with a trained model | Learn a base model, typically from a large dataset | Adapt a trained model to a task |
+| Parameters updated | None | Typically all | All, or a selected subset |
+| Data | The inputs to process | Training examples | Examples of the new task |
+| GPU memory holds | Weights, intermediate results, workspace, and (for text generation) a cache of earlier tokens | Weights, saved intermediate results (activations), gradients, optimizer state, and workspace | The same kinds as pre-training; LoRA reduces the trainable parameters and their gradients and optimizer state |
+| Compute required | Depends on the model, the inputs, and how many there are | Usually substantial | Depends on the model, the data, and the method |
+
+### Two Models in This Module
+
+This module uses two different models:
+
+- **TinyLlama 1.1B Chat** (`TinyLlama/TinyLlama-1.1B-Chat-v1.0`, 1.1 billion
+  parameters) generates text. It predicts one **token** (a word or part of a
+  word) at a time, each based on the tokens before it. It is a chat model: a
+  base language model that was further trained to answer requests written in
+  a chat format, which is why the scripts wrap each prompt in its **chat
+  template**.
+- **DistilBERT** (`distilbert-base-uncased`, 67 million parameters) reads a
+  whole piece of text at once. You'll fine-tune it to classify movie reviews
+  from the IMDB dataset as positive or negative, training on 2,000 reviews and
+  evaluating on 500 others. DistilBERT was pre-trained on ordinary text; the
+  classification layers on top of it are new, and start with random weights.
+
+Fine-tuning the classifier does not change the text-generation model.
 
 ### Parameter-Efficient Fine-Tuning (LoRA)
 
-Full fine-tuning updates **every** weight in the model, which requires enormous
-memory. **LoRA (Low-Rank Adaptation)** freezes the original weights and adds
-small trainable "adapter" matrices:
+Full fine-tuning updates **every** weight in the model, so it needs a gradient
+and optimizer state for every one. **LoRA (Low-Rank Adaptation)** freezes
+selected weight matrices and trains a small, low-rank update for each:
 
 ```
-  Original weight matrix W (frozen)
+  Original weight matrix W (frozen, d × d)
   +
-  Low-rank adapter:  A × B  (trainable, much smaller)
+  Low-rank update: B × A, where B is d × r and A is r × d, and the rank r
+                   is much smaller than d; the update is scaled by lora_alpha / r
   =
-  Effective weight: W + A × B
+  Effective weight: W + (lora_alpha / r) × B × A
 ```
 
-The DistilBERT model you'll fine-tune has about 67 million parameters. With
-this exercise's LoRA settings, only about 0.74 million (1.1%) are trained --
-about 90x fewer. That is why fine-tuning fits easily on one GPU and finishes
-in seconds.
+In this module's exercise, LoRA adapts two weight matrices (`q_lin` and
+`v_lin`) in each of DistilBERT's 6 layers with rank r = 8, which adds 147,456
+trainable parameters. The new classification layers are trained as well, and
+they have 592,130 parameters. Together that is 739,586 trainable parameters out
+of about 67 million (1.1%), about 90 times fewer than full fine-tuning.
+
+Fewer trainable parameters means less memory for gradients and optimizer
+state. But the frozen model must still be in GPU memory, and each training
+step still runs the whole model forward and backward and stores its
+intermediate results, so 90 times fewer trainable parameters does not mean 90
+times less memory or time. This exercise uses a small model and a subset of
+the dataset to keep training practical within the tutorial. LoRA reduces the
+number of trainable parameters and their associated gradient and
+optimizer-state memory.
 
 ### Why GPUs for AI?
 
-Neural networks are mostly **matrix multiplications** -- exactly the kind of
-massively parallel operation GPUs excel at:
+Neural networks are mostly **matrix multiplications**, which split into many
+independent multiply-adds that a GPU can run in parallel:
 
-- The MI210 has **6656 stream processors** running in parallel
-- **64 GB HBM2e** with **1.6 TB/s bandwidth** for fast data access
-- Generating text for one prompt at a time uses only a sliver of that
-  parallelism, so the GPU may be only slightly faster than the CPU (you can
-  measure this in Exercise 3). GPUs pull far ahead when they process many
-  prompts together, which is called **batching** (this module's Agent
-  Practice). Batching is how the shared AI server behind the tutorial's agent
-  answers a whole classroom at once.
+- The MI210 has **104 compute units** with **6656 stream processors**. A stream
+  processor is a simple arithmetic lane, not an independent CPU-style core:
+  lanes work in groups of 64 (a wavefront, as in Module 5) that run the same
+  instruction on different data.
+- **64 GB HBM2e** with **1.6 TB/s bandwidth** for fast data access.
+
+Generating text has two phases. First the model processes the whole prompt at
+once, which is a lot of parallel work. Then it generates one token per step,
+and each step depends on the token before it. For a single prompt, each step
+does a little arithmetic but has to move a large share of the model's weights
+from memory, so it can use only a small part of the GPU's compute capacity and
+is often limited by memory bandwidth instead.
+
+**Batching**, generating for several prompts in the same steps, lets those
+sequences share each pass of the model, which can greatly raise the total
+number of tokens generated per second. How much depends on the model, the
+sequence lengths, the batch size, and the software. A batch needs more memory,
+and it doesn't make every individual response arrive sooner. The shared AI
+server behind the tutorial's agent batches requests from the whole classroom.
+Servers like it add requests to the batch and remove finished ones as they
+go; this module's Agent Practice uses a simpler, fixed batch.
 
 ---
 
