@@ -150,6 +150,10 @@ go; this module's Agent Practice uses a simpler, fixed batch.
 
 ## Hands-On Exercises (~40 min)
 
+Suggested pacing: about 5 minutes for Exercises 1 and 2, 8 minutes for
+Exercise 3, 12 minutes for Exercise 4, and 15 minutes for the Agent Practice.
+Exercise 3's CPU baseline and the challenges are optional.
+
 First, navigate to the exercises directory for this module:
 
 ```bash
@@ -160,7 +164,7 @@ cd module-06-ai-inference-finetuning/exercises
 >
 > All exercises run as **batch jobs** that produce output files. Submit your
 > script, wait for it to complete, then examine the output while others use the
-> nodes.
+> nodes. Never run these models on the login node.
 
 ### Exercise 1: Meet the Shared Python Environment
 
@@ -188,9 +192,10 @@ deactivate
 > the environment is missing, ask an instructor.
 
 The models and the dataset these exercises use are pre-downloaded too, so your
-jobs load them from a shared cache instead of downloading them from Hugging
-Face. The first fine-tuning job you run copies the dataset (128 MB) into your
-`$WORK` directory, because the `datasets` library needs to write next to it.
+jobs load them from a shared cache and never download anything. The way these
+scripts load the dataset, the `datasets` library needs to write next to it,
+and the shared copy is read-only, so the first fine-tuning job you run copies
+the dataset (128 MB) into your `$WORK` directory.
 
 ---
 
@@ -206,13 +211,23 @@ cat ../examples/simple_inference.py
 
 #### Step 2: Review the Inference Workflow
 
-This script loads a small pre-trained text generation model and generates
-responses to a few prompts. Examine how it:
-1. Loads the model and tokenizer
-2. Moves the model to the GPU
-3. Tokenizes input text
-4. Generates output tokens
-5. Decodes back to text
+This script loads TinyLlama and generates responses to a few prompts. Examine
+how it:
+1. Loads the model and tokenizer, and moves the model to the GPU
+2. Wraps each prompt in the chat template and tokenizes it
+3. Runs a short, untimed warm-up generation
+4. Generates output tokens, timing only `model.generate()`
+5. Counts the tokens it actually generated and decodes them back to text
+
+> **Note**
+>
+> PyTorch built for AMD GPUs (ROCm) still calls the GPU `"cuda"` and uses the
+> `torch.cuda` functions, so the same code runs on AMD and NVIDIA GPUs.
+
+GPU work runs in the background, so the script calls
+`torch.cuda.synchronize()` before and after `model.generate()` to make sure the
+timer covers all of the generation. It counts each response's tokens up to and
+including the token that ends the response.
 
 #### Step 3: Submit the Batch Job
 
@@ -232,10 +247,16 @@ cat inference_<JOBID>.out
 ```
 
 **Questions:**
-- How fast does the model generate text (tokens/sec)?
-- How much GPU memory does the model use after loading, and at its peak while
-  generating?
+- How many tokens per second does the model generate?
+- The script runs a warm-up generation before it starts timing. Why? (Think
+  back to Module 5.)
+- How much GPU memory is allocated after loading, and at the peak while
+  generating? Besides the weights, what needs memory while generating?
 - Do the generated responses make sense?
+
+The scripts report memory **allocated** to PyTorch tensors. PyTorch's caching
+allocator reserves somewhat more, and `rocm-smi` shows everything in use on the
+GPU.
 
 ---
 
@@ -253,30 +274,32 @@ In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
 `:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
 or an existing VS Code Remote SSH connection.
 
-#### Step 2: (Optional) Try the CPU First
+#### Step 2: Complete TODOs 1 and 2
 
-Until you complete TODO 1, the template runs the model on the CPU
-(`device = "cpu"`). To get a baseline, submit it once before editing anything:
+There are **3 TODOs**. Do the first two now:
+
+1. **TODO 1**: Choose the generation settings: `max_new_tokens`, and a list of
+   `temperatures` to compare (try `[0.1, 0.7, 1.5]`)
+2. **TODO 2**: Add your own prompts to the prompt list
+
+#### Step 3: (Optional) Run on the CPU First
+
+Until you complete TODO 3, the script runs the model on the CPU. For a
+baseline, submit it once now:
 
 ```bash
 sbatch submit_inference.sh run_inference.py
 ```
 
-Note the tokens/sec it reports, so you can compare with the GPU in Step 5.
+With the suggested settings, this job takes about 4 minutes. Note the tokens
+per second on its `All temperatures` line, and the number of CPU threads it
+used.
 
-#### Step 3: Complete the TODOs
+#### Step 4: Complete TODO 3 and Run on the GPU
 
-There are **3 TODOs**:
+3. **TODO 3**: Change the device from `"cpu"` to `"cuda"`
 
-1. **TODO 1**: Load the model onto the GPU (choose the right device)
-2. **TODO 2**: Choose the generation settings: `max_new_tokens`, and a list of
-   `temperatures` to compare (try `[0.1, 0.7, 1.5]`)
-3. **TODO 3**: Add your own custom prompts to the prompt list
-
-#### Step 4: Submit the Batch Job
-
-Edit the file, add your own prompts, and submit it by naming the script after
-the batch file:
+Then submit the script again:
 
 ```bash
 sbatch submit_inference.sh run_inference.py
@@ -285,20 +308,32 @@ sbatch submit_inference.sh run_inference.py
 #### Step 5: Compare Temperatures
 
 Your script runs every prompt at each temperature in `temperatures`, so one
-job gives you a side-by-side comparison. With the suggested values, expect:
-- `0.1` -- very focused, repetitive
-- `0.7` -- balanced creativity
-- `1.5` -- wild and unpredictable
+job gives you a side-by-side comparison. Temperature only matters when the
+model **samples** its next token at random from the likely ones
+(`do_sample=True`, as here). In general:
+- `0.1` concentrates the choice on the highest-scoring tokens, so responses
+  are focused and can repeat themselves.
+- `0.7` allows more variation.
+- `1.5` flattens the choice, which often adds variation and mistakes. (The
+  script's `top_p=0.9` still drops the least likely tokens, so the text
+  usually stays readable.)
 
-Which temperature gives the most useful answers to your prompts? If you ran
-the CPU baseline in Step 2, how many times faster is the GPU?
+With `do_sample=False`, the model instead always picks the most likely token,
+which is called **greedy decoding**. A lower temperature doesn't make an answer
+more correct, and a model this small can give weak answers at every
+temperature.
+
+**Questions:**
+- Which temperature gives the most useful answers to your prompts?
+- If you ran the CPU baseline, compare the two runs' `All temperatures` lines.
+  They did the same work, so how many times faster is the GPU?
 
 ---
 
 ### Exercise 4: Fine-Tune a Model with LoRA
 
 Now let's adapt a pre-trained model to a new task. We'll fine-tune a text
-classification model (DistilBERT) on a sentiment analysis dataset using LoRA.
+classification model (DistilBERT) on the IMDB sentiment dataset using LoRA.
 
 #### Step 1: Open the Fine-Tuning Script
 
@@ -313,8 +348,9 @@ vim finetune_lora.py
 There are **3 TODOs**:
 
 1. **TODO 1**: Configure the LoRA adapter parameters
-2. **TODO 2**: Write the training loop (forward pass, loss, backward, optimizer step)
-3. **TODO 3**: Run evaluation and print accuracy
+2. **TODO 2**: Write the training step (clear the gradients, forward pass,
+   loss, backward pass, optimizer step)
+3. **TODO 3**: Evaluate the model after training and print its accuracy
 
 #### Step 3: Submit the Fine-Tuning Job
 
@@ -328,13 +364,28 @@ sbatch submit_finetune.sh
 cat finetune_<JOBID>.out
 ```
 
+> **Note**
+>
+> `finetune_<JOBID>.err` contains a "LOAD REPORT" that lists `MISSING`
+> classifier weights and `UNEXPECTED` vocabulary weights. That's expected: the
+> checkpoint was pre-trained to predict words, not classify reviews, so the
+> classification layers are new, and training them is the point of this
+> exercise.
+
+The script fixes its random seed, so running it again gives the same data
+selection and starting weights.
+
 **Questions:**
-- What accuracy does the model achieve before fine-tuning (random baseline)?
-- What accuracy after fine-tuning?
-- How long did training take?
-- How many parameters were actually trained (vs. total)?
-- What was the peak GPU memory during training? Training stores gradients and
-  optimizer state as well as the model, so why is the number still small?
+- Compare the accuracy before fine-tuning with the majority-class baseline
+  (always guessing the more common label). The new classification layers
+  start with random weights, so the starting accuracy is close to a guess, but
+  not exactly 50%.
+- What accuracy does the model reach after fine-tuning?
+- How long did the training loop take?
+- How many parameters were trained, and how many of those are LoRA adapters?
+- What was the peak allocated GPU memory during training? Training stores
+  gradients and optimizer state for the trained parameters, and intermediate
+  results for the whole model. Which of those does LoRA shrink?
 
 ---
 
