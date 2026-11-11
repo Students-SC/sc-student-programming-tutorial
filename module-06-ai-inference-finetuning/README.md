@@ -485,33 +485,47 @@ A solution that measures both modes is in
 
 ---
 
-### Challenge A: LoRA Hyperparameters
+### Challenge A (Optional): LoRA Hyperparameters
 
 Experiment with different LoRA settings in `finetune_lora.py`:
 
 - `r=4` (rank 4) vs. `r=16` (rank 16) vs. `r=64` (rank 64)
 - `lora_alpha=16` vs. `lora_alpha=32`
-- `num_epochs=1` vs. `num_epochs=3` vs. `num_epochs=5`
+- `NUM_EPOCHS=1` vs. `NUM_EPOCHS=3` vs. `NUM_EPOCHS=5`
 
-How do these affect final accuracy and training time?
+Change one setting at a time and note both `r` and `lora_alpha` for each run,
+so you know what caused a difference. LoRA scales its update by
+`lora_alpha / r`, so changing `r` alone also changes that scale; to change only
+the rank, change both (for example, `r=16` with `lora_alpha=32`). A few runs are
+enough to see a pattern.
 
-### Challenge B: LoRA vs. Full Fine-Tuning
+How do these affect final accuracy and the training-loop time? Why does the
+training time hardly change with the rank? The seed is fixed, so rerunning a
+setting gives the same result, but a different seed could move the accuracy by
+a point or two, so don't read too much into small differences.
+
+### Challenge B (Optional): LoRA vs. Full Fine-Tuning
 
 How much does LoRA actually save? Fine-tune the same model without it:
 
 1. Copy your completed script: `cp finetune_lora.py finetune_full.py`
 2. In `finetune_full.py`, delete the line that wraps the model with
-   `get_peft_model`, so that every weight is trained.
+   `get_peft_model`, so that every weight is trained. The output's trainable
+   parameter count confirms it.
 3. Submit it: `sbatch submit_finetune.sh finetune_full.py`
 
-Compare the two runs: trainable parameters, peak GPU memory during training,
-training time, and accuracy after fine-tuning. How do both peaks compare with
-the peak memory for inference in Exercise 2?
+Compare the two runs: trainable parameters, peak allocated GPU memory during
+training, training-loop time, and accuracy after fine-tuning.
 
-Then change `LEARNING_RATE` in `finetune_full.py` from `2e-4` to `2e-5` and
-run it again. Why does training *all* of the weights need a smaller learning
-rate than training only the LoRA adapters? (Hint: think about how far each
-update moves the pre-trained weights.)
+Exercise 2's peak memory came from a different model (TinyLlama, 1.1 billion
+parameters) with different inputs, so comparing it with these training peaks
+isn't a controlled comparison of inference and training. What differs between
+those runs, besides inference versus training?
+
+Full fine-tuning often uses a smaller learning rate than adapter training.
+Change `LEARNING_RATE` in `finetune_full.py` from `2e-4` to `2e-5` and run it
+again. Does the smaller learning rate improve this run? (Hint: think about how
+far each update moves the pre-trained weights.)
 
 A full fine-tuning solution with the smaller learning rate is in
 `solutions/finetune_full_solution.py`.
@@ -523,19 +537,22 @@ A full fine-tuning solution with the smaller learning rate is in
 | Concept | Description |
 |---------|-------------|
 | **Inference** | Running a trained model on new inputs (forward pass only) |
-| **Training** | Learning weights from scratch on a large dataset |
-| **Fine-tuning** | Adapting a pre-trained model to a specific task |
-| **LoRA** | Parameter-efficient fine-tuning using low-rank adapters |
-| **Tokenizer** | Converts text to/from numerical tokens the model understands |
-| **Temperature** | Controls randomness when sampling: lower is more focused, higher (>1) more random. Must be above 0; for deterministic output, turn sampling off with `do_sample=False` |
+| **Pre-training** | Learning a base model, typically from a large dataset |
+| **Fine-tuning** | Further training a pre-trained model for a specific task |
+| **LoRA** | Parameter-efficient fine-tuning that trains low-rank updates to frozen weights |
+| **Tokenizer** | Converts text to and from the numerical tokens the model understands |
+| **Temperature** | Controls randomness when sampling: lower is more focused, higher (>1) more varied. Must be above 0; for deterministic output, turn sampling off with `do_sample=False` (greedy decoding) |
+| **Batching** | Generating for several prompts in the same steps, to raise total throughput |
 
-| PyTorch / HuggingFace | Purpose |
+| PyTorch / Hugging Face | Purpose |
 |-----------------------|---------|
 | `AutoModelForCausalLM.from_pretrained(name)` | Load a pre-trained text generation model |
 | `AutoTokenizer.from_pretrained(name)` | Load the matching tokenizer |
-| `model.to("cuda")` | Move model to GPU |
-| `model.generate(input_ids, ...)` | Generate text |
-| `get_peft_model(model, lora_config)` | Wrap model with LoRA adapters |
+| `model.to("cuda")` | Move a model to the GPU (`"cuda"` on AMD GPUs too) |
+| `model.eval()`, `torch.inference_mode()` | Switch off training behavior and gradient tracking for inference |
+| `model.generate(**inputs, ...)` | Generate text |
+| `torch.cuda.synchronize()` | Wait for queued GPU work to finish, before reading a timer |
+| `get_peft_model(model, lora_config)` | Wrap a model with LoRA adapters |
 
 ---
 
