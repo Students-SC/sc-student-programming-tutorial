@@ -43,7 +43,13 @@ if [[ ! -d "$HF_DATASETS_CACHE/imdb" ]]; then
     TMP_COPY="$HF_DATASETS_CACHE/imdb.partial.$$"
     cp -r "$SC26_SHARED_DIR/sc26_hf_cache/datasets/imdb" "$TMP_COPY"
     chmod -R u+w "$TMP_COPY"
-    mv -T "$TMP_COPY" "$HF_DATASETS_CACHE/imdb"
+    # If another of your jobs finished copying first, keep its copy
+    mv -T "$TMP_COPY" "$HF_DATASETS_CACHE/imdb" 2>/dev/null || rm -rf "$TMP_COPY"
+fi
+if [[ ! -d "$HF_DATASETS_CACHE/imdb" ]]; then
+    echo "ERROR: could not copy the IMDB dataset to $HF_DATASETS_CACHE" >&2
+    echo "       Please ask an instructor for help." >&2
+    exit 1
 fi
 
 echo "Python:  $(python3 --version)"
