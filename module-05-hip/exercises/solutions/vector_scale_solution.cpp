@@ -3,27 +3,39 @@
  *
  * Compile:  hipcc -O2 -o vector_scale vector_scale_solution.cpp
  * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_scale
+ *
+ * Optional compile-time settings:
+ *   -DBLOCK_SIZE=<threads per block>   (default 256)
+ *   -DN=<number of elements>           (default 16777216, i.e., 2^24)
  */
 
 #include <hip/hip_runtime.h>
 #include <cstdio>
+#include <cstdlib>
 #include <cmath>
 
-#define N (1 << 24)
+#ifndef N
+#define N (1 << 24)   /* ~16 million elements */
+#endif
 
 #ifndef BLOCK_SIZE
 #define BLOCK_SIZE 256
 #endif
 
+#define REPS 10       /* timed kernel launches, averaged */
+
+/* Check a HIP call's return value. On failure, report which call failed,
+ * where, and why, then exit with a nonzero status. */
 #define HIP_CHECK(call)                                                     \
     do {                                                                    \
-        hipError_t err = call;                                              \
-        if (err != hipSuccess) {                                            \
-            fprintf(stderr, "HIP error at %s:%d: %s\n",                    \
-                    __FILE__, __LINE__, hipGetErrorString(err));             \
+        hipError_t err_ = (call);                                           \
+        if (err_ != hipSuccess) {                                           \
+            fprintf(stderr, "HIP error at %s:%d: %s failed: %s\n",         \
+                    __FILE__, __LINE__, #call, hipGetErrorString(err_));    \
             exit(1);                                                        \
         }                                                                   \
     } while (0)
+
 
 /* TODO 1: SOLVED */
 __global__ void vector_scale_kernel(const double *input, double *result,
@@ -36,15 +48,18 @@ __global__ void vector_scale_kernel(const double *input, double *result,
 
 int main(void) {
     double alpha = 2.5;
-    size_t bytes = N * sizeof(double);
+    size_t bytes = (size_t)N * sizeof(double);
 
+    /* Allocate and initialize host memory. Fill the result with NaN so that
+     * validation fails if no result is ever copied back. */
     double *h_input  = (double *)malloc(bytes);
     double *h_result = (double *)malloc(bytes);
     for (int i = 0; i < N; i++) {
         h_input[i] = (double)i;
-        h_result[i] = -1.0;  /* so the check below fails if no result is copied back */
+        h_result[i] = NAN;
     }
 
+    /* Allocate device memory */
     double *d_input, *d_result;
     HIP_CHECK(hipMalloc(&d_input, bytes));
     HIP_CHECK(hipMalloc(&d_result, bytes));
@@ -57,41 +72,50 @@ int main(void) {
     vector_scale_kernel<<<blocks, BLOCK_SIZE>>>(d_input, d_result, alpha, N);
     HIP_CHECK(hipGetLastError());
 
+    /* The launch returns before the GPU finishes. Wait for it, and check for
+     * errors that happened while the kernel ran. */
     HIP_CHECK(hipDeviceSynchronize());
 
-    /* Time the kernel. The first launch includes one-time setup, so time 10
-     * more launches and report the average. */
-    const int reps = 10;
+    /* Time REPS more launches with GPU events and report the average. The
+     * launch above was a warm-up: the first launch includes one-time setup. */
     hipEvent_t start, stop;
     HIP_CHECK(hipEventCreate(&start));
     HIP_CHECK(hipEventCreate(&stop));
     HIP_CHECK(hipEventRecord(start));
-    for (int rep = 0; rep < reps; rep++)
+    for (int rep = 0; rep < REPS; rep++)
         vector_scale_kernel<<<blocks, BLOCK_SIZE>>>(d_input, d_result, alpha, N);
+    HIP_CHECK(hipGetLastError());
     HIP_CHECK(hipEventRecord(stop));
     HIP_CHECK(hipEventSynchronize(stop));
     float total_ms = 0.0f;
     HIP_CHECK(hipEventElapsedTime(&total_ms, start, stop));
-    float kernel_ms = total_ms / reps;
+    float kernel_ms = total_ms / REPS;
 
     /* TODO 4: SOLVED */
     HIP_CHECK(hipMemcpy(h_result, d_result, bytes, hipMemcpyDeviceToHost));
 
+    /* Validate every element against the CPU result. NaN fails every
+     * comparison, so reject non-finite values explicitly. */
+    int mismatches = 0;
     double max_error = 0.0;
     for (int i = 0; i < N; i++) {
         double expected = alpha * (double)i;
         double error = fabs(h_result[i] - expected);
-        if (error > max_error) max_error = error;
+        if (!std::isfinite(h_result[i]) || error > 1e-10) mismatches++;
+        else if (error > max_error) max_error = error;
     }
+    int passed = (mismatches == 0);
 
     printf("Vector Scale: result[i] = %.1f * input[i]\n", alpha);
-    printf("  N:          %d\n", N);
-    printf("  Block size: %d\n", BLOCK_SIZE);
-    printf("  Time:       %.3f ms per launch (average of %d)\n", kernel_ms, reps);
-    printf("  Bandwidth:  %.1f GB/s\n", 2.0 * bytes / (kernel_ms / 1e3) / 1e9);
-    printf("  Max error:  %.2e\n", max_error);
-    printf("  Status:     %s\n", max_error < 1e-10 ? "PASSED" : "FAILED");
+    printf("  N:                    %d\n", N);
+    printf("  Block size:           %d\n", BLOCK_SIZE);
+    printf("  Time:                 %.3f ms per launch (average of %d)\n", kernel_ms, REPS);
+    printf("  Effective bandwidth:  %.1f GB/s\n", 2.0 * bytes / (kernel_ms / 1e3) / 1e9);
+    printf("  Max error:            %.2e\n", max_error);
+    printf("  Mismatches:           %d of %d\n", mismatches, N);
+    printf("  Status:               %s\n", passed ? "PASSED" : "FAILED");
 
+    /* Clean up */
     HIP_CHECK(hipEventDestroy(start));
     HIP_CHECK(hipEventDestroy(stop));
     HIP_CHECK(hipFree(d_input));
@@ -99,5 +123,5 @@ int main(void) {
     free(h_input);
     free(h_result);
 
-    return 0;
+    return passed ? 0 : 1;
 }

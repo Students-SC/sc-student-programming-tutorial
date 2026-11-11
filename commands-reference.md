@@ -218,6 +218,7 @@ See [Module 7](module-07-ai-agents/README.md) for the agent exercises.
 | OpenMP pi | `openmp-pi_<JOBID>.out` |
 | MPI sum | `mpi-sum_<JOBID>.out` |
 | HIP exercise | `hip-exercise_<JOBID>.out` |
+| HIP block-size comparison | `hip-blocksizes_<JOBID>.out` |
 | Inference | `inference_<JOBID>.out` |
 | Fine-tuning | `finetune_<JOBID>.out` |
 | Agent exercise | `agent_<JOBID>.out` |

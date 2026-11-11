@@ -1,5 +1,8 @@
 {
-  "tools": { "approvalMode": "default" },
+  "tools": {
+    "approvalMode": "default",
+    "disabled": ["skill", "artifact", "notebook_edit", "display_image", "enter_plan_mode"]
+  },
   "ui": { "allowedApprovalModes": ["plan", "default", "auto-edit"] },
   "model": {
     "generationConfig": {
@@ -7,6 +10,8 @@
       "samplingParams": { "max_tokens": 8192 }
     }
   },
+  "memory": { "enableManagedAutoMemory": false, "enableManagedAutoDream": false },
+  "skills": { "disabledLevels": ["bundled"] },
   "general": { "enableAutoUpdate": false, "outputLanguage": "English" },
   "privacy": { "usageStatisticsEnabled": false },
   "telemetry": { "enabled": false }
