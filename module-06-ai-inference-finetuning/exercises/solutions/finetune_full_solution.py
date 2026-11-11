@@ -2,13 +2,14 @@
 finetune_full_solution.py -- Solution for Challenge B: full fine-tuning
 
 Same as finetune_lora_solution.py, but without LoRA: every weight in the
-model is trained. Full fine-tuning needs a smaller learning rate (2e-5)
-than LoRA (2e-4); at 2e-4 it barely learns.
+model is trained. Full fine-tuning often uses a smaller learning rate than
+adapter training, so this version uses 2e-5 instead of LoRA's 2e-4.
 
 Run from the exercises directory:
   sbatch submit_finetune.sh solutions/finetune_full_solution.py
 """
 
+import sys
 import time
 import torch
 from torch.utils.data import DataLoader
@@ -16,12 +17,14 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from datasets import load_dataset
 
 MODEL_NAME = "distilbert-base-uncased"
+DATASET = "imdb"
 NUM_EPOCHS = 3
 BATCH_SIZE = 32
 LEARNING_RATE = 2e-5
 MAX_LENGTH = 256
 TRAIN_SAMPLES = 2000
 EVAL_SAMPLES = 500
+SEED = 42  # fixes the data selection and the new classifier's starting weights
 
 
 def tokenize_function(examples, tokenizer):
@@ -33,20 +36,21 @@ def tokenize_function(examples, tokenizer):
     )
 
 
+@torch.inference_mode()
 def evaluate(model, eval_loader, device):
+    """Compute accuracy on the evaluation set."""
     model.eval()
     correct = 0
     total = 0
-    with torch.no_grad():
-        for batch in eval_loader:
-            input_ids = batch["input_ids"].to(device)
-            attention_mask = batch["attention_mask"].to(device)
-            labels = batch["label"].to(device)
+    for batch in eval_loader:
+        input_ids = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+        labels = batch["label"].to(device)
 
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            predictions = torch.argmax(outputs.logits, dim=-1)
-            correct += (predictions == labels).sum().item()
-            total += labels.size(0)
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        predictions = torch.argmax(outputs.logits, dim=-1)
+        correct += (predictions == labels).sum().item()
+        total += labels.size(0)
 
     return correct / total if total > 0 else 0.0
 
@@ -56,16 +60,28 @@ def main():
     print("  Full Fine-Tuning -- Solution")
     print("=" * 60)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"\nDevice: {device}")
-    if device == "cuda":
-        print(f"GPU: {torch.cuda.get_device_name(0)}")
+    # PyTorch built for AMD GPUs (ROCm) still calls the GPU "cuda"
+    if not torch.cuda.is_available():
+        sys.exit("ERROR: no GPU is available. Submit this script with sbatch "
+                 "so it runs on a GPU node.")
+    device = "cuda"
+    torch.manual_seed(SEED)
+    print(f"\nGPU: {torch.cuda.get_device_name(0)}")
+    print(f"Model: {MODEL_NAME}, dataset: {DATASET}, seed: {SEED}")
+    print(f"Training examples: {TRAIN_SAMPLES} (from the train split), "
+          f"evaluation examples: {EVAL_SAMPLES} (from the test split)")
+    print(f"Epochs: {NUM_EPOCHS}, batch size: {BATCH_SIZE}, "
+          f"max length: {MAX_LENGTH} tokens, learning rate: {LEARNING_RATE}")
 
+    # --- Load dataset ---
     print("\nLoading IMDB dataset...")
-    dataset = load_dataset("imdb")
-    train_data = dataset["train"].shuffle(seed=42).select(range(TRAIN_SAMPLES))
-    eval_data = dataset["test"].shuffle(seed=42).select(range(EVAL_SAMPLES))
+    dataset = load_dataset(DATASET)
+    train_data = dataset["train"].shuffle(seed=SEED).select(range(TRAIN_SAMPLES))
+    eval_data = dataset["test"].shuffle(seed=SEED).select(range(EVAL_SAMPLES))
 
+    # --- Load model and tokenizer ---
+    # The pre-trained DistilBERT body is loaded from the checkpoint; the
+    # classification layers on top are new, with random starting weights.
     print(f"Loading model: {MODEL_NAME}")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForSequenceClassification.from_pretrained(
@@ -75,18 +91,20 @@ def main():
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Total parameters: {total_params:,}")
 
+    # --- Apply LoRA ---
     # No LoRA adapter: every weight is trainable.
-
     model.to(device)
 
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    trainable = {n: p.numel() for n, p in model.named_parameters() if p.requires_grad}
+    trainable_params = sum(trainable.values())
+    lora_params = sum(v for n, v in trainable.items() if "lora_" in n)
     print(f"Trainable parameters: {trainable_params:,} "
           f"({100 * trainable_params / total_params:.2f}%)")
+    print(f"  LoRA adapters: {lora_params:,}, other layers: {trainable_params - lora_params:,}")
+    print(f"Allocated GPU memory after model load: "
+          f"{torch.cuda.memory_allocated() / 1e9:.2f} GB")
 
-    if device == "cuda":
-        print(f"GPU memory after model load: "
-              f"{torch.cuda.memory_allocated() / 1e9:.2f} GB")
-
+    # --- Tokenize datasets ---
     print("\nTokenizing datasets...")
     train_encoded = train_data.map(
         lambda x: tokenize_function(x, tokenizer), batched=True
@@ -100,16 +118,23 @@ def main():
     train_loader = DataLoader(train_encoded, batch_size=BATCH_SIZE, shuffle=True)
     eval_loader = DataLoader(eval_encoded, batch_size=BATCH_SIZE)
 
+    # --- Evaluate before fine-tuning ---
+    eval_labels = list(eval_data["label"])
+    majority = max(eval_labels.count(0), eval_labels.count(1)) / len(eval_labels)
+    print(f"\nMajority-class baseline (always guess the most common label): {majority:.1%}")
     pre_accuracy = evaluate(model, eval_loader, device)
-    print(f"\nAccuracy BEFORE fine-tuning: {pre_accuracy:.1%}")
+    print(f"Accuracy before fine-tuning: {pre_accuracy:.1%}")
 
+    # --- Training loop ---
     optimizer = torch.optim.AdamW(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=LEARNING_RATE,
     )
 
-    print(f"\nTraining for {NUM_EPOCHS} epochs on {TRAIN_SAMPLES} samples...")
-    t_train_start = time.time()
+    print(f"\nTraining for {NUM_EPOCHS} epochs on {TRAIN_SAMPLES} examples...")
+    torch.cuda.synchronize()
+    torch.cuda.reset_peak_memory_stats()
+    t_train_start = time.perf_counter()
 
     for epoch in range(NUM_EPOCHS):
         model.train()
@@ -138,16 +163,16 @@ def main():
         avg_loss = epoch_loss / num_batches if num_batches > 0 else 0
         print(f"  Epoch {epoch+1}/{NUM_EPOCHS}: avg_loss = {avg_loss:.4f}")
 
-    train_time = time.time() - t_train_start
-    print(f"Training completed in {train_time:.1f}s")
-    if device == "cuda":
-        print(f"Peak GPU memory during training: "
-              f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
+    torch.cuda.synchronize()
+    train_time = time.perf_counter() - t_train_start
+    print(f"Training loop completed in {train_time:.1f} s (excludes evaluation)")
+    print(f"Peak allocated GPU memory during training: "
+          f"{torch.cuda.max_memory_allocated() / 1e9:.2f} GB")
 
     # TODO 3: SOLVED
     post_accuracy = evaluate(model, eval_loader, device)
-    print(f"\nAccuracy AFTER fine-tuning: {post_accuracy:.1%}")
-    print(f"Improvement: {post_accuracy - pre_accuracy:+.1%}")
+    print(f"\nAccuracy after fine-tuning: {post_accuracy:.1%}")
+    print(f"Change: {post_accuracy - pre_accuracy:+.1%}")
 
     print(f"\n{'=' * 60}")
     print("  Fine-tuning complete!")
