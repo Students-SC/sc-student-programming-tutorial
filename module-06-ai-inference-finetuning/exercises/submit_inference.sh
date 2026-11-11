@@ -12,7 +12,9 @@
 #SBATCH --output=inference_%j.out
 #SBATCH --error=inference_%j.err
 
-echo "LLM Inference -- Job $SLURM_JOB_ID on $(hostname)"
+set -euo pipefail
+
+echo "LLM Inference -- Job ${SLURM_JOB_ID:-(not in Slurm)} on $(hostname)"
 echo ""
 
 # The shared, read-only Python environment that the instructors built
