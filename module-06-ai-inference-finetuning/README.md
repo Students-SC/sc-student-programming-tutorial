@@ -89,35 +89,53 @@ This module uses two different models:
 
 Fine-tuning the classifier does not change the text-generation model.
 
-### Parameter-Efficient Fine-Tuning (LoRA)
+### Generating Text with Hugging Face
 
-Full fine-tuning updates **every** weight in the model, so it needs a gradient
-and optimizer state for every one. **LoRA (Low-Rank Adaptation)** freezes
-selected weight matrices and trains a small, low-rank update for each:
+The inference scripts take the same steps for every prompt:
 
+1. Format the prompt with the tokenizer's **chat template**, which adds the
+   conversation markers this chat model was trained on (`format_prompt()` in
+   the scripts).
+2. Tokenize the formatted text into token IDs.
+3. Move those input tensors to the device.
+4. Generate new token IDs with `model.generate()`.
+5. Remove the input part from the output, and decode the rest (the
+   continuation) back to text.
+
+The call that generates looks like this:
+
+```python
+outputs = model.generate(
+    **inputs,           # the tokenized prompt: input_ids and attention_mask
+    max_new_tokens=64,  # generate at most 64 new tokens
+    do_sample=True,     # choose each token at random from the likely ones
+    temperature=0.7,    # lower is more focused, higher is more varied
+    top_p=0.9,          # sample only from the most likely tokens
+)
 ```
-  Original weight matrix W (frozen, d × d)
-  +
-  Low-rank update: B × A, where B is d × r and A is r × d, and the rank r
-                   is much smaller than d; the update is scaled by lora_alpha / r
-  =
-  Effective weight: W + (lora_alpha / r) × B × A
-```
 
-In this module's exercise, LoRA adapts two weight matrices (`q_lin` and
-`v_lin`) in each of DistilBERT's 6 layers with rank r = 8, which adds 147,456
-trainable parameters. The new classification layers are trained as well, and
-they have 592,130 parameters. Together that is 739,586 trainable parameters out
-of about 67 million (1.1%), about 90 times fewer than full fine-tuning.
+- `**inputs` expands the dictionary the tokenizer returned into named
+  arguments, including `input_ids` and `attention_mask`.
+- `max_new_tokens` is an upper limit: generation stops sooner if the model
+  produces its end-of-response token.
+- `do_sample=True` turns on sampling. With `do_sample=False`, the model always
+  picks the most likely token, which is called **greedy decoding**.
+- `temperature` reshapes the probabilities that sampling uses.
+- `top_p` limits sampling to the smallest set of likely tokens whose
+  probabilities add up to 0.9.
+- A lower temperature doesn't make an answer more factually correct.
 
-Fewer trainable parameters means less memory for gradients and optimizer
-state. But the frozen model must still be in GPU memory, and each training
-step still runs the whole model forward and backward and stores its
-intermediate results, so 90 times fewer trainable parameters does not mean 90
-times less memory or time. This exercise uses a small model and a subset of
-the dataset to keep training practical within the tutorial. LoRA reduces the
-number of trainable parameters and their associated gradient and
-optimizer-state memory.
+The scripts also pass `pad_token_id=tokenizer.eos_token_id`, which tells
+`generate()` which token marks padding, and `max_length=None`, so that only
+`max_new_tokens` limits the length.
+
+The other calls in the scripts:
+- `AutoTokenizer.from_pretrained(name)` loads the tokenizer, and
+  `AutoModelForCausalLM.from_pretrained(name)` loads the generation model.
+- `model.eval()` selects evaluation behavior, and `torch.inference_mode()`
+  turns off gradient tracking, which generating text doesn't need (see
+  [Training and Evaluation Modes](#training-and-evaluation-modes)).
+- `"cuda"` is PyTorch's name for the GPU, on this ROCm installation too.
 
 ### Why GPUs for AI?
 
@@ -145,6 +163,129 @@ and it doesn't make every individual response arrive sooner. The shared AI
 server behind the tutorial's agent batches requests from the whole classroom.
 Servers like it add requests to the batch and remove finished ones as they
 go; this module's Agent Practice uses a simpler, fixed batch.
+
+### What a Training Batch Contains
+
+A **batch** groups several reviews (32 in this exercise) so the GPU processes
+them together. For each batch, the training loop works with:
+
+| Name | Meaning |
+|------|---------|
+| `input_ids` | Token IDs representing the reviews |
+| `attention_mask` | 1 for real tokens, 0 for padding |
+| `labels` | The correct sentiment classes: 0 for negative, 1 for positive |
+| `outputs.logits` | Two prediction scores per review, one for each class |
+| `outputs.loss` | One number: the classification loss, calculated using the labels |
+
+- The tokenizer produces `input_ids` and `attention_mask`; the labels come
+  from the dataset.
+- Logits are scores, not probabilities. `argmax` selects the class with the
+  larger score.
+- Passing `labels` to this Hugging Face model asks it to calculate the
+  classification loss as well as the logits.
+- The script's `evaluate()` function uses the labels differently: it doesn't
+  give them to the model, but compares the predicted classes with them and
+  counts the correct ones.
+
+### One Training Step
+
+Here is the training step for one batch, which you'll enable in Exercise 4:
+
+```python
+# Discard gradients from the previous batch.
+optimizer.zero_grad()
+
+# Predict the labels and compute the classification loss.
+outputs = model(
+    input_ids=input_ids,
+    attention_mask=attention_mask,
+    labels=labels,
+)
+loss = outputs.loss
+
+# Compute gradients for the trainable parameters.
+loss.backward()
+
+# Update those parameters using the gradients.
+optimizer.step()
+```
+
+- The forward pass, `model(...)`, produces predictions and, because labels
+  are supplied, the loss.
+- `loss.backward()` computes gradients. It doesn't change any weights.
+- `optimizer.step()` updates the trainable parameters using their gradients.
+  The script's optimizer is AdamW, created with only the parameters whose
+  `requires_grad` is `True`, that is, the trainable ones.
+- PyTorch adds new gradients to the ones already stored unless they are
+  cleared. This script makes one update per batch, so it clears them at the
+  start of each batch.
+
+### Training and Evaluation Modes
+
+- `model.train()` turns on training behavior, such as dropout, which randomly
+  zeroes some values during training to discourage memorizing the examples.
+- `model.eval()` switches to evaluation behavior, for example turning dropout
+  off. It doesn't turn off gradient tracking by itself.
+- `torch.inference_mode()` turns off gradient tracking, which saves memory
+  and time when evaluating or generating.
+
+The fine-tuning script calls `model.train()` before each epoch, and its
+`evaluate()` function uses `model.eval()` inside `torch.inference_mode()`.
+
+### Parameter-Efficient Fine-Tuning (LoRA)
+
+Full fine-tuning updates **every** weight in the model, so it needs a gradient
+and optimizer state for every one. **LoRA (Low-Rank Adaptation)** freezes
+selected weight matrices and trains a small, low-rank update for each:
+
+```
+  Original weight matrix W (frozen, d × d)
+  +
+  Low-rank update: B × A, where B is d × r and A is r × d, and the rank r
+                   is much smaller than d; the update is scaled by lora_alpha / r
+  =
+  Effective weight: W + (lora_alpha / r) × B × A
+```
+
+In this module's exercise, LoRA adapts two weight matrices (`q_lin` and
+`v_lin`) in each of DistilBERT's 6 layers with rank r = 8, which adds 147,456
+trainable parameters. The new classification layers are trained as well, and
+they have 592,130 parameters. Together that is 739,586 trainable parameters,
+about 90 times fewer than the 66,955,010 that full fine-tuning trains.
+
+Wrapping the model with LoRA also adds parameters: the adapters, and, in this
+configuration, trainable copies of the classification layers, which PEFT keeps
+alongside the frozen originals. So the wrapped model has 67,694,596
+parameters, and the script reports the trainable share against that number,
+about 1.09%.
+
+Fewer trainable parameters means less memory for gradients and optimizer
+state. But the frozen model must still be in GPU memory, and each training
+step still runs the whole model forward and backward and stores its
+intermediate results, so 90 times fewer trainable parameters does not mean 90
+times less memory or time. This exercise uses a small model and a subset of
+the dataset to keep training practical within the tutorial. LoRA reduces the
+number of trainable parameters and their associated gradient and
+optimizer-state memory.
+
+### Configuring LoRA
+
+Exercise 4's LoRA configuration uses these settings:
+
+| Setting | Meaning |
+|---------|---------|
+| `task_type=TaskType.SEQ_CLS` | Configure PEFT for sequence classification |
+| `r=8` | Rank of the low-rank update |
+| `lora_alpha=16` | Scales the update by `lora_alpha / r`, which is 2 here |
+| `lora_dropout=0.1` | Dropout probability on the adapters' input during training |
+| `target_modules=["q_lin", "v_lin"]` | The DistilBERT layers that get adapters |
+| `get_peft_model(model, lora_config)` | Attaches the adapters and sets which parameters are trainable |
+
+`q_lin` and `v_lin` are the query and value projections inside attention, the
+part of each layer that decides which other words in the review each word
+draws information from. You don't need the details of attention for this
+exercise. The adapters are separate from the classification layers, which
+train too.
 
 ---
 
