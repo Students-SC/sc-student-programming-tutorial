@@ -152,7 +152,7 @@ for (int i = 0; i < N; i++) {
 }
 ```
 
-<a href="/_static/openmp_loop_visualizer.html">Let's visualize this!</a>
+<a href="/sc-student-programming-tutorial/_static/openmp_loop_visualizer.html">Let's visualize this!</a>
 
 So this is great when all the iterations of the loop are independent of each other. But if one
 iteration depends on the result of another iteration, the loop may not be safe to parallelize with

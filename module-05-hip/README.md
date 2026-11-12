@@ -197,7 +197,7 @@ int i = blockIdx.x * blockDim.x + threadIdx.x;
 | `gridDim.x` | Number of blocks in the grid |
 
 
-<a href="/_static/thread_index_visualizer.html">Let's try to visualize with a visualization.</a>
+<a href="/sc-student-programming-tutorial/_static/thread_index_visualizer.html">Let's try to visualize with a visualization.</a>
 
 This `i` now effectively identifies the thread differentiating it from all the threads in the grid. So in your kernel,
 if you have the operation 
@@ -210,7 +210,7 @@ c[i] = a[i] + b[i];
 The 'i'th thread performs this operation for the 'i'th elements of a,b, and c.
 
 
-<a href="/_static/thread_index_with_vecadd_visualizer.html">Let's see the visualization again, this time with the array addition</a>.
+<a href="/sc-student-programming-tutorial/_static/thread_index_with_vecadd_visualizer.html">Let's see the visualization again, this time with the array addition</a>.
 
 **How this maps to the hardware.** On the MI210, threads execute in groups of
 64 called **wavefronts**. Each thread block runs entirely on one compute unit,
