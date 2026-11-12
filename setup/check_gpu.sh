@@ -7,7 +7,7 @@
 # Module 2 explains what each line of this script does.
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=check-gpu
-#SBATCH --partition=mi2101x
+#SBATCH --partition=batch
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=2:00
@@ -16,18 +16,15 @@
 
 set -euo pipefail
 
-SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/lustre/orion/stf007/world-shared/subil/SC26_student_program}"
 VENV_DIR="$SC26_SHARED_DIR/sc26_venv"
+module load miniforge3
+module load rocm/7.2
 
 echo "GPU check -- job ${SLURM_JOB_ID:-none} on $(hostname)"
 echo ""
 
-if [[ ! -f "$VENV_DIR/bin/activate" ]]; then
-    echo "Status:  FAILED -- shared Python environment not found at $VENV_DIR"
-    echo "         Please ask an instructor for help."
-    exit 1
-fi
-source "$VENV_DIR/bin/activate"
+conda activate $VENV_DIR
 
 python3 - <<'EOF'
 import sys

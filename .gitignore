@@ -12,3 +12,4 @@ PLAN.md
 
 # Binaries students compile in the exercises
 module-02-slurm/exercises/hello_compute
+.aider*
