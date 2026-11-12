@@ -12,7 +12,7 @@ By the end of this module, you will be able to:
 - Describe the major components of an HPC cluster
 - Navigate the cluster filesystem and use environment modules
 - Inspect hardware resources using command-line tools
-- Give an AI agent the facts about your cluster that it can't know on its own
+- Give an AI agent the facts about your cluster that it doesn't know on its own
 
 ---
 
@@ -204,8 +204,8 @@ date              # Print the current date and time.
 ```bash
 ls -la $HOME      # List everything in your home directory, long format, including hidden files.
 ls -la $WORK      # List everything in your work directory (the $WORK area for larger files).
-df -h $HOME       # Show disk space usage for the filesystem holding your home directory.
-df -h $WORK       # Show disk space usage for the filesystem holding your work directory.
+df -h $HOME       # Show disk space usage for your home directory.
+df -h $WORK       # Show disk space usage for the shared project directory holding your work directory.
 ```
 
 #### Step 3: Check the Software Environment
@@ -270,7 +270,7 @@ step you see what that means, and you start adding notes to the file that
 the tutorial's agent, Qwen Code, reads whenever it starts in the tutorial
 repository. You will add to it all day.
 
-#### Step 1: Ask Without Notes
+#### Step 1: Ask Without Providing the Agent Additional Information
 
 Start Qwen Code in an empty directory outside the repository, so it has no
 files to read:
@@ -286,7 +286,7 @@ Ask it:
 
 Note what it says, then type `/quit`.
 
-#### Step 2: Write Down What You Learned
+#### Step 2: Provide Agent with Additional Information
 
 The tutorial repository has a file for exactly this: `QWEN.md`, at its top
 level. Qwen Code reads it whenever it starts anywhere inside the repository.
@@ -303,7 +303,6 @@ Add facts from Exercise 1 under its "Cluster notes" heading:
 cat >> QWEN.md << 'EOF'
 - This tutorial uses the mi2101x partition: 16 CPU cores, 64 GB of memory, and 1 AMD MI210 GPU per node.
 - AMD GPUs: use rocm-smi and rocminfo, never nvidia-smi.
-- Never run computations on the login node. Use srun or sbatch.
 EOF
 ```
 
@@ -317,7 +316,13 @@ Why here? Facts about one project belong in a `QWEN.md` at that project's top
 level, so every agent session in the project starts from them. Qwen Code also
 reads a personal `~/.qwen/QWEN.md` in every directory; keep that for
 preferences you want in all of your projects, not for facts about one
-cluster or tutorial.
+project or tutorial.
+
+Look at what the configuration file says now:
+
+```bash
+cat QWEN.md
+```
 
 #### Step 3: Ask Again, Then Let It Try
 
@@ -335,24 +340,31 @@ Compare its answer with Step 1. Then ask it to run the command:
 Qwen Code asks before running anything. Approve the `srun` command: `srun`
 asks Slurm for a compute node, so it's fine to start from the login node.
 
-Expect the cluster to reject the agent's first attempts: the command is
-missing **two** options that this cluster requires and your notes don't
-mention yet. Each time, watch the agent read the rejection and fix the
-command, then approve its next try. (If its first try already works, ask it
-which options it added and why.)
+Expect the cluster to reject the agent's first attempts since there are required
+Slurm options the agent doesn't know about yet. Each time, watch the agent read
+the rejection and fix the command, then approve its next try. (If its first try
+already works, ask it which options it added and why.)
 
-When the command succeeds, type `/quit` and add the two facts the agent
-discovered to `QWEN.md`, one line each:
+When the command succeeds, type `/quit` and add the facts the agent discovered
+to `QWEN.md`, one line each:
 
 ```bash
 echo "- <first fact>" >> QWEN.md
 echo "- <second fact>" >> QWEN.md
+...
+```
+
+#### Step 4: Ask Again With the Required Information
+
+Now start the agent again and ask it the same question.
+
+```bash
+bash setup/launch_qwen.sh
 ```
 
 **Questions:**
-- What changed in the answer after you added your notes, and why?
-- Which two options did the cluster require? Compare them with the note under
-  Step 6.
+- What changed in the answers after you added the additional information from
+  steps 3 and 4, and why?
 - What time limit did the agent choose? Is that a sensible request for
   `hostname` on a shared cluster?
 
@@ -368,7 +380,7 @@ echo "- <second fact>" >> QWEN.md
    sentences) describing the cluster: how many nodes are in our partition, how many
    CPUs per node, what GPU each node has, and what software is available.
 
-2. **AI agent check.** Save the Step 5 output, plus each device's number of
+2. **AI agent check.** Save the output from Exercise 1, Step 5, plus each device's number of
    compute units, to a file the agent can read:
 
    ```bash
@@ -377,7 +389,14 @@ echo "- <second fact>" >> QWEN.md
 
    Start Qwen Code in `~/agent-scratch` as in Agent Practice and ask it to
    explain each line of `@rocminfo.txt` (typing `@` lets you pick a file in
-   the current directory). Does the agent correctly identify the CPU model? The
+   the current directory).
+
+   ```bash
+   cd ~/agent-scratch
+   bash ../sc-student-programming-tutorial/setup/launch_qwen.sh
+   ```
+
+   Does the agent correctly identify the CPU model? The
    GPU? What does it say a "compute unit" is for the CPU, and for the GPU?
    Check its answer against the cluster table above. Does it get anything
    wrong? See [Using AI Assistants](../README.md#using-ai-assistants) for more
