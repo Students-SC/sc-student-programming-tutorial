@@ -128,7 +128,7 @@ you would in modern development practice. The ground rule:
 
 Let the agent help you write code, debug errors, and explain concepts -- but
 make sure *you* understand what the code does before moving on. Each module
-ends with an **Agent Practice** step: after you have done the exercise
+ends with an **Agent Practice** step: after you have done the exercises
 yourself, you hand a related task to the agent, predict what should happen,
 and check its work with the same tests you used on your own code. Agents
 make mistakes; the point is to catch them.
@@ -206,7 +206,7 @@ folder with starter code and templates.
 
 | Time | Session |
 |------|---------|
-| 8:30 to 8:50 CST | Welcome & AI Assistants Intro |
+| 8:30 to 8:50 CST | Welcome, Intro & AI Assistants |
 | 8:50 to 9:20 CST | Module 1: HPC Foundations |
 | 9:20 to 10:05 CST | Module 2: Slurm |
 | 10:05 to 10:20 CST | *Break* |
