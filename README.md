@@ -50,19 +50,8 @@ git clone https://github.com/Students-SC/sc-student-programming-tutorial.git
 cd sc-student-programming-tutorial
 ```
 
-### 3. Verify Your Environment
 
-Run the environment check script to confirm everything is set up:
-
-```bash
-bash setup/check_environment.sh
-```
-
-You should see [PASS] for all items. A [WARN] that the AI agent server isn't
-running yet is fine before the tutorial starts. If anything fails, ask an
-instructor for help.
-
-### 4. Check That Your Jobs Can Use a GPU
+### 3. Check That Your Jobs Can Use a GPU
 
 Your instructors have already installed the Python environment for the
 afternoon's AI exercises (PyTorch and friends) in a shared location, so there
@@ -86,7 +75,7 @@ You should see `Status: PASSED` and the GPU's name. Module 2 includes a
 checkpoint that explains this job and helps anyone who skipped this step catch
 up.
 
-The tutorial's AI coding agent (Qwen Code) is also preinstalled, so it's ready
+The tutorial's AI coding agent (Aider) is also preinstalled, so it's ready
 to use. See "Using AI Assistants" below.
 
 ## Getting Help
@@ -105,9 +94,9 @@ how this works.
 | Resource | Details |
 |----------|---------|
 | CPU | AMD EPYC 7V13 (16 cores per virtual node) |
-| GPU | 1x AMD Instinct MI210 (64 GB HBM2e) per virtual node |
+| GPU | 8x AMD Instinct MI250X (64 GB HBM2e) per  node |
 | RAM | 64 GB system DRAM per virtual node |
-| Partition | `mi2101x` |
+| Partition | `batch` |
 | Scheduler | Slurm |
 | Compiler | GCC 12.2, `hipcc` (ROCm 7.2) |
 | MPI | OpenMPI 4.1.8 |
