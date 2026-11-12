@@ -15,10 +15,10 @@ By the end of this module, you will be able to:
 ---
 
 
-CPUs stopped getting "faster" a while ago i.e. the number of instructions it can execute per second has
-plateaud. Most consumer CPUs tend to be between 2-4 GHz, which indicates the number of instructions
-it can execute per second. 
-For many years, programs got faster automatically as CPU clock speeds increased. Today, clock speeds improve much more slowly, and most CPUs tend to stay
+CPUs stopped getting "faster" a while ago i.e. the number of instructions it
+can execute per second has plateaud. For
+many years, programs got faster automatically as CPU clock speeds increased.
+Today, clock speeds improve much more slowly, and most CPUs tend to stay
 between 2-4 GHz. 
 
 So how can we get more work done if the CPUs can't get faster. We do that by performing tasks in
@@ -85,9 +85,12 @@ gcc -o ./threadexample threadexample.c -lpthread
 ./threadexample
 ```
 
-We're not going to see more of pthreads, but you can see how this can be used to potentially build
-up much more complex programs. But you can also see how this can get cumbersome. In pthreads, the programmer is responsible for creating threads, dividing the work, waiting for threads to finish, and avoiding bugs from shared data access. We could
-benefit from an easier to understand model of writing parallel programs.
+We're not going to see more of pthreads, but you can see how this can be used
+to potentially build up much more complex programs. But you can also see how
+this can get cumbersome. In pthreads, the programmer is responsible for
+creating threads, dividing the work, waiting for threads to finish, and
+avoiding bugs from shared data access. We could benefit from an easier to
+understand model of writing parallel programs.
  
 
 ### The OpenMP Model
@@ -122,7 +125,7 @@ threads, they do work in parallel, then they join back into one.
 ```
 
 (Note: To use OpenMP library functions such as `omp_get_thread_num()` and `omp_get_num_threads()`,
-include `#include <omp.h>` header). 
+include `#include <omp.h>` header. We will see this in the examples). 
 
 So each thread will do the same `printf` task. So if we started 4 OpenMP threads (we'll see how to
 specify the number of threads later) we may see an output like
@@ -179,11 +182,12 @@ happen a lot. So the final answer of `sum` might be incorrect because
 all the values in `a` array weren't properly summed because of this.
 
 
-The `reduction` clause instructs the compiler about this situation and makes sure that the final
-value sum is the correct sum as you would get when it is single threaded. You can think of it as
-each thread maintains its own copy of `sum` and performs its share of iterations on that private
-copy of `sum`. At the end of the loop, the value of `sum` from all the threads are added together to
-get the final value of `sum`.
+The `reduction` clause instructs the compiler about this situation and makes
+sure that the final value sum is the correct sum as you would get when it is
+single threaded. You can think of it as each thread maintains its own copy of
+`sum` and performs its share of iterations on that private copy of `sum`. At
+the end of the loop, the value of `sum` from all the threads are added together
+by one thread to get the final value of `sum`.
 
 
 ### Shared and Private Variables
@@ -265,11 +269,12 @@ so there's no place to call it cleanly with the combined `parallel for`.
 
 To avoid multiple threads writing the same shared variable, an OpenMP pattern is to use `#pragma omp single` which ensures only one thread from among the team of OpenMP threads performs that action.
 
-By default, OpenMP waits for all threads at the end of a for loop and at the end of a parallel region before continuing.
-`nthreads` is shared (it's declared outside the region), so if every thread
-assigned it, that would be a race, even though they would all write the same
-value. `#pragma omp single` makes exactly one thread run the next statement
-while the others wait for it to finish, so only one thread writes `nthreads`.
+By default, OpenMP waits for all threads at the end of a for loop and at the
+end of a parallel region before continuing.  `nthreads` is shared (it's
+declared outside the region), so if every thread assigned it, that would be a
+race, even though they would all write the same value. `#pragma omp single`
+makes exactly one thread run the next statement while the others wait for it to
+finish, so only one thread writes `nthreads`.
 
 ### Compiling and Running
 
@@ -440,7 +445,9 @@ the 1-thread time divided by the N-thread time:
   thread adds up a smaller share of the steps, and the partial sums are
   combined at the end, so the additions happen in a different order. Why
   would the order of additions change the result on a computer, when it
-  doesn't in math?
+  doesn't in math? (Hint: you should look into how floating point numbers work,
+  and how many digits can be represented in the `double` datatype, and consider what
+  happens when your number has more digits than that).
 - How does the **time** change? What speedup do you get with 16 threads vs. 1?
 - Is the speedup perfect (16x)? Why or why not? Think back to
   [Amdahl's law](../module-01-hpc-foundations/README.md#how-much-faster-amdahls-law)
@@ -520,10 +527,45 @@ numbers, show the agent the output and ask it to fix the script.
 
 ---
 
-### Additional Challenges
 
-If you finish the exercises above early, try the [Module 3 challenges](../challenges/README.md#module-3---openmp-challenges): parallelizing a matrix-vector multiply and exploring other `omp for` clauses. You can also come back to them after the tutorial.
+## Challenges (Optional)
 
+If you finish the exercises above early, try the below challenges 
+
+### Challenge A: Matrix-Vector Multiply
+
+Parallelize a matrix-vector multiplication using OpenMP. A template is at:
+
+```bash
+cat matvec_openmp.c
+```
+
+The outer loop over rows is embarrassingly parallel -- each row of the output
+can be computed independently. Add the appropriate OpenMP directive and compare
+performance with the serial version. Compile and run it with:
+
+```bash
+gcc -fopenmp -O2 -o matvec_openmp matvec_openmp.c -lm
+srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+  bash -c 'export OMP_NUM_THREADS=16; ./matvec_openmp'
+```
+
+A completed version is in `./solutions/matvec_openmp_solution.c`.
+
+**Question:** On 16 threads, the matrix-vector multiply speeds up much less
+than the pi program did in Module 3's Exercise 3. Why? (Hint: compare how much
+data each program reads from memory for each arithmetic operation it does.)
+
+**Question:** Can you find a way to parallelize the inner loop as well? Is it worth it? Experiment
+with it to find out the timings and see if it produces better or worse performance.
+
+
+### Challenge B: Exploring other clauses for `pragma omp for`
+
+If you look at the [OpenMP API spec for `pragma for`](https://www.openmp.org/spec-html/5.0/openmpsu41.html#x64-1290002.9.2), you will see it has a number of optional clauses you can use. You've seen one already: `reduction`. Try exploring some of the others. For example:
+
+1. Could you apply the `collapse` clause to the loops in `matvec_openmp.c`? Does it compile? If not, read the compiler's error message: what does it say about the loops, and why?
+2. Could you apply the `schedule` clause to the loop in your completed `pi_openmp.c` (in `module-03-openmp/exercises/`) and to `matvec_openmp.c`? Is there any difference in execution time between `schedule(static)` and `schedule(dynamic)`? If `dynamic` is much slower, try giving it a chunk size, such as `schedule(dynamic, 100000)`. Why does that help?
 ### Advanced: OpenMP Offload
 
 OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, visit the [OpenMP Offload bonus module in the challenges directory](../challenges/bonus-openmp-offload/README.md) to learn how additional OpenMP directives can be used to accomplish tasks on the GPU.
