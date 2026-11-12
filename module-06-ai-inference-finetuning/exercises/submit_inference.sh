@@ -12,7 +12,9 @@
 #SBATCH --output=inference_%j.out
 #SBATCH --error=inference_%j.err
 
-echo "LLM Inference -- Job $SLURM_JOB_ID on $(hostname)"
+set -euo pipefail
+
+echo "LLM Inference -- Job ${SLURM_JOB_ID:-(not in Slurm)} on $(hostname)"
 echo ""
 
 # The shared, read-only Python environment that the instructors built
@@ -32,7 +34,7 @@ export HF_HUB_OFFLINE=1
 
 echo "Python:  $(python3 --version)"
 echo "PyTorch: $(python3 -c 'import torch; print(torch.__version__)')"
-echo "ROCm:    $(python3 -c 'import torch; print(torch.cuda.is_available())')"
+echo "GPU available: $(python3 -c 'import torch; print(torch.cuda.is_available())')"
 echo ""
 
 # The Python script to run is the first argument (default: the example):

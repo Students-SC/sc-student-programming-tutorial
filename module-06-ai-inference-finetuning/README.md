@@ -6,29 +6,36 @@
 
 By the end of this module, you will be able to:
 
-- Explain the difference between training, fine-tuning, and inference
-- Run inference with a pre-trained language model on the MI210 GPU
+- Explain the difference between inference, pre-training, and fine-tuning
+- Run inference with a pre-trained language model on the MI210 GPU and measure its throughput
 - Fine-tune a text classification model using LoRA (parameter-efficient fine-tuning)
-- Reason about GPU memory usage during inference vs. training
+- Reason about GPU memory usage during inference and training
 - Check an agent's change with measurements and the job's warnings
 
 ---
 
 ## Key Concepts
 
-### What is AI/ML?
+### What is Machine Learning?
 
 Machine learning is about finding patterns in data. Instead of writing explicit
-rules, you show the computer many examples and it learns the rules itself.
+rules, you let the computer learn them from examples. In **supervised
+learning**, the kind this module's fine-tuning exercise uses, each example
+comes with the right answer (a label), and the computer learns a model that
+maps inputs to answers:
 
 ```
-  Traditional Programming:      Machine Learning:
-  Rules + Data → Answers        Data + Answers → Rules (Model)
+  Traditional programming:      Supervised learning:
+  Rules + Data → Answers        Data + Answers → Model
 ```
+
+Not all machine learning needs labeled answers. A language model, for example,
+is first trained on ordinary text by predicting the next word, so the text
+itself provides the targets.
 
 A **neural network** is a mathematical function with millions (or billions) of
-adjustable numbers called **weights**. Training adjusts these weights so the
-function produces good outputs for given inputs.
+adjustable numbers called **weights**, or **parameters**. Training adjusts
+these weights so the function produces good outputs for given inputs.
 
 ### Neural Networks in a Nutshell
 
@@ -38,57 +45,255 @@ function produces good outputs for given inputs.
            weights      weights          weights
 ```
 
-- **Forward pass**: data flows through layers to produce a prediction
-- **Loss**: measures how wrong the prediction is
-- **Backpropagation**: computes how to adjust each weight to reduce the loss
-- **Gradient descent**: actually updates the weights
+Each training step has four parts:
 
-### Inference vs. Training vs. Fine-Tuning
+- **Forward pass**: data flows through the layers to produce predictions.
+- **Loss**: a number that measures how far the predictions are from the
+  training targets.
+- **Backpropagation**: computes the **gradient** of the loss with respect to
+  each trainable parameter, that is, which way and how strongly to nudge it to
+  reduce the loss.
+- **Optimizer step**: uses the gradients to update the trainable parameters.
+  This module uses the **AdamW** optimizer, which keeps two running averages
+  for every trainable parameter (its **optimizer state**) to choose the size of
+  each update.
 
-| | Inference | Training | Fine-Tuning |
+### Inference, Pre-training, and Fine-Tuning
+
+Fine-tuning is a form of training: it continues training a model that has
+already been pre-trained, to adapt it to a new task.
+
+| | Inference | Pre-training | Fine-tuning |
 |---|---|---|---|
-| What | Use a trained model to make predictions | Train a model from scratch | Adapt a pre-trained model to a new task |
-| Weights | Frozen (no changes) | Random → learned | Pre-trained → adjusted |
-| Data needed | Just the input | Massive dataset | Small task-specific dataset |
-| Compute cost | Low | Very high | Moderate |
-| GPU memory | Model weights only | Weights + gradients + optimizer states | Less than full training |
+| Purpose | Produce outputs with a trained model | Learn a base model, typically from a large dataset | Adapt a trained model to a task |
+| Parameters updated | None | Typically all | All, or a selected subset |
+| Data | The inputs to process | Training examples | Examples of the new task |
+| GPU memory holds | Weights, intermediate results, workspace, and (for text generation) a cache of earlier tokens | Weights, saved intermediate results (activations), gradients, optimizer state, and workspace | The same kinds as pre-training; LoRA reduces the trainable parameters and their gradients and optimizer state |
+| Compute required | Depends on the model, the inputs, and how many there are | Usually substantial | Depends on the model, the data, and the method |
 
-### Parameter-Efficient Fine-Tuning (LoRA)
+### Two Models in This Module
 
-Full fine-tuning updates **every** weight in the model, which requires enormous
-memory. **LoRA (Low-Rank Adaptation)** freezes the original weights and adds
-small trainable "adapter" matrices:
+This module uses two different models:
 
+- **TinyLlama 1.1B Chat** (`TinyLlama/TinyLlama-1.1B-Chat-v1.0`, 1.1 billion
+  parameters) generates text. It predicts one **token** (a word or part of a
+  word) at a time, each based on the tokens before it. It is a chat model: a
+  base language model that was further trained to answer requests written in
+  a chat format, which is why the scripts wrap each prompt in its **chat
+  template**.
+- **DistilBERT** (`distilbert-base-uncased`, 67 million parameters) reads a
+  whole piece of text at once. You'll fine-tune it to classify movie reviews
+  from the IMDB dataset as positive or negative, training on 2,000 reviews and
+  evaluating on 500 others. DistilBERT was pre-trained on ordinary text; the
+  classification layers on top of it are new, and start with random weights.
+
+Fine-tuning the classifier does not change the text-generation model.
+
+### Generating Text with Hugging Face
+
+The inference scripts take the same steps for every prompt:
+
+1. Format the prompt with the tokenizer's **chat template**, which adds the
+   conversation markers this chat model was trained on (`format_prompt()` in
+   the scripts).
+2. Tokenize the formatted text into token IDs.
+3. Move those input tensors to the device.
+4. Generate new token IDs with `model.generate()`.
+5. Remove the input part from the output, and decode the rest (the
+   continuation) back to text.
+
+The call that generates looks like this:
+
+```python
+outputs = model.generate(
+    **inputs,           # the tokenized prompt: input_ids and attention_mask
+    max_new_tokens=64,  # generate at most 64 new tokens
+    do_sample=True,     # choose each token at random from the likely ones
+    temperature=0.7,    # lower is more focused, higher is more varied
+    top_p=0.9,          # sample only from the most likely tokens
+)
 ```
-  Original weight matrix W (frozen)
-  +
-  Low-rank adapter:  A × B  (trainable, much smaller)
-  =
-  Effective weight: W + A × B
-```
 
-The DistilBERT model you'll fine-tune has about 67 million parameters. With
-this exercise's LoRA settings, only about 0.74 million (1.1%) are trained --
-about 90x fewer. That is why fine-tuning fits easily on one GPU and finishes
-in seconds.
+- `**inputs` expands the dictionary the tokenizer returned into named
+  arguments, including `input_ids` and `attention_mask`.
+- `max_new_tokens` is an upper limit: generation stops sooner if the model
+  produces its end-of-response token.
+- `do_sample=True` turns on sampling. With `do_sample=False`, the model always
+  picks the most likely token, which is called **greedy decoding**.
+- `temperature` reshapes the probabilities that sampling uses.
+- `top_p` limits sampling to the smallest set of likely tokens whose
+  probabilities add up to 0.9.
+- A lower temperature doesn't make an answer more factually correct.
+
+The scripts also pass `pad_token_id=tokenizer.eos_token_id`, which tells
+`generate()` which token marks padding, and `max_length=None`, so that only
+`max_new_tokens` limits the length.
+
+The other calls in the scripts:
+- `AutoTokenizer.from_pretrained(name)` loads the tokenizer, and
+  `AutoModelForCausalLM.from_pretrained(name)` loads the generation model.
+- `model.eval()` selects evaluation behavior, and `torch.inference_mode()`
+  turns off gradient tracking, which generating text doesn't need (see
+  [Training and Evaluation Modes](#training-and-evaluation-modes)).
+- `"cuda"` is PyTorch's name for the GPU, on this ROCm installation too.
 
 ### Why GPUs for AI?
 
-Neural networks are mostly **matrix multiplications** -- exactly the kind of
-massively parallel operation GPUs excel at:
+Neural networks are mostly **matrix multiplications**, which split into many
+independent multiply-adds that a GPU can run in parallel:
 
-- The MI210 has **6656 stream processors** running in parallel
-- **64 GB HBM2e** with **1.6 TB/s bandwidth** for fast data access
-- Generating text for one prompt at a time uses only a sliver of that
-  parallelism, so the GPU may be only slightly faster than the CPU (you can
-  measure this in Exercise 3). GPUs pull far ahead when they process many
-  prompts together, which is called **batching** (this module's Agent
-  Practice). Batching is how the shared AI server behind the tutorial's agent
-  answers a whole classroom at once.
+- The MI210 has **104 compute units** with **6656 stream processors**. A stream
+  processor is a simple arithmetic lane, not an independent CPU-style core:
+  lanes work in groups of 64 (a wavefront, as in Module 5) that run the same
+  instruction on different data.
+- **64 GB HBM2e** with **1.6 TB/s bandwidth** for fast data access.
+
+Generating text has two phases. First the model processes the whole prompt at
+once, which is a lot of parallel work. Then it generates one token per step,
+and each step depends on the token before it. For a single prompt, each step
+does a little arithmetic but has to move a large share of the model's weights
+from memory, so it can use only a small part of the GPU's compute capacity and
+is often limited by memory bandwidth instead.
+
+**Batching**, generating for several prompts in the same steps, lets those
+sequences share each pass of the model, which can greatly raise the total
+number of tokens generated per second. How much depends on the model, the
+sequence lengths, the batch size, and the software. A batch needs more memory,
+and it doesn't make every individual response arrive sooner. The shared AI
+server behind the tutorial's agent batches requests from the whole classroom.
+Servers like it add requests to the batch and remove finished ones as they
+go; this module's Agent Practice uses a simpler, fixed batch.
+
+### What a Training Batch Contains
+
+A **batch** groups several reviews (32 in this exercise) so the GPU processes
+them together. For each batch, the training loop works with:
+
+| Name | Meaning |
+|------|---------|
+| `input_ids` | Token IDs representing the reviews |
+| `attention_mask` | 1 for real tokens, 0 for padding |
+| `labels` | The correct sentiment classes: 0 for negative, 1 for positive |
+| `outputs.logits` | Two prediction scores per review, one for each class |
+| `outputs.loss` | One number: the classification loss, calculated using the labels |
+
+- The tokenizer produces `input_ids` and `attention_mask`; the labels come
+  from the dataset.
+- Logits are scores, not probabilities. `argmax` selects the class with the
+  larger score.
+- Passing `labels` to this Hugging Face model asks it to calculate the
+  classification loss as well as the logits.
+- The script's `evaluate()` function uses the labels differently: it doesn't
+  give them to the model, but compares the predicted classes with them and
+  counts the correct ones.
+
+### One Training Step
+
+Here is the training step for one batch, which you'll enable in Exercise 4:
+
+```python
+# Discard gradients from the previous batch.
+optimizer.zero_grad()
+
+# Predict the labels and compute the classification loss.
+outputs = model(
+    input_ids=input_ids,
+    attention_mask=attention_mask,
+    labels=labels,
+)
+loss = outputs.loss
+
+# Compute gradients for the trainable parameters.
+loss.backward()
+
+# Update those parameters using the gradients.
+optimizer.step()
+```
+
+- The forward pass, `model(...)`, produces predictions and, because labels
+  are supplied, the loss.
+- `loss.backward()` computes gradients. It doesn't change any weights.
+- `optimizer.step()` updates the trainable parameters using their gradients.
+  The script's optimizer is AdamW, created with only the parameters whose
+  `requires_grad` is `True`, that is, the trainable ones.
+- PyTorch adds new gradients to the ones already stored unless they are
+  cleared. This script makes one update per batch, so it clears them at the
+  start of each batch.
+
+### Training and Evaluation Modes
+
+- `model.train()` turns on training behavior, such as dropout, which randomly
+  zeroes some values during training to discourage memorizing the examples.
+- `model.eval()` switches to evaluation behavior, for example turning dropout
+  off. It doesn't turn off gradient tracking by itself.
+- `torch.inference_mode()` turns off gradient tracking, which saves memory
+  and time when evaluating or generating.
+
+The fine-tuning script calls `model.train()` before each epoch, and its
+`evaluate()` function uses `model.eval()` inside `torch.inference_mode()`.
+
+### Parameter-Efficient Fine-Tuning (LoRA)
+
+Full fine-tuning updates **every** weight in the model, so it needs a gradient
+and optimizer state for every one. **LoRA (Low-Rank Adaptation)** freezes
+selected weight matrices and trains a small, low-rank update for each:
+
+```
+  Original weight matrix W (frozen, d × d)
+  +
+  Low-rank update: B × A, where B is d × r and A is r × d, and the rank r
+                   is much smaller than d; the update is scaled by lora_alpha / r
+  =
+  Effective weight: W + (lora_alpha / r) × B × A
+```
+
+In this module's exercise, LoRA adapts two weight matrices (`q_lin` and
+`v_lin`) in each of DistilBERT's 6 layers with rank r = 8, which adds 147,456
+trainable parameters. The new classification layers are trained as well, and
+they have 592,130 parameters. Together that is 739,586 trainable parameters,
+about 90 times fewer than the 66,955,010 that full fine-tuning trains.
+
+Wrapping the model with LoRA also adds parameters: the adapters, and, in this
+configuration, trainable copies of the classification layers, which PEFT keeps
+alongside the frozen originals. So the wrapped model has 67,694,596
+parameters, and the script reports the trainable share against that number,
+about 1.09%.
+
+Fewer trainable parameters means less memory for gradients and optimizer
+state. But the frozen model must still be in GPU memory, and each training
+step still runs the whole model forward and backward and stores its
+intermediate results, so 90 times fewer trainable parameters does not mean 90
+times less memory or time. This exercise uses a small model and a subset of
+the dataset to keep training practical within the tutorial. LoRA reduces the
+number of trainable parameters and their associated gradient and
+optimizer-state memory.
+
+### Configuring LoRA
+
+Exercise 4's LoRA configuration uses these settings:
+
+| Setting | Meaning |
+|---------|---------|
+| `task_type=TaskType.SEQ_CLS` | Configure PEFT for sequence classification |
+| `r=8` | Rank of the low-rank update |
+| `lora_alpha=16` | Scales the update by `lora_alpha / r`, which is 2 here |
+| `lora_dropout=0.1` | Dropout probability on the adapters' input during training |
+| `target_modules=["q_lin", "v_lin"]` | The DistilBERT layers that get adapters |
+| `get_peft_model(model, lora_config)` | Attaches the adapters and sets which parameters are trainable |
+
+`q_lin` and `v_lin` are the query and value projections inside attention, the
+part of each layer that decides which other words in the review each word
+draws information from. You don't need the details of attention for this
+exercise. The adapters are separate from the classification layers, which
+train too.
 
 ---
 
 ## Hands-On Exercises (~40 min)
+
+Suggested pacing: about 5 minutes for Exercises 1 and 2, 8 minutes for
+Exercise 3, 12 minutes for Exercise 4, and 15 minutes for the Agent Practice.
+Exercise 3's CPU baseline and the challenges are optional.
 
 First, navigate to the exercises directory for this module:
 
@@ -100,7 +305,7 @@ cd module-06-ai-inference-finetuning/exercises
 >
 > All exercises run as **batch jobs** that produce output files. Submit your
 > script, wait for it to complete, then examine the output while others use the
-> nodes.
+> nodes. Never run these models on the login node.
 
 ### Exercise 1: Meet the Shared Python Environment
 
@@ -128,9 +333,10 @@ deactivate
 > the environment is missing, ask an instructor.
 
 The models and the dataset these exercises use are pre-downloaded too, so your
-jobs load them from a shared cache instead of downloading them from Hugging
-Face. The first fine-tuning job you run copies the dataset (128 MB) into your
-`$WORK` directory, because the `datasets` library needs to write next to it.
+jobs load them from a shared cache and never download anything. The way these
+scripts load the dataset, the `datasets` library needs to write next to it,
+and the shared copy is read-only, so the first fine-tuning job you run copies
+the dataset (128 MB) into your `$WORK` directory.
 
 ---
 
@@ -146,13 +352,23 @@ cat ../examples/simple_inference.py
 
 #### Step 2: Review the Inference Workflow
 
-This script loads a small pre-trained text generation model and generates
-responses to a few prompts. Examine how it:
-1. Loads the model and tokenizer
-2. Moves the model to the GPU
-3. Tokenizes input text
-4. Generates output tokens
-5. Decodes back to text
+This script loads TinyLlama and generates responses to a few prompts. Examine
+how it:
+1. Loads the model and tokenizer, and moves the model to the GPU
+2. Wraps each prompt in the chat template and tokenizes it
+3. Runs a short, untimed warm-up generation
+4. Generates output tokens, timing only `model.generate()`
+5. Counts the tokens it actually generated and decodes them back to text
+
+> **Note**
+>
+> PyTorch built for AMD GPUs (ROCm) still calls the GPU `"cuda"` and uses the
+> `torch.cuda` functions, so the same code runs on AMD and NVIDIA GPUs.
+
+GPU work runs in the background, so the script calls
+`torch.cuda.synchronize()` before and after `model.generate()` to make sure the
+timer covers all of the generation. It counts each response's tokens up to and
+including the token that ends the response.
 
 #### Step 3: Submit the Batch Job
 
@@ -172,10 +388,16 @@ cat inference_<JOBID>.out
 ```
 
 **Questions:**
-- How fast does the model generate text (tokens/sec)?
-- How much GPU memory does the model use after loading, and at its peak while
-  generating?
+- How many tokens per second does the model generate?
+- The script runs a warm-up generation before it starts timing. Why? (Think
+  back to Module 5.)
+- How much GPU memory is allocated after loading, and at the peak while
+  generating? Besides the weights, what needs memory while generating?
 - Do the generated responses make sense?
+
+The scripts report memory **allocated** to PyTorch tensors. PyTorch's caching
+allocator reserves somewhat more, and `rocm-smi` shows everything in use on the
+GPU.
 
 ---
 
@@ -193,52 +415,73 @@ In Vim, press `i` to enter insert mode and make your edits. Press `Esc`, type
 `:wq`, and press `Enter` to save and exit. You can instead use `nano`, `emacs`,
 or an existing VS Code Remote SSH connection.
 
-#### Step 2: (Optional) Try the CPU First
+#### Step 2: Change the Settings
 
-Until you complete TODO 1, the template runs the model on the CPU
-(`device = "cpu"`). To get a baseline, submit it once before editing anything:
+The script runs as it is; its settings are working values for you to change
+(see [Generating Text with Hugging Face](#generating-text-with-hugging-face)).
+There are **3 TODOs**, plus an optional fourth:
 
-```bash
-sbatch submit_inference.sh run_inference.py
-```
+1. **TODO 1**: Choose the device: change `"cpu"` to `"cuda"`.
+2. **TODO 2**: Choose the response-length limit: change `max_new_tokens` to
+   `64`. Longer limits take more time and can need more memory.
+3. **TODO 3**: Choose the temperatures to compare: change `temperatures` to
+   `[0.1, 0.7, 1.5]`.
+4. **TODO 4** (optional): Add your own prompts to `PROMPTS`, and raise
+   `NUM_PROMPTS` to include them.
 
-Note the tokens/sec it reports, so you can compare with the GPU in Step 5.
+The script uses the first `NUM_PROMPTS` of the prompts in `PROMPTS`. Here it
+uses the first 2, so each run stays short; the Agent Practice uses all of
+them.
 
-#### Step 3: Complete the TODOs
-
-There are **3 TODOs**:
-
-1. **TODO 1**: Load the model onto the GPU (choose the right device)
-2. **TODO 2**: Choose the generation settings: `max_new_tokens`, and a list of
-   `temperatures` to compare (try `[0.1, 0.7, 1.5]`)
-3. **TODO 3**: Add your own custom prompts to the prompt list
-
-#### Step 4: Submit the Batch Job
-
-Edit the file, add your own prompts, and submit it by naming the script after
-the batch file:
+#### Step 3: Submit the Batch Job
 
 ```bash
 sbatch submit_inference.sh run_inference.py
 ```
 
-#### Step 5: Compare Temperatures
+When it finishes, check that the output says `Device: cuda` and names the GPU.
+
+#### Step 4: Compare Temperatures
 
 Your script runs every prompt at each temperature in `temperatures`, so one
-job gives you a side-by-side comparison. With the suggested values, expect:
-- `0.1` -- very focused, repetitive
-- `0.7` -- balanced creativity
-- `1.5` -- wild and unpredictable
+job gives you a side-by-side comparison. In general:
+- `0.1` concentrates the choice on the highest-scoring tokens, so responses
+  are focused and can repeat themselves.
+- `0.7` allows more variation.
+- `1.5` flattens the choice, which often adds variation and mistakes.
 
-Which temperature gives the most useful answers to your prompts? If you ran
-the CPU baseline in Step 2, how many times faster is the GPU?
+A lower temperature doesn't make an answer more correct, and a model this
+small can give weak answers at every temperature.
+
+**Question:** Which temperature gives the most useful answers to your prompts?
+
+#### Step 5 (Optional): Compare with the CPU
+
+Change the device back to `"cpu"`, leave the other settings as they are, and
+submit the script again:
+
+```bash
+sbatch submit_inference.sh run_inference.py
+```
+
+This job takes a minute or two. Both runs used the same settings and prompts,
+but because the model samples, they generate different text and possibly
+different numbers of tokens. Compare the two runs' `All temperatures` lines:
+the number of tokens each generated, and the tokens per second. How many
+times faster is the GPU?
+
+Then change the device back to `"cuda"` for the Agent Practice.
 
 ---
 
 ### Exercise 4: Fine-Tune a Model with LoRA
 
 Now let's adapt a pre-trained model to a new task. We'll fine-tune a text
-classification model (DistilBERT) on a sentiment analysis dataset using LoRA.
+classification model (DistilBERT) on the IMDB sentiment dataset using LoRA.
+This exercise uses the calls explained in
+[What a Training Batch Contains](#what-a-training-batch-contains),
+[One Training Step](#one-training-step), and
+[Configuring LoRA](#configuring-lora).
 
 #### Step 1: Open the Fine-Tuning Script
 
@@ -248,15 +491,65 @@ Open the script in an editor, as in Exercise 3:
 vim finetune_lora.py
 ```
 
-#### Step 2: Complete the TODOs
+#### Step 2: Read and Enable the Three Code Blocks
 
-There are **3 TODOs**:
+The code for each task is already written, but commented out between a
+`BEGIN` and an `END` marker line. Read each block and be ready to explain it.
+Then enable it by deleting exactly the first `#` of each line between the
+markers, which keeps the indentation as it is. Lines that are still comments
+afterward are explanations. For example, before:
 
-1. **TODO 1**: Configure the LoRA adapter parameters
-2. **TODO 2**: Write the training loop (forward pass, loss, backward, optimizer step)
-3. **TODO 3**: Run evaluation and print accuracy
+```python
+    # ----- BEGIN TODO 3 -----
+#    post_accuracy = evaluate(model, eval_loader, device)
+#    print(f"\nAccuracy after fine-tuning: {post_accuracy:.1%}")
+#    print(f"Change: {post_accuracy - pre_accuracy:+.1%}")
+    # ----- END TODO 3 -----
+```
 
-#### Step 3: Submit the Fine-Tuning Job
+and after:
+
+```python
+    # ----- BEGIN TODO 3 -----
+    post_accuracy = evaluate(model, eval_loader, device)
+    print(f"\nAccuracy after fine-tuning: {post_accuracy:.1%}")
+    print(f"Change: {post_accuracy - pre_accuracy:+.1%}")
+    # ----- END TODO 3 -----
+```
+
+The three blocks are:
+
+1. **TODO 1**: The LoRA configuration. Be ready to explain `r` and
+   `target_modules`.
+2. **TODO 2**: The training step for one batch.
+3. **TODO 3**: The evaluation after fine-tuning. The `evaluate()` function is
+   defined at the top of the file; you don't need to write it.
+
+After you enable a block, set its flag at the top of the file to `True`:
+`LORA_CONFIG_READY`, `TRAINING_STEP_READY`, and `EVALUATION_READY`. While any
+flag is still `False`, the job stops right away and names the unfinished
+task. The flags are reminders that you finished, not tests of your code. (The
+script does stop if no LoRA parameters are trainable, which means TODO 1
+isn't enabled.)
+
+> **Tip**
+>
+> In Vim, you can delete the first character of many lines at once. Put the
+> cursor on the first `#` after a `BEGIN` line, press `Ctrl+V` (or `Ctrl+Q` if
+> your terminal pastes instead), press `j` to extend the selection down to the
+> line before `END`, then press `x`.
+
+#### Step 3: Predict, Then Submit
+
+Before you submit, answer:
+- Which call computes the gradients, and which call changes the weights?
+- Does adding LoRA change the total number of parameters, the number of
+  trainable parameters, or both?
+- Why does the training call include the labels? How does `evaluate()` use
+  them differently?
+
+For discussion, or if you finish early: which parameters does the optimizer
+update?
 
 ```bash
 sbatch submit_finetune.sh
@@ -268,94 +561,199 @@ sbatch submit_finetune.sh
 cat finetune_<JOBID>.out
 ```
 
-**Questions:**
-- What accuracy does the model achieve before fine-tuning (random baseline)?
-- What accuracy after fine-tuning?
-- How long did training take?
-- How many parameters were actually trained (vs. total)?
-- What was the peak GPU memory during training? Training stores gradients and
-  optimizer state as well as the model, so why is the number still small?
+> **Note**
+>
+> `finetune_<JOBID>.err` contains a "LOAD REPORT" that lists `MISSING`
+> classifier weights and `UNEXPECTED` vocabulary weights. That's expected: the
+> checkpoint was pre-trained to predict words, not classify reviews, so the
+> classification layers are new, and training them is the point of this
+> exercise.
+
+Compare the output with your predictions:
+- The parameter counts: the original model, the model after wrapping with
+  LoRA, the trainable parameters (and the percentage of the wrapped model),
+  and how many of those are LoRA adapters and how many are other layers.
+- The training loss in each epoch.
+- The accuracy before and after fine-tuning, and the majority-class baseline
+  (always guessing the more common label). The new classification layers start
+  with random weights, so the starting accuracy is close to a guess, but not
+  exactly 50%. A small run like this one doesn't always improve by the same
+  amount.
+- The peak allocated GPU memory during training. Training stores gradients and
+  optimizer state for the trained parameters, and intermediate results for the
+  whole model. Which of those does LoRA shrink?
+
+The script fixes its random seed, so on the same setup a rerun selects the
+same data and starts from the same weights. The results can still differ
+slightly between runs, because GPU calculations don't always add up numbers
+in the same order.
 
 ---
 
 ### Agent Practice: Batch Your Prompts
 
-So far the model answers one prompt at a time. Each step of generation reads
-all of the model's weights from GPU memory, so the GPU does much more useful
-work per step when it generates for many prompts together. Have the agent make
-that change, and check it with measurements and the job's warnings.
+So far the model answers one prompt at a time. Batching lets the GPU work on
+all the prompts in the same steps (see [Why GPUs for AI?](#why-gpus-for-ai)).
+Have the agent add batched generation and compare it with one-at-a-time
+generation in the same job, then check its work with the measurements and the
+job's warnings.
 
 #### Step 1: Ask for the Change
 
-Copy your completed script from Exercise 3, then start Qwen Code:
+If you ran the optional CPU comparison in Exercise 3, first change the device
+in `run_inference.py` back to `"cuda"`. Then copy your script, switch the copy
+to all of the prompts, and check both settings:
 
 ```bash
 cp run_inference.py batch_agent.py
+sed -i 's/^NUM_PROMPTS = .*/NUM_PROMPTS = len(PROMPTS)/' batch_agent.py
+grep -nE '^NUM_PROMPTS|device = ' batch_agent.py
+```
+
+The `grep` output should show `NUM_PROMPTS = len(PROMPTS)` and
+`device = "cuda"`. Then start Qwen Code:
+
+```bash
 bash ../../setup/launch_qwen.sh
 ```
 
-Ask it:
+Copy this whole prompt (the copy button at the top right of the box copies all
+of it) and paste it into Qwen Code. Because it is long, Qwen Code shows it as
+`[Pasted Content ... chars]`; press `Enter` to send it.
 
-> Change batch_agent.py so it generates the responses for all prompts at each temperature in a single model.generate() call, and prints the total tokens per second.
+```text
+Update batch_agent.py to compare sequential and batched text generation on the same prompts using the same model.
 
-Read the change before you approve it. Predict: will the total tokens per
-second go up or down? Will each individual response arrive sooner or later?
+Use greedy decoding with do_sample=False for this comparison. Keep the model, precision, prompts, and maximum new-token limit the same in both modes. Load the model once and warm up both modes before timing.
 
-#### Step 2: Run It and Check
+In sequential mode, generate one response at a time. In batched mode, generate all responses in one model.generate() call.
+
+Use appropriate padding for this decoder-only model. Print each prompt and its generated continuation.
+
+Report a comparison table containing mode, number of prompts, actual generated-token count, generation time, and aggregate output tokens per second. Exclude model loading, warm-up, tokenization, and decoding from generation timing. Synchronize the GPU around wall-clock measurements.
+
+Count only actual generated tokens, excluding prompt tokens and padding after a response finishes. Explain any output differences rather than assuming the two modes must be identical.
+
+Preserve the existing shared environment, local model cache, and Slurm workflow.
+```
+
+#### Step 2: Review Before You Approve
+
+If the agent shows only part of the change, press `Ctrl+S` to see all of it.
+Before you approve it, check:
+- **Padding.** The prompts have different lengths, so a batch is padded to the
+  longest one. Which side does the agent pad on, and is a pad token set? (A
+  text generation model continues from the *end* of its input.)
+- **Attention mask.** Is it passed to `model.generate()`, so the model ignores
+  the padding?
+- **Matching.** Does each continuation stay with its prompt, and is the prompt
+  part (with its padding) removed before decoding?
+- **Counting and timing.** Are generated tokens counted with
+  `count_generated_tokens()`, and is the timer around `model.generate()` alone,
+  with `synchronize()` before and after?
+- **Fair comparison.** Do both modes use the same prompts, `max_new_tokens`,
+  and greedy decoding, with the inputs on the GPU?
+
+#### Step 3: Run It and Check
 
 ```bash
 sbatch submit_inference.sh batch_agent.py
 ```
 
-When the job finishes, check three things:
-- Is the total tokens per second higher than in Exercise 3?
-- Do the responses still make sense?
-- Does `inference_<JOBID>.err` contain a warning about padding?
+The comparison table should have columns like these:
+
+| Mode | Prompts | Generated tokens | Generation time (s) | Aggregate output tokens/s |
+|------|---------|------------------|---------------------|---------------------------|
+| Sequential | ... | ... | ... | ... |
+| Batched | ... | ... | ... | ... |
+
+When the job finishes, check:
+- Does the output say `Device: cuda` and name the GPU, and does the table show
+  all of your prompts in each mode? A CPU run is not a GPU benchmark.
+- Do the batched responses make sense and answer their prompts?
+- Does `inference_<JOBID>.err` contain a warning about padding? A warning is
+  useful evidence, but no warning doesn't prove the code is right. (A warning
+  that `temperature` or `top_p` "may be ignored" is harmless: greedy decoding
+  doesn't use them.)
 
 If something is wrong, give the agent the warning or the output and ask it to
-fix the script.
+fix that one problem.
 
 **Questions:**
-- Prompts have different lengths, so they are padded to the same length.
-  Which side did the agent pad on? Why does a text generation model need the
-  padding on the left?
-- The shared AI server behind Qwen Code answers the whole class at once. How
-  does batching help it?
-- Type `/stats model` in Qwen Code. How many tokens has your session used?
-  Every request behind those numbers was an inference job like yours.
+- Did batching improve aggregate throughput in this run? Did both modes
+  generate comparable numbers of tokens?
+- Are the two modes' responses identical? If not, why might they differ, even
+  with greedy decoding?
+- What extra GPU memory does a batch need? (The solution below measures each
+  mode's peak.)
+- What does this measurement tell you about the time to finish the whole set
+  of prompts? What doesn't it tell you about how soon each response starts
+  arriving?
+- How does batching help a shared inference service like the one behind
+  Qwen Code?
+- Type `/stats model` in Qwen Code to see how many tokens your session has
+  sent and received. The server reuses cached work for text it has seen
+  before, so this isn't the same as the work the GPU did.
 
-A solution that measures both ways is in
+A solution that measures both modes is in
 `solutions/batch_inference_solution.py`.
 
 ---
 
-### Challenge A: LoRA Hyperparameters
+### Challenge A (Optional): LoRA Hyperparameters
 
-Experiment with different LoRA settings in `finetune_lora.py`:
+Start with a prediction. In `finetune_lora.py`, change `r=8` and
+`lora_alpha=16` to `r=16` and `lora_alpha=32`. Before you submit, predict the
+output's parameter counts: the LoRA adapter parameters, the other trainable
+(classification) parameters, and the total trainable parameters.
 
-- `r=4` (rank 4) vs. `r=16` (rank 16) vs. `r=64` (rank 64)
+Then check your prediction. For this model and these target layers, you should
+see 294,912 adapter parameters, twice as many as before, because `r` sets the
+size of each adapter; the classification layers are unchanged at 592,130; and
+the total is 887,042. `lora_alpha / r` is still 2. Note the training-loop time
+and peak memory as well.
+
+Then try other settings, changing one at a time and noting both `r` and
+`lora_alpha` for each run:
+
+- `r=4` vs. `r=64`
 - `lora_alpha=16` vs. `lora_alpha=32`
-- `num_epochs=1` vs. `num_epochs=3` vs. `num_epochs=5`
+- `NUM_EPOCHS=1` vs. `NUM_EPOCHS=3` vs. `NUM_EPOCHS=5`
 
-How do these affect final accuracy and training time?
+LoRA scales its update by `lora_alpha / r`, so changing `r` alone also changes
+that scale. A few runs are enough to see a pattern.
 
-### Challenge B: LoRA vs. Full Fine-Tuning
+How do these settings affect the final accuracy? Does the training time change
+with the rank? What might explain your result? A different seed could move the
+accuracy by a point or two, so don't read too much into small differences.
+
+### Challenge B (Optional): LoRA vs. Full Fine-Tuning
 
 How much does LoRA actually save? Fine-tune the same model without it:
 
-1. Copy your completed script: `cp finetune_lora.py finetune_full.py`
-2. In `finetune_full.py`, delete the line that wraps the model with
-   `get_peft_model`, so that every weight is trained.
+1. Copy your completed script, with all three blocks enabled and their flags
+   set to `True`: `cp finetune_lora.py finetune_full.py`
+2. In `finetune_full.py`, delete two things: the line
+   `model = get_peft_model(model, lora_config)`, and the check that stops the
+   job when no LoRA parameters are trainable (the `if lora_params == 0:` block).
+   Every weight is then trained.
 3. Submit it: `sbatch submit_finetune.sh finetune_full.py`
 
-Compare the two runs: trainable parameters, peak GPU memory during training,
-training time, and accuracy after fine-tuning. How do both peaks compare with
-the peak memory for inference in Exercise 2?
+In the output, confirm that all 66,955,010 parameters are trainable (100%).
+The count after wrapping now equals the original, because nothing was wrapped.
 
-Then change `LEARNING_RATE` in `finetune_full.py` from `2e-4` to `2e-5` and
-run it again. Why does training *all* of the weights need a smaller learning
-rate than training only the LoRA adapters? (Hint: think about how far each
-update moves the pre-trained weights.)
+Compare the two runs: trainable parameters, peak allocated GPU memory during
+training, training-loop time, and accuracy after fine-tuning.
+
+Exercise 2's peak memory came from a different model (TinyLlama, 1.1 billion
+parameters) with different inputs, so comparing it with these training peaks
+isn't a controlled comparison of inference and training. What differs between
+those runs, besides inference versus training?
+
+Full fine-tuning often uses a smaller learning rate than adapter training.
+Change `LEARNING_RATE` in `finetune_full.py` from `2e-4` to `2e-5` and run it
+again. Does the smaller learning rate improve this run? (Hint: think about how
+far each update moves the pre-trained weights.)
 
 A full fine-tuning solution with the smaller learning rate is in
 `solutions/finetune_full_solution.py`.
@@ -367,19 +765,24 @@ A full fine-tuning solution with the smaller learning rate is in
 | Concept | Description |
 |---------|-------------|
 | **Inference** | Running a trained model on new inputs (forward pass only) |
-| **Training** | Learning weights from scratch on a large dataset |
-| **Fine-tuning** | Adapting a pre-trained model to a specific task |
-| **LoRA** | Parameter-efficient fine-tuning using low-rank adapters |
-| **Tokenizer** | Converts text to/from numerical tokens the model understands |
-| **Temperature** | Controls randomness when sampling: lower is more focused, higher (>1) more random. Must be above 0; for deterministic output, turn sampling off with `do_sample=False` |
+| **Pre-training** | Learning a base model, typically from a large dataset |
+| **Fine-tuning** | Further training a pre-trained model for a specific task |
+| **LoRA** | Parameter-efficient fine-tuning that trains low-rank updates to frozen weights |
+| **Tokenizer** | Converts text to and from the numerical tokens the model understands |
+| **Temperature** | Controls randomness when sampling: lower is more focused, higher (>1) more varied. Must be above 0; for deterministic output, turn sampling off with `do_sample=False` (greedy decoding) |
+| **Batching** | Generating for several prompts in the same steps, to raise total throughput |
 
-| PyTorch / HuggingFace | Purpose |
+| PyTorch / Hugging Face | Purpose |
 |-----------------------|---------|
 | `AutoModelForCausalLM.from_pretrained(name)` | Load a pre-trained text generation model |
 | `AutoTokenizer.from_pretrained(name)` | Load the matching tokenizer |
-| `model.to("cuda")` | Move model to GPU |
-| `model.generate(input_ids, ...)` | Generate text |
-| `get_peft_model(model, lora_config)` | Wrap model with LoRA adapters |
+| `model.to("cuda")` | Move a model to the GPU (`"cuda"` on AMD GPUs too) |
+| `model.train()` / `model.eval()` | Select training or evaluation behavior (such as dropout on or off) |
+| `torch.inference_mode()` | Turn off gradient tracking while evaluating or generating |
+| `optimizer.zero_grad()`, `loss.backward()`, `optimizer.step()` | Clear gradients, compute gradients, update the trainable parameters |
+| `model.generate(**inputs, ...)` | Generate text |
+| `torch.cuda.synchronize()` | Wait for queued GPU work to finish, before reading a timer |
+| `get_peft_model(model, lora_config)` | Wrap a model with LoRA adapters |
 
 ---
 
