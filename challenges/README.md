@@ -6,15 +6,6 @@ modules.
 Challenge activities will be added here as module owners review their sections
 of the curriculum.
 
-## Module 3 - OpenMP Challenges
-
-Starting from the tutorial repository's root directory, navigate to the Module
-3 challenges directory:
-
-```bash
-cd challenges/module-03-openmp-challenges
-```
-
 
 
 ## Module 4: MPI Challenges
