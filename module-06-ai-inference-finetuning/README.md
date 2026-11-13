@@ -497,7 +497,7 @@ model = get_peft_model(model, lora_config)
 | `r=8` | Adapter rank; larger values add trainable parameters |
 | `lora_alpha=16` | Scale the update by `lora_alpha / r`, here 2 |
 | `lora_dropout=0.1` | Randomly zero 10% of adapter-input values on average during training |
-| `target_modules` | Adapt query and value projections in attention: two matrices per layer, 12 total |
+| `target_modules` | Which weight matrices get adapters, by name; here the query (`q_lin`) and value (`v_lin`) matrices in each of the 6 layers' attention, 12 in total |
 | `get_peft_model(...)` | Attach adapters and set trainable parameters, including classification layers for this configuration |
 
 The effective weight is **W + (lora_alpha / r) × B × A**. Here **A** and **B**
@@ -659,13 +659,6 @@ Count only actual generated tokens, excluding prompt tokens and padding after a 
 Preserve the existing shared environment, local model cache, and Slurm workflow.
 ```
 
-**Batching reference.** For this decoder-only workflow, use **left padding**
-and pass the attention mask. Slice off the **full padded input width** before
-decoding continuations. Count each response through its first end-of-sequence
-token if present, excluding later padding, using `count_generated_tokens()`.
-Greedy outputs can still differ because batch shapes can change floating-point
-rounding and occasionally change which token has the highest score.
-
 #### Step 2: Review Before You Approve
 
 If the agent shows only part of the change, press `Ctrl+S` to see all of it.
@@ -723,6 +716,19 @@ fix that one problem.
 - Type `/stats model` in Qwen Code to see how many tokens your session has
   sent and received. The server reuses cached work for text it has seen
   before, so this isn't the same as the work the GPU did.
+
+**How batching should work.** The prompts have different lengths, so a batch
+pads the shorter ones to the length of the longest. A decoder-only model like
+TinyLlama continues from the end of its input, so the padding belongs on the
+left, where it doesn't sit between a prompt and its continuation, and the
+attention mask tells the model which positions are padding. With left padding,
+every continuation starts at the same position, the full padded input width,
+so slicing there separates each continuation from its prompt.
+`count_generated_tokens()` counts each response through its first
+end-of-sequence token, so padding added after a response finishes isn't
+counted. Even with greedy decoding, the two modes can give slightly different
+responses: a batch changes the shapes of the calculations, which can change
+floating-point rounding and occasionally which token scores highest.
 
 A solution that measures both modes is in
 `solutions/batch_inference_solution.py`.
