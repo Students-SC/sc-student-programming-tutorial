@@ -324,17 +324,20 @@ def reference_m5(run):
     copy(REFERENCE / "sweep.sh", run.workdir / "sweep.sh")
 
 
-# --- Module 6: batched generation, checked for the padding bug --------------
+# --- Module 6: per-prompt token statistics, checked against their summary ---
 def setup_m6(run):
     sol = run.workdir / "solutions" / "run_inference_solution.py"
     copy(sol, run.workdir / "run_inference.py")
-    copy(sol, run.workdir / "batch_agent.py")
+    source = sol.read_text()
+    source = source.replace("NUM_PROMPTS = 2", "NUM_PROMPTS = len(PROMPTS)")
+    source = source.replace("max_new_tokens = 64", "max_new_tokens = 128")
+    (run.workdir / "token_stats_agent.py").write_text(source)
 
 
 def check_m6(run, args):
-    src = (run.workdir / "batch_agent.py").read_text()
+    src = (run.workdir / "token_stats_agent.py").read_text()
     rc, out, err = sh(["sbatch", "--wait", f"--partition={args.partition}",
-                       "submit_inference.sh", "batch_agent.py"],
+                       "submit_inference.sh", "token_stats_agent.py"],
                       run.workdir, run.env, 1800)
     m = re.search(r"Submitted batch job (\d+)", out)
     if not m:
@@ -342,20 +345,43 @@ def check_m6(run, args):
     job = m.group(1)
     job_out = (run.workdir / f"inference_{job}.out").read_text(errors="replace")
     job_err = (run.workdir / f"inference_{job}.err").read_text(errors="replace")
-    tok_s = [x for line in job_out.splitlines() if "tok/s" in line
-             for x in floats(line.split("tok/s")[0][-12:])]
+
+    counts = [
+        int(match.group(1))
+        for match in re.finditer(r"Generated tokens:\s*(\d+)", job_out, re.I)
+    ]
+    summaries = list(re.finditer(
+        r"Token statistics:\s*min=(\d+),\s*max=(\d+),\s*"
+        r"average=([\d.]+),\s*total=(\d+)",
+        job_out, re.I,
+    ))
+    arithmetic_ok = (len(counts) == 15 and len(summaries) == 3
+                     and all(1 <= count <= 128 for count in counts))
+    if arithmetic_ok:
+        for i, summary in enumerate(summaries):
+            group = counts[5 * i:5 * i + 5]
+            minimum, maximum, average, total = summary.groups()
+            arithmetic_ok = arithmetic_ok and (
+                int(minimum) == min(group)
+                and int(maximum) == max(group)
+                and int(total) == sum(group)
+                and abs(float(average) - sum(group) / len(group)) < 0.06
+            )
+
     notes = {"job": job, "exit": rc, "traceback": "Traceback" in job_err,
-             "padding_warning": "right-padding was detected" in job_err,
-             "left_padding": bool(re.search(r"padding_side\s*=\s*['\"]left", src)),
-             "single_generate": len(re.findall(r"\.generate\(", src)) == 1,
-             "max_tok_s": max(tok_s) if tok_s else None}
-    passed = rc == 0 and not notes["traceback"] and not notes["padding_warning"]
+             "per_prompt_counts": len(counts), "summaries": len(summaries),
+             "arithmetic_ok": arithmetic_ok,
+             "reused_counter": (src.count("count_generated_tokens(") >= 2
+                                and "tokenizer.encode" not in src),
+             "single_generate_call": len(re.findall(r"\.generate\(", src)) == 1}
+    passed = (rc == 0 and not notes["traceback"] and arithmetic_ok
+              and notes["reused_counter"] and notes["single_generate_call"])
     return passed, notes
 
 
 def reference_m6(run):
-    copy(run.workdir / "solutions" / "batch_inference_solution.py",
-         run.workdir / "batch_agent.py")
+    copy(run.workdir / "solutions" / "token_stats_solution.py",
+         run.workdir / "token_stats_agent.py")
 
 
 TASKS = {t.name: t for t in [
@@ -387,12 +413,17 @@ TASKS = {t.name: t for t in [
          "and status.",
          files=["sweep.sh"], read=["vector_scale.cpp"],
          setup=setup_m5, reference=reference_m5, check=check_m5),
-    Task("m6-batch", "module-06-ai-inference-finetuning/exercises", "code",
-         "Change batch_agent.py so it generates the responses for all prompts "
-         "at each temperature in a single model.generate() call, and prints "
-         "the total tokens per second.",
-         files=["batch_agent.py"], setup=setup_m6, reference=reference_m6,
-         check=check_m6),
+    Task("m6-token-stats", "module-06-ai-inference-finetuning/exercises", "code",
+         "Update token_stats_agent.py to report the actual generated-token "
+         "count for each prompt. Reuse the existing "
+         "count_generated_tokens() result; do not tokenize the decoded "
+         "response again. For each temperature, print each count as "
+         "`Generated tokens: N`, then print `Token statistics: min=N, max=N, "
+         "average=N.N, total=N`. Preserve the throughput measurement and do "
+         "not change model.generate(), the prompts, temperatures, or maximum "
+         "token limit.",
+         files=["token_stats_agent.py"], setup=setup_m6,
+         reference=reference_m6, check=check_m6),
 ]}
 
 
