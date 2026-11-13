@@ -34,9 +34,11 @@ kernels, which reduces the transfer overhead. You'll measure this in
 Exercise 1.
 
 CPU:
+
 ![topology of a 16 core CPU](/_static/lstopooutput.png)
 
 GPU:
+
 ![topology of a A100 GPU](/_static/gpudiagram.png)
 
 However, a GPU cannot do more specialized tasks like managing IO, network communication[^1], interacting
@@ -87,25 +89,30 @@ threads.
 
 #### Memory and Memory Bandwidth
 
-A GPU obviously needs to operate on some data, and this data needs to live somewhere. Every computer
-has RAM, but that is too far away and would be too slow to access by the GPU. So a GPU usually comes with with
-its own RAM that is close to the chip. Because usually GPUs are meant for high throughput computing, it is useful for the GPUs
-RAM to be large enough to store a large amount of data to avoid having to reach out to the CPU
-memory frequently. And also because computational parts of GPUs are able to churn through a large amount of data 
-quickly, the GPU should not be bottlenecked by how much data can be read from the GPU memory at a
-time, so the GPU memory should be high bandwidth so that large amounts of data at a time can be read
-from the memory.
+A GPU obviously needs to operate on some data, and this data needs to live
+somewhere. Every computer has RAM, but that is too far away and would be too
+slow to access by the GPU. So a GPU usually comes with with its own RAM that is
+close to the chip. Because usually GPUs are meant for high throughput
+computing, it is useful for the GPUs RAM to be large enough to store a large
+amount of data to avoid having to reach out to the CPU memory frequently. And
+also because computational parts of GPUs are able to churn through a large
+amount of data quickly, the GPU should not be bottlenecked by how much data can
+be read from the GPU memory at a time, so the GPU memory should be high
+bandwidth so that large amounts of data at a time can be read from the memory.
 
 
 #### Architecture
 
-Architecture refers to the overall design of the GPU. The individual decisions and compromises that are made to
-allow the GPU to do what it does efficiently, including things like number of cores and compute
-units in a GPU, what specialized cores are included, how much memory and bandwidth it has, etc. Architectures are always iterated on and improved
-between different generations of GPUs, based on the lessons learned in previous generations and to
-move with the times of how GPUs are being used. For example, matrix cores (or tensor cores on Nvidia
-GPUs) are prevalent now in datacenter GPUs as it became clear hardware support for matrix
-multiplications is useful for machine learning workloads.
+Architecture refers to the overall design of the GPU. The individual decisions
+and compromises that are made to allow the GPU to do what it does efficiently,
+including things like number of cores and compute units in a GPU, what
+specialized cores are included, how much memory and bandwidth it has, etc.
+Architectures are always iterated on and improved between different generations
+of GPUs, based on the lessons learned in previous generations and to move with
+the times of how GPUs are being used. For example, matrix cores (or tensor
+cores on Nvidia GPUs) are prevalent now in datacenter GPUs as it became clear
+hardware support for matrix multiplications is useful for machine learning
+workloads.
 
 ### HIP: Portable GPU Programming
 
@@ -351,7 +358,8 @@ you'll measure today:
 1. **Give the GPU enough work.** The MI210 has 104 compute units. A kernel
    needs enough blocks and active wavefronts to keep the GPU busy. For
    example, 4,096 threads arranged as 16 blocks of 256 can use at most 16
-   compute units at once. Actual utilization also depends on the kernel's
+   compute units at once (each block being assigned to a single compute unit) with
+   plenty more compute unites to go around. Actual utilization also depends on the kernel's
    resource requirements and behavior.
 2. **Let neighboring threads read neighboring memory.** When the threads of a
    wavefront read consecutive addresses, the GPU combines their reads into a
@@ -393,10 +401,6 @@ The programs in this module measure performance the same way:
 
 ## Hands-On Exercises (~40 min)
 
-Suggested pacing: about 7 minutes for Exercise 1, 15 minutes for Exercise 2,
-and 8 minutes for Exercise 3. The Agent Practice takes about 15 to 20 minutes;
-if you are short on time, stop after its Step 5. The challenge at the end is
-an optional extension.
 
 The compiler (`hipcc`) and tools are already set up on the cluster. If
 `hipcc --version` doesn't work, run the environment check from
