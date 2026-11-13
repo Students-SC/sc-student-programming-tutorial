@@ -25,8 +25,8 @@ By the end of this module, you will be able to:
 | Agent Practice | 15 min | Add batching, review the change, and measure throughput |
 
 The lecture covers concepts only. Code explanations appear beside the exercises
-as lookup references, rather than additional lecture material. The CPU comparison
-and Challenges A and B are optional extensions outside the planned 60 minutes.
+as lookup references, rather than additional lecture material. Challenges A
+and B are optional extensions outside the planned 60 minutes.
 Hands-on timings include editing, submission, and output review; queue delays and
 agent response times can affect the pace.
 
@@ -184,7 +184,7 @@ memory or training time.**
 
 Suggested pacing: about 5 minutes for Exercises 1 and 2, 8 minutes for
 Exercise 3, 12 minutes for Exercise 4, and 15 minutes for the Agent Practice.
-Exercise 3's CPU baseline and the challenges are optional.
+The challenges are optional.
 
 First, navigate to the exercises directory for this module:
 
@@ -261,11 +261,10 @@ GPU work runs in the background, so the script calls
 timer covers all of the generation. It counts each response's tokens up to and
 including the token that ends the response.
 
-##### Generating Text with Hugging Face
+##### Understanding the Code: Generating Text with Hugging Face
 
-**Code reference for Exercises 2 and 3.** The scripts already perform these
-steps; no additional edits are needed here. The model is
-`TinyLlama/TinyLlama-1.1B-Chat-v1.0`.
+The scripts already perform these steps; no additional edits are needed here.
+The model is `TinyLlama/TinyLlama-1.1B-Chat-v1.0`.
 
 | Call or value | What to recognize in the script |
 |---|---|
@@ -356,15 +355,15 @@ or an existing VS Code Remote SSH connection.
 #### Step 2: Change the Settings
 
 The script runs as it is; its settings are working values for you to change
-(see [Generating Text with Hugging Face](#generating-text-with-hugging-face)).
-There are **3 TODOs**, plus an optional fourth:
+(see [Generating Text with Hugging Face](#understanding-the-code-generating-text-with-hugging-face)).
+The script already runs on the GPU (`device = "cuda"`). There are **2 TODOs**,
+plus an optional third:
 
-1. **TODO 1**: Choose the device: change `"cpu"` to `"cuda"`.
-2. **TODO 2**: Choose the response-length limit: change `max_new_tokens` to
+1. **TODO 1**: Choose the response-length limit: change `max_new_tokens` to
    `64`. Longer limits take more time and can need more memory.
-3. **TODO 3**: Choose the temperatures to compare: change `temperatures` to
+2. **TODO 2**: Choose the temperatures to compare: change `temperatures` to
    `[0.1, 0.7, 1.5]`.
-4. **TODO 4** (optional): Add your own prompts to `PROMPTS`, and raise
+3. **TODO 3** (optional): Add your own prompts to `PROMPTS`, and raise
    `NUM_PROMPTS` to include them.
 
 The script uses the first `NUM_PROMPTS` of the prompts in `PROMPTS`. Here it
@@ -392,23 +391,6 @@ A lower temperature doesn't make an answer more correct, and a model this
 small can give weak answers at every temperature.
 
 **Question:** Which temperature gives the most useful answers to your prompts?
-
-#### Step 5 (Optional): Compare with the CPU
-
-Change the device back to `"cpu"`, leave the other settings as they are, and
-submit the script again:
-
-```bash
-sbatch submit_inference.sh run_inference.py
-```
-
-This job takes a minute or two. Both runs used the same settings and prompts,
-but because the model samples, they generate different text and possibly
-different numbers of tokens. Compare the two runs' `All temperatures` lines:
-the number of tokens each generated, and the tokens per second. How many
-times faster is the GPU?
-
-Then change the device back to `"cuda"` for the Agent Practice.
 
 ---
 
@@ -641,9 +623,8 @@ job's warnings.
 
 #### Step 1: Ask for the Change
 
-If you ran the optional CPU comparison in Exercise 3, first change the device
-in `run_inference.py` back to `"cuda"`. Then copy your script, switch the copy
-to all of the prompts, and check both settings:
+Copy your script from Exercise 3, switch the copy to all of the prompts, and
+check both settings:
 
 ```bash
 cp run_inference.py batch_agent.py

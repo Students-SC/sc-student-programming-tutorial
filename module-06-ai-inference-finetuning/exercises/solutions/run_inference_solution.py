@@ -92,13 +92,13 @@ def main():
     print("  LLM Inference Exercise -- Solution")
     print("=" * 60)
 
-    # TODO 1: SOLVED
+    # PyTorch built for AMD GPUs (ROCm) still calls the GPU "cuda".
     device = "cuda"
 
-    # TODO 2: SOLVED
+    # TODO 1: SOLVED
     max_new_tokens = 64
 
-    # TODO 3: SOLVED
+    # TODO 2: SOLVED
     temperatures = [0.1, 0.7, 1.5]
 
     prompts = PROMPTS[:NUM_PROMPTS]
