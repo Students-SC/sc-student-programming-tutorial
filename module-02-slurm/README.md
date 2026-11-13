@@ -39,7 +39,7 @@ most widely used scheduler in HPC.
 | `sbatch script.sh` | Submit a batch job | `sbatch my_job.sh` |
 | `squeue` | View the job queue | `squeue -u $USER` |
 | `scancel <jobid>` | Cancel a job | `scancel 12345` |
-| `srun <command>` | Run a command on a compute node | `srun --partition=mi2101x --nodes=1 --time=1:00 hostname` |
+| `srun <command>` | Run a command on a compute node | `srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=1:00 hostname` |
 | `sinfo` | View partition/node status | `sinfo -p mi2101x` |
 | `scontrol show job <id>` | Detailed info about a job | `scontrol show job 12345` |
 | `sacct -j <id>` | Accounting info after completion | `sacct -j 12345` |
@@ -52,7 +52,9 @@ A batch script is a regular shell script with special `#SBATCH` comment lines ca
 ```bash
 #!/bin/bash
 #SBATCH --job-name=my-job          # Name shown in squeue
-#SBATCH --partition=mi2101x        # Which partition (group of nodes)
+#SBATCH --partition=batch       # Which partition (group of nodes)
+#SBATCH -A TRN001              # Slurm "Account" your user account belongs to
+#SBATCH --reservation sc26studentprogram # Provides a way to get exclusive access to a set of nodes within a time window
 #SBATCH --nodes=1                  # Number of nodes
 #SBATCH --ntasks=1                 # Number of tasks (processes)
 #SBATCH --time=5:00                # Max wall time (MM:SS or HH:MM:SS)
@@ -146,7 +148,7 @@ You should see your job in `PENDING` or `RUNNING` state. Try these while it runs
 ```bash
 squeue -u $USER                     # Your jobs
 scontrol show job <JOBID>           # Detailed job info
-squeue -p mi2101x                   # All jobs on our partition
+squeue -p batch                   # All jobs on our partition
 ```
 
 Slurm is part of day-to-day work on an HPC cluster, so it's worth learning how
@@ -270,14 +272,14 @@ script. Useful for quick tests.
 #### Step 1: Run a Command
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 hostname
+srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=1 hostname
 ```
 
 #### Step 2: Try More Commands
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 lscpu | grep "Model name"
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo | grep -E "Marketing Name|Device Type"
+srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=1 lscpu | grep "Model name"
+srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=1 rocminfo | grep -E "Marketing Name|Device Type"
 ```
 
 On the login node, the same `rocminfo` command lists two CPUs and two GPUs.
@@ -336,10 +338,10 @@ let the agent edit files, but only after you approve each change.
 
 #### Step 1: Give the Agent the Spec
 
-Start Qwen Code from this directory:
+Start Aider from this directory:
 
 ```bash
-bash ../../setup/launch_qwen.sh
+bash ../../setup/launch_aider.sh
 ```
 
 Ask it:
@@ -413,14 +415,14 @@ Experiment with different Slurm directives and observe their effect:
 
 ```bash
 # Request multiple tasks (for MPI later)
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 hostname
+srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=4 hostname
 
 # Request multiple CPUs per task (for OpenMP later)
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=8 \
+srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=8 \
   bash -c 'echo "I have $SLURM_CPUS_PER_TASK CPUs"'
 
 # Check the GPU on the node (every mi2101x node has an MI210)
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 \
+srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=1 \
   bash -c 'echo "GPU node: $(hostname)"; rocm-smi --showproductname 2>/dev/null | head -10'
 ```
 
@@ -439,7 +441,7 @@ times does `hostname` print?
 | Get details on a job | `scontrol show job <JOBID>` |
 | Cancel a job | `scancel <JOBID>` |
 | Cancel all my jobs | `scancel -u $USER` |
-| Run a quick command on a node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 <cmd>` |
+| Run a quick command on a node | `srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=1 <cmd>` |
 | See node availability | `sinfo -p mi2101x` |
 
 ---
