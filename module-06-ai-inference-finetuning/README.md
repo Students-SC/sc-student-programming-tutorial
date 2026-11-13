@@ -397,11 +397,8 @@ small can give weak answers at every temperature.
 ### Exercise 4: Fine-Tune a Model with LoRA
 
 Now let's adapt a pre-trained model to a new task. We'll fine-tune a text
-classification model (DistilBERT) on the IMDB sentiment dataset using LoRA.
-This exercise uses the calls explained in
-[What a Training Batch Contains](#what-a-training-batch-contains),
-[One Training Step](#one-training-step), and
-[Configuring LoRA](#configuring-lora).
+classification model (DistilBERT) on the IMDB sentiment dataset using LoRA. The
+code is already written; your task is to read and enable the three main parts.
 
 #### Step 1: Open the Fine-Tuning Script
 
@@ -413,166 +410,29 @@ vim finetune_lora.py
 
 #### Step 2: Read and Enable the Three Code Blocks
 
-The code for each task is already written, but commented out between a
-`BEGIN` and an `END` marker line. Read each block and be ready to explain it.
-Then enable it by deleting exactly the first `#` of each line between the
-markers, which keeps the indentation as it is. Lines that are still comments
-afterward are explanations. For example, before:
+Each TODO is a commented block between `BEGIN` and `END` markers. Read the
+block, then remove exactly the first `#` from every line inside it. This keeps
+the code's indentation and leaves its explanatory comments as comments. Leave
+the marker lines unchanged.
 
-```python
-    # ----- BEGIN TODO 3 -----
-#    post_accuracy = evaluate(model, eval_loader, device)
-#    print(f"\nAccuracy after fine-tuning: {post_accuracy:.1%}")
-#    print(f"Change: {post_accuracy - pre_accuracy:+.1%}")
-    # ----- END TODO 3 -----
-```
-
-and after:
-
-```python
-    # ----- BEGIN TODO 3 -----
-    post_accuracy = evaluate(model, eval_loader, device)
-    print(f"\nAccuracy after fine-tuning: {post_accuracy:.1%}")
-    print(f"Change: {post_accuracy - pre_accuracy:+.1%}")
-    # ----- END TODO 3 -----
-```
-
-The three blocks are:
-
-1. **TODO 1**: The LoRA configuration. Be ready to explain `r` and
-   `target_modules`.
-2. **TODO 2**: The training step for one batch.
-3. **TODO 3**: The evaluation after fine-tuning. The `evaluate()` function is
-   defined at the top of the file; you don't need to write it.
-
-After you enable a block, set its flag at the top of the file to `True`:
-`LORA_CONFIG_READY`, `TRAINING_STEP_READY`, and `EVALUATION_READY`. While any
-flag is still `False`, the job stops right away and names the unfinished
-task. The flags are reminders that you finished, not tests of your code. (The
-script does stop if no LoRA parameters are trainable, which means TODO 1
-isn't enabled.)
-
-> **Tip**
->
-> In Vim, you can delete the first character of many lines at once. Put the
-> cursor on the first `#` after a `BEGIN` line, press `Ctrl+V` (or `Ctrl+Q` if
-> your terminal pastes instead), press `j` to extend the selection down to the
-> line before `END`, then press `x`.
-
-##### What a Training Batch Contains
-
-**Code reference for the three TODO blocks.** The base checkpoint is
-`distilbert-base-uncased`. For **B reviews** and **L token positions** after
-truncation and padding:
-
-| Value | Shape | Meaning |
+| TODO | What it enables | What to notice |
 |---|---|---|
-| `input_ids` | `B × L` | Token IDs, including padding |
-| `attention_mask` | `B × L` | 1 for real tokens, 0 for padding |
-| `labels` | `B` | Dataset targets: 0 negative, 1 positive |
-| `outputs.logits` | `B × 2` | Negative and positive scores per review |
-| `outputs.loss` | Scalar | Cross-entropy loss averaged over the reviews |
+| **1: LoRA configuration** | Adds trainable adapters to the model | `r` is the adapter rank; `target_modules` selects the attention matrices to adapt. |
+| **2: Training step** | Performs one parameter update for each batch | `backward()` computes gradients; `optimizer.step()` updates the trainable parameters. |
+| **3: Evaluation** | Measures accuracy after fine-tuning | Evaluation makes predictions without updating parameters. |
 
-The tokenizer supplies IDs and masks; the dataset supplies labels. Padding
-makes the batch rectangular, and the mask prevents attention to padding.
-
-##### Configuring LoRA
-
-TODO 1 attaches the adapters:
-
-```python
-lora_config = LoraConfig(
-    task_type=TaskType.SEQ_CLS,
-    r=8,
-    lora_alpha=16,
-    lora_dropout=0.1,
-    target_modules=["q_lin", "v_lin"],
-)
-model = get_peft_model(model, lora_config)
-```
-
-| Setting | Meaning |
-|---|---|
-| `TaskType.SEQ_CLS` | One classification per input sequence |
-| `r=8` | Adapter rank; larger values add trainable parameters |
-| `lora_alpha=16` | Scale the update by `lora_alpha / r`, here 2 |
-| `lora_dropout=0.1` | Randomly zero 10% of adapter-input values on average during training |
-| `target_modules` | Which weight matrices get adapters, by name; here the query (`q_lin`) and value (`v_lin`) matrices in each of the 6 layers' attention, 12 in total |
-| `get_peft_model(...)` | Attach adapters and set trainable parameters, including classification layers for this configuration |
-
-The effective weight is **W + (lora_alpha / r) × B × A**. Here **A** and **B**
-are the two adapter matrices, not the batch-size symbol above.
-
-| Parameter count | This configuration |
-|---|---:|
-| Original model | 66,955,010 |
-| Trainable LoRA adapters | 147,456 |
-| Trainable classification layers | 592,130 |
-| Total trainable | 739,586 |
-| Total after wrapping | 67,694,596 |
-
-PEFT retains frozen originals of the classification layers alongside trainable
-copies. Including those copies and the adapters increases the total parameter
-count; the trainable share is **1.09% of the wrapped model**.
-
-##### One Training Step
-
-TODO 2 performs one update per batch:
-
-```python
-optimizer.zero_grad()  # Clear previous gradients.
-outputs = model(
-    input_ids=input_ids,
-    attention_mask=attention_mask,
-    labels=labels,
-)
-loss = outputs.loss
-loss.backward()        # Compute gradients; no parameter update yet.
-optimizer.step()      # Update trainable parameters using AdamW.
-```
-
-Labels are used to calculate loss, not as clues to the prediction layers.
-PyTorch accumulates gradients unless cleared. This optimizer includes only
-parameters with `requires_grad=True`: the adapters and classification layers.
-AdamW maintains running gradient and squared-gradient averages as optimizer state.
-
-TODO 3 calls `evaluate()`, which obtains logits without passing labels to the
-model, then compares predictions with the labels:
-
-```python
-predicted_labels = outputs.logits.argmax(dim=-1)
-correct = (predicted_labels == labels).sum().item()
-```
-
-Logits are scores, not probabilities. `argmax` chooses the higher-scoring class.
-Evaluation totals correct predictions and divides by the number of reviews
-to report accuracy; it does not update parameters.
-
-##### Training and Evaluation Modes
-
-| Call | Effect |
-|---|---|
-| `model.train()` | Enable training behavior, including dropout |
-| `model.eval()` | Disable dropout; does not disable gradient tracking |
-| `torch.inference_mode()` | Disable gradient tracking and extra bookkeeping; does not change the model's train/eval setting |
-
-Dropout randomly zeroes some intermediate values during training to discourage
-overreliance on particular features. The script calls `model.train()` before
-each epoch; `evaluate()` uses `model.eval()` inside `torch.inference_mode()`.
-These mode controls do not themselves update parameters. They are already
-implemented in the script.
+After enabling each block, set its matching flag at the top of the file to
+`True`: `LORA_CONFIG_READY`, `TRAINING_STEP_READY`, and `EVALUATION_READY`.
+The job stops and names any task whose flag is still `False`.
 
 #### Step 3: Predict, Then Submit
 
 Before you submit, answer:
-- Which call computes the gradients, and which call changes the weights?
-- Does adding LoRA change the total number of parameters, the number of
-  trainable parameters, or both?
-- Why does the training call include the labels? How does `evaluate()` use
-  them differently?
-
-For discussion, or if you finish early: which parameters does the optimizer
-update?
+- Which parameters will LoRA train?
+- Which call computes the gradients, and which call changes the trainable
+  parameters?
+- Why does training pass labels to the model, while evaluation compares the
+  model's predictions with the labels afterward?
 
 ```bash
 sbatch submit_finetune.sh
@@ -593,23 +453,13 @@ cat finetune_<JOBID>.out
 > exercise.
 
 Compare the output with your predictions:
-- The parameter counts: the original model, the model after wrapping with
-  LoRA, the trainable parameters (and the percentage of the wrapped model),
-  and how many of those are LoRA adapters and how many are other layers.
-- The training loss in each epoch.
-- The accuracy before and after fine-tuning, and the majority-class baseline
-  (always guessing the more common label). The new classification layers start
-  with random weights, so the starting accuracy is close to a guess, but not
-  exactly 50%. A small run like this one doesn't always improve by the same
-  amount.
-- The peak allocated GPU memory during training. Training stores gradients and
-  optimizer state for the trained parameters, and intermediate results for the
-  whole model. Which of those does LoRA shrink?
-
-The script fixes its random seed, so on the same setup a rerun selects the
-same data and starts from the same weights. The results can still differ
-slightly between runs, because GPU calculations don't always add up numbers
-in the same order.
+- How many parameters are trainable compared with the full model? How many
+  belong to the LoRA adapters versus other trainable layers?
+- Does the training loss decrease over the three epochs?
+- How does the final accuracy compare with the starting accuracy and the
+  majority-class baseline?
+- What was the peak allocated GPU memory? Which training memory components
+  does LoRA reduce?
 
 ---
 
