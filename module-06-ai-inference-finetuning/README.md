@@ -261,11 +261,10 @@ GPU work runs in the background, so the script calls
 timer covers all of the generation. It counts each response's tokens up to and
 including the token that ends the response.
 
-##### Generating Text with Hugging Face
+##### Understanding the Code: Generating Text with Hugging Face
 
-**Code reference for Exercises 2 and 3.** The scripts already perform these
-steps; no additional edits are needed here. The model is
-`TinyLlama/TinyLlama-1.1B-Chat-v1.0`.
+The scripts already perform these steps; no additional edits are needed here.
+The model is `TinyLlama/TinyLlama-1.1B-Chat-v1.0`.
 
 | Call or value | What to recognize in the script |
 |---|---|
