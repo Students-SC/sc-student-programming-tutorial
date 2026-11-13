@@ -72,19 +72,19 @@ See [Module 2](module-02-slurm/README.md) for the Slurm walkthrough.
 
 | I want to... | Command |
 |--------------|---------|
-| Run `hostname` on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 hostname` |
-| Check CPU model on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 lscpu \| grep "Model name"` |
-| List the CPUs and GPUs on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 rocminfo \| grep -E "Marketing Name\|Device Type"` |
-| Run a program on one compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./program` |
-| Run with 4 MPI ranks | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program` |
-| Run with 16 CPU cores for one task | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 ./program` |
+| Run `hostname` on a compute node | `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 hostname` |
+| Check CPU model on a compute node | `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 lscpu \| grep "Model name"` |
+| List the CPUs and GPUs on a compute node | `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 rocminfo \| grep -E "Marketing Name\|Device Type"` |
+| Run a program on one compute node | `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 ./program` |
+| Run with 4 MPI ranks | `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=4 ./program` |
+| Run with 16 CPU cores for one task | `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 ./program` |
 
 ## Slurm Script Directives
 
 | Directive | Meaning |
 |-----------|---------|
 | `#SBATCH --job-name=name` | Name shown in the Slurm queue |
-| `#SBATCH --partition=mi2101x` | Use the tutorial partition |
+| `#SBATCH -A TRN001 --reservation=sc26studentprogram --partition=batch` | Use the tutorial partition |
 | `#SBATCH --nodes=1` | Request one node |
 | `#SBATCH --ntasks=1` | Request one task or MPI rank |
 | `#SBATCH --cpus-per-task=16` | Request CPU cores for one task |
@@ -110,7 +110,7 @@ See [Module 2](module-02-slurm/README.md) for the Slurm walkthrough.
 | Compile a C program that uses math functions | `gcc -O2 -o program program.c -lm` |
 | Compile an OpenMP program | `gcc -fopenmp -O2 -o program program.c -lm` |
 | Set the OpenMP thread count | `export OMP_NUM_THREADS=4` |
-| Run OpenMP with 4 threads through Slurm | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 bash -c 'export OMP_NUM_THREADS=4; ./program'` |
+| Run OpenMP with 4 threads through Slurm | `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 bash -c 'export OMP_NUM_THREADS=4; ./program'` |
 
 Useful OpenMP snippets from [Module 3](module-03-openmp/README.md):
 
@@ -129,8 +129,8 @@ Useful OpenMP snippets from [Module 3](module-03-openmp/README.md):
 |--------------|---------|
 | Compile an MPI C program | `mpicc -O2 -o program program.c` |
 | Compile an MPI C program using math functions | `mpicc -O2 -o program program.c -lm` |
-| Run with 4 ranks | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program` |
-| Run with 16 ranks | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=16 ./program` |
+| Run with 4 ranks | `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=4 ./program` |
+| Run with 16 ranks | `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=16 ./program` |
 
 Useful MPI calls from [Module 4](module-04-mpi/README.md):
 
@@ -156,7 +156,7 @@ Useful MPI calls from [Module 4](module-04-mpi/README.md):
 | Show GPU memory usage | `rocm-smi --showmeminfo vram` |
 | Compile a HIP program | `hipcc -O2 -o program program.cpp` |
 | Compile with a block-size macro | `hipcc -O2 -DBLOCK_SIZE=256 -o program program.cpp` |
-| Run a HIP program on a compute node | `srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./program` |
+| Run a HIP program on a compute node | `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 ./program` |
 
 Useful HIP calls and syntax from [Module 5](module-05-hip/README.md):
 
