@@ -7,7 +7,7 @@
 # Module 2 explains what each line of this script does.
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=check-gpu
-#SBATCH --partition=batch
+#SBATCH -A TRN001 --partition=batch  --reservation=sc26studentprogram
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=2:00

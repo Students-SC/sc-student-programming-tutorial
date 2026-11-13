@@ -34,13 +34,11 @@ parallel programs that run on GPUs and training AI models -- all on a real HPC c
 
 ### 1. Connect to the Cluster
 
-You will receive login credentials for the
-[AMD University Program (AUP) AI & HPC Cluster](https://amdresearch.github.io/hpcfund/index.html).
-Connect via SSH:
+You will receive an RSA token from one of the people distributing tokens. Make sure that you return
+the token when you leave.
 
-```bash
-ssh <your-username>@hpcfund.amd.com
-```
+Once you have the token, ssh to `ssh csepXY@frontier.olcf.ornl.gov` where XY is replaced by the 2-3
+digit number assigned to your token. 
 
 ### 2. Clone This Repository
 
@@ -93,13 +91,13 @@ how this works.
 
 | Resource | Details |
 |----------|---------|
-| CPU | AMD EPYC 7V13 (16 cores per virtual node) |
-| GPU | 8x AMD Instinct MI250X (64 GB HBM2e) per  node |
-| RAM | 64 GB system DRAM per virtual node |
+| CPU | AMD EPYC 7A53 64-Core Processor |
+| GPU | 8x AMD Instinct MI250X (64 GB HBM2e each) per node |
+| RAM | 512 GB system DRAM per node |
 | Partition | `batch` |
 | Scheduler | Slurm |
 | Compiler | GCC 12.2, `hipcc` (ROCm 7.2) |
-| MPI | OpenMPI 4.1.8 |
+| MPI | Cray MPICH 9.1.0 |
 
 > **Important**
 >
@@ -122,19 +120,17 @@ yourself, you hand a related task to the agent, predict what should happen,
 and check its work with the same tests you used on your own code. Agents
 make mistakes; the point is to catch them.
 
-### The tutorial agent: Qwen Code + a self-hosted coding model
+### The tutorial agent: Aider + OLCF Inference Service 
 
 We provide a CLI coding agent for you to use throughout the day -- no accounts,
-no API keys, no cost. It's [Qwen Code](https://github.com/QwenLM/qwen-code), an
-open-source coding agent, pointed at **Qwen3-Coder-30B-A3B-Instruct**, served on
-a dedicated MI300X compute node by your instructors. Exercises that say *"ask
+no API keys, no cost. It's Aider pointed at the OLCF Inference service. Exercises that say *"ask
 your AI agent..."* refer to this tool.
 
 It's preinstalled for everyone. Start it in the directory you are working in:
 
 ```bash
 cd ~/sc-student-programming-tutorial
-bash setup/launch_qwen.sh
+bash setup/launch_aider.sh
 ```
 
 Type requests in plain English. Unlike a chatbot, Qwen Code reads and searches
@@ -151,7 +147,7 @@ tutorial, which you add to starting in Module 1. It has three modes; press
 | **Auto-edit** | Edit files without asking; still asks before every command | Module 7's capstone, if you want fewer interruptions |
 
 To start a read-only session, pass `--approval-mode plan`:
-`bash setup/launch_qwen.sh --approval-mode plan`.
+`bash setup/launch_aider.sh --approval-mode plan`.
 
 Read everything before you approve it. Approve an edit only if you understand
 the change, and a command only if you would run it yourself. In particular,
