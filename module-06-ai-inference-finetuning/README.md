@@ -10,7 +10,7 @@ By the end of this module, you will be able to:
 - Run inference with a pre-trained language model on the MI210 GPU and measure its throughput
 - Fine-tune a text classification model using LoRA (parameter-efficient fine-tuning)
 - Reason about GPU memory usage during inference and training
-- Check an agent's change with measurements and the job's warnings
+- Check an agent's change using the program's output and simple calculations
 
 ---
 
@@ -22,7 +22,7 @@ By the end of this module, you will be able to:
 | Exercises 1 and 2 | 5 min | Check the environment and run the inference example |
 | Exercise 3 | 8 min | Change inference settings and compare results |
 | Exercise 4 | 12 min | Enable LoRA fine-tuning and examine the results |
-| Agent Practice | 15 min | Add batching, review the change, and measure throughput |
+| Agent Practice | 15 min | Add per-prompt token statistics and check the calculations |
 
 The lecture covers concepts only. Code explanations appear beside the exercises
 as lookup references, rather than additional lecture material. Challenges A
@@ -150,8 +150,8 @@ weights to produce just one token, making memory bandwidth a common limit.
 **Batching** processes several sequences together, reusing weights across them.
 It can raise **aggregate tokens per second**, while requiring more memory.
 Higher throughput does not necessarily mean a faster individual response.
-The Agent Practice uses a fixed batch; the shared Qwen Code server uses
-**continuous batching**, adding requests and removing completed ones as it runs.
+The shared Qwen Code server uses **continuous batching**, adding requests and
+removing completed ones as it runs.
 
 ### Parameter-Efficient Fine-Tuning: LoRA (~5 min)
 
@@ -165,7 +165,7 @@ size and the maximum rank of the update.
 Our exercise adapts two matrices in each of DistilBERT's six transformer layers
 and trains the new classification layers. Together, these are about **740,000
 trainable parameters**, versus about **67 million** for full fine-tuning.
-The code reference in Exercise 4 explains rank, scaling, and exact counts.
+The exercise script shows the LoRA configuration and reports the exact counts.
 
 | Memory component | Inference | LoRA training |
 |---|---|---|
@@ -367,8 +367,7 @@ plus an optional third:
    `NUM_PROMPTS` to include them.
 
 The script uses the first `NUM_PROMPTS` of the prompts in `PROMPTS`. Here it
-uses the first 2, so each run stays short; the Agent Practice uses all of
-them.
+uses the first 2, so each run stays short.
 
 #### Step 3: Submit the Batch Job
 
@@ -463,125 +462,92 @@ Compare the output with your predictions:
 
 ---
 
-### Agent Practice: Batch Your Prompts
+### Agent Practice: Report Per-Prompt Token Statistics
 
-So far the model answers one prompt at a time. Batching lets the GPU work on
-all the prompts in the same steps (see [Why GPUs for AI?](#why-gpus-for-ai)).
-Have the agent add batched generation and compare it with one-at-a-time
-generation in the same job, then check its work with the measurements and the
-job's warnings.
+`max_new_tokens` is a limit, not a promise that every response will have that
+length. Generation can stop sooner when the model produces an
+end-of-sequence token. Your Exercise 3 script counts these tokens internally,
+but reports only a total for each temperature. Have the agent add per-prompt
+counts and a short summary, then check its arithmetic.
 
-#### Step 1: Ask for the Change
+#### Step 1: Predict, Then Ask for the Change
 
-Copy your script from Exercise 3, switch the copy to all of the prompts, and
-check both settings:
+Before using the agent, predict: will every response use all 128 allowed tokens?
+What can make a response stop sooner?
+
+Copy your completed script from Exercise 3. For this experiment, use all five
+prompts and raise the limit so the model has a chance to finish some responses
+before reaching it:
 
 ```bash
-cp run_inference.py batch_agent.py
-sed -i 's/^NUM_PROMPTS = .*/NUM_PROMPTS = len(PROMPTS)/' batch_agent.py
-grep -nE '^NUM_PROMPTS|device = ' batch_agent.py
+cp run_inference.py token_stats_agent.py
+sed -i 's/^NUM_PROMPTS = .*/NUM_PROMPTS = len(PROMPTS)/' token_stats_agent.py
+sed -i 's/^    max_new_tokens = .*/    max_new_tokens = 128/' token_stats_agent.py
+grep -nE 'NUM_PROMPTS =|max_new_tokens =|temperatures =' token_stats_agent.py
 ```
 
-The `grep` output should show `NUM_PROMPTS = len(PROMPTS)` and
-`device = "cuda"`. Then start Qwen Code:
+The output should show all prompts, a 128-token limit, and the three
+temperatures from Exercise 3. Then start Qwen Code:
 
 ```bash
 bash ../../setup/launch_qwen.sh
 ```
 
-Copy this whole prompt (the copy button at the top right of the box copies all
-of it) and paste it into Qwen Code. Because it is long, Qwen Code shows it as
-`[Pasted Content ... chars]`; press `Enter` to send it.
+Copy and paste this prompt:
 
 ```text
-Update batch_agent.py to compare sequential and batched text generation on the same prompts using the same model.
+Update token_stats_agent.py to report the actual generated-token count for each prompt.
 
-Use greedy decoding with do_sample=False for this comparison. Keep the model, precision, prompts, and maximum new-token limit the same in both modes. Load the model once and warm up both modes before timing.
+Reuse the existing count_generated_tokens() result. Do not tokenize the decoded response again.
 
-In sequential mode, generate one response at a time. In batched mode, generate all responses in one model.generate() call.
+For each temperature, print:
+- each token count beside its response as: Generated tokens: N
+- one summary line as: Token statistics: min=N, max=N, average=N.N, total=N
 
-Use appropriate padding for this decoder-only model. Print each prompt and its generated continuation.
-
-Report a comparison table containing mode, number of prompts, actual generated-token count, generation time, and aggregate output tokens per second. Exclude model loading, warm-up, tokenization, and decoding from generation timing. Synchronize the GPU around wall-clock measurements.
-
-Count only actual generated tokens, excluding prompt tokens and padding after a response finishes. Explain any output differences rather than assuming the two modes must be identical.
-
-Preserve the existing shared environment, local model cache, and Slurm workflow.
+Preserve the existing throughput measurement. Do not change model.generate(), the prompts, temperatures, maximum token limit, model loading, shared cache, or Slurm workflow.
 ```
 
 #### Step 2: Review Before You Approve
 
 If the agent shows only part of the change, press `Ctrl+S` to see all of it.
-Before you approve it, check:
-- **Padding.** The prompts have different lengths, so a batch is padded to the
-  longest one. Which side does the agent pad on, and is a pad token set? (A
-  text generation model continues from the *end* of its input.)
-- **Attention mask.** Is it passed to `model.generate()`, so the model ignores
-  the padding?
-- **Matching.** Does each continuation stay with its prompt, and is the prompt
-  part (with its padding) removed before decoding?
-- **Counting and timing.** Are generated tokens counted with
-  `count_generated_tokens()`, and is the timer around `model.generate()` alone,
-  with `synchronize()` before and after?
-- **Fair comparison.** Do both modes use the same prompts, `max_new_tokens`,
-  and greedy decoding, with the inputs on the GPU?
+The change should use ordinary Python data and calculations. Check that:
+
+- It keeps the existing `n_tokens` value for each response instead of
+  tokenizing the response text again.
+- Each count stays paired with the prompt and response it describes.
+- The minimum, maximum, average, and total come from those per-prompt counts.
+- The `model.generate()` call and its settings are unchanged.
 
 #### Step 3: Run It and Check
 
 ```bash
-sbatch submit_inference.sh batch_agent.py
+sbatch submit_inference.sh token_stats_agent.py
 ```
 
-The comparison table should have columns like these:
+When the job finishes, inspect `inference_<JOBID>.out`. For every temperature,
+check that:
 
-| Mode | Prompts | Generated tokens | Generation time (s) | Aggregate output tokens/s |
-|------|---------|------------------|---------------------|---------------------------|
-| Sequential | ... | ... | ... | ... |
-| Batched | ... | ... | ... | ... |
+- All five prompts have a generated-token count between 1 and 128.
+- The reported total equals the five per-prompt counts added together.
+- The average equals the total divided by 5.
+- The minimum and maximum match the five displayed counts.
+- The original generation time and tokens-per-second measurement are still
+  present.
 
-When the job finishes, check:
-- Does the output say `Device: cuda` and name the GPU, and does the table show
-  all of your prompts in each mode? A CPU run is not a GPU benchmark.
-- Do the batched responses make sense and answer their prompts?
-- Does `inference_<JOBID>.err` contain a warning about padding? A warning is
-  useful evidence, but no warning doesn't prove the code is right. (A warning
-  that `temperature` or `top_p` "may be ignored" is harmless: greedy decoding
-  doesn't use them.)
-
-If something is wrong, give the agent the warning or the output and ask it to
-fix that one problem.
+If a check fails, give the agent the relevant output and ask it to fix that
+specific problem.
 
 **Questions:**
-- Did batching improve aggregate throughput in this run? Did both modes
-  generate comparable numbers of tokens?
-- Are the two modes' responses identical? If not, why might they differ, even
-  with greedy decoding?
-- What extra GPU memory does a batch need? (The solution below measures each
-  mode's peak.)
-- What does this measurement tell you about the time to finish the whole set
-  of prompts? What doesn't it tell you about how soon each response starts
-  arriving?
-- How does batching help a shared inference service like the one behind
-  Qwen Code?
-- Type `/stats model` in Qwen Code to see how many tokens your session has
-  sent and received. The server reuses cached work for text it has seen
-  before, so this isn't the same as the work the GPU did.
 
-**How batching should work.** The prompts have different lengths, so a batch
-pads the shorter ones to the length of the longest. A decoder-only model like
-TinyLlama continues from the end of its input, so the padding belongs on the
-left, where it doesn't sit between a prompt and its continuation, and the
-attention mask tells the model which positions are padding. With left padding,
-every continuation starts at the same position, the full padded input width,
-so slicing there separates each continuation from its prompt.
-`count_generated_tokens()` counts each response through its first
-end-of-sequence token, so padding added after a response finishes isn't
-counted. Even with greedy decoding, the two modes can give slightly different
-responses: a batch changes the shapes of the calculations, which can change
-floating-point rounding and occasionally which token scores highest.
+- Did every response reach the 128-token limit? If not, what ended it?
+- Did one temperature consistently produce longer responses in this small
+  experiment?
+- Why should the script count generated token IDs instead of words or
+  characters in the decoded response?
+- Type `/stats model` in Qwen Code. How many tokens did your agent session send
+  and receive?
 
-A solution that measures both modes is in
-`solutions/batch_inference_solution.py`.
+A completed version is in `solutions/token_stats_solution.py`.
 
 ---
 

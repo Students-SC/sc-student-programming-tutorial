@@ -26,8 +26,8 @@ PROMPTS = [
     # TODO 3 (optional): add your own prompts here, and raise NUM_PROMPTS.
 ]
 
-# How many of PROMPTS to use, starting from the first. The temperature
-# comparison uses the first 2; the Agent Practice uses all 5.
+# How many of PROMPTS to use, starting from the first. Use the first 2 so the
+# temperature comparison stays short.
 NUM_PROMPTS = 2
 
 
