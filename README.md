@@ -122,8 +122,7 @@ make mistakes; the point is to catch them.
 
 ### The tutorial agent: Aider + OLCF Inference Service 
 
-We provide a CLI coding agent for you to use throughout the day -- no accounts,
-no API keys, no cost. It's Aider pointed at the OLCF Inference service. Exercises that say *"ask
+We provide a CLI coding agent for you to use throughout today. It's Aider pointed at the OLCF Inference service. Exercises that say *"ask
 your AI agent..."* refer to this tool.
 
 It's preinstalled for everyone. Start it in the directory you are working in:
@@ -140,15 +139,17 @@ reads `QWEN.md` at the repository's top level: notes for the agent about this
 tutorial, which you add to starting in Module 1. It has three modes; press
 **Shift+Tab** to switch between them:
 
-To
 
 Read everything before you approve it. Approve an edit only if you understand
 the change, and a command only if you would run it yourself. In particular,
 programs belong on compute nodes (`srun` or `sbatch`), never on the login node;
 compiling and reading files on the login node are fine.
 
-Inside Qwen Code, `/diff` shows the changes it has made, `/restore` undoes them,
-`/stats model` shows how many tokens your session has used, and `/quit` exits.
+Inside Aider, it is running by default in 'ask' mode where it will answer questions but 
+won't edit files. If you want to switch to 'code' mode, 
+type `/code` to switch to that so that your agent can edit files. Type `/quit` to exit the agent.
+`/add` followed by the name of files or directories will add those files to the LLMs context
+window so the LLM is aware of those files.
 
 > **Note**
 >
