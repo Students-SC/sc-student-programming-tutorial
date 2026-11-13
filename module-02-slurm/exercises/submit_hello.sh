@@ -6,7 +6,7 @@
 # Then submit:    sbatch submit_hello.sh
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=hello-compute
-#SBATCH --partition=mi2101x
+#SBATCH --partition=batch -A TRN001 --reservation=sc26studentprogram
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=2:00

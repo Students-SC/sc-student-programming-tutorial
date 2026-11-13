@@ -194,7 +194,6 @@ reading the output before moving on.
 hostname          # Print the name of the machine you are logged into.
 whoami            # Print your username on this system.
 echo $HOME        # Print the path to your home directory (the $HOME variable).
-echo $WORK        # Print the path to the AMD cluster's project filesystem 
 pwd               # Print the current working directory.
 date              # Print the current date and time.
 ```
@@ -203,9 +202,7 @@ date              # Print the current date and time.
 
 ```bash
 ls -la $HOME      # List everything in your home directory, long format, including hidden files.
-ls -la $WORK      # List everything in your work directory (the $WORK area for larger files).
 df -h $HOME       # Show disk space usage for your home directory.
-df -h $WORK       # Show disk space usage for the shared project directory holding your work directory.
 ```
 
 #### Step 3: Check the Software Environment
