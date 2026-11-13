@@ -497,7 +497,7 @@ model = get_peft_model(model, lora_config)
 | `r=8` | Adapter rank; larger values add trainable parameters |
 | `lora_alpha=16` | Scale the update by `lora_alpha / r`, here 2 |
 | `lora_dropout=0.1` | Randomly zero 10% of adapter-input values on average during training |
-| `target_modules` | Adapt query and value projections in attention: two matrices per layer, 12 total |
+| `target_modules` | Which weight matrices get adapters, by name; here the query (`q_lin`) and value (`v_lin`) matrices in each of the 6 layers' attention, 12 in total |
 | `get_peft_model(...)` | Attach adapters and set trainable parameters, including classification layers for this configuration |
 
 The effective weight is **W + (lora_alpha / r) × B × A**. Here **A** and **B**
