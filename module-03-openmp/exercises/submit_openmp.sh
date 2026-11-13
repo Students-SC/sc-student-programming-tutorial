@@ -6,7 +6,7 @@
 # Then submit:    sbatch submit_openmp.sh
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=openmp-pi
-#SBATCH --partition=mi2101x
+#SBATCH -A TRN001 --reservation=sc26studentprogram --partition=batch
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16

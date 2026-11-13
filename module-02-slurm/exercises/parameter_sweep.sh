@@ -7,7 +7,7 @@
 # Submit with:  sbatch parameter_sweep.sh
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=param-sweep
-#SBATCH --partition=mi2101x
+#SBATCH -A TRN001 --reservation=sc26studentprogram --partition=batch
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=5:00
