@@ -1,6 +1,6 @@
 # Module 6 -- AI on HPC: Inference & Fine-Tuning
 
-> **Time:** 2:00 to 3:00 PM CST · 60 min total · ~20 min lecture · ~40 min hands-on
+> **Time:** 2:00 to 3:00 PM CST ┬╖ 60 min total ┬╖ ~20 min lecture ┬╖ ~40 min hands-on
 
 ## Learning Objectives
 
@@ -14,278 +14,169 @@ By the end of this module, you will be able to:
 
 ---
 
-## Key Concepts
+## Session Plan
 
-### What is Machine Learning?
+| Part | Time | Focus |
+|---|---:|---|
+| Key Concepts | 20 min | Models and training; inference versus training; GPU batching; LoRA |
+| Exercises 1 and 2 | 5 min | Check the environment and run the inference example |
+| Exercise 3 | 8 min | Change inference settings and compare results |
+| Exercise 4 | 12 min | Enable LoRA fine-tuning and examine the results |
+| Agent Practice | 15 min | Add batching, review the change, and measure throughput |
 
-Machine learning is about finding patterns in data. Instead of writing explicit
-rules, you let the computer learn them from examples. In **supervised
-learning**, the kind this module's fine-tuning exercise uses, each example
-comes with the right answer (a label), and the computer learns a model that
-maps inputs to answers:
+The lecture covers concepts only. Code explanations appear beside the exercises
+as lookup references, rather than additional lecture material. The CPU comparison
+and Challenges A and B are optional extensions outside the planned 60 minutes.
+Hands-on timings include editing, submission, and output review; queue delays and
+agent response times can affect the pace.
 
+---
+
+## Key Concepts (~20 min)
+
+### What is Machine Learning? (~2 min)
+
+**Machine learning** uses data or experience to fit **models** that make
+predictions, discover patterns, or guide decisions. A model maps inputs to
+outputs. Training adjusts it based on examples or feedback, with the goal of
+performing well on new inputs.
+
+In **supervised learning**, examples include target outputs, or **labels**.
+Our fine-tuning exercise uses reviews labeled positive or negative. In
+**self-supervised learning**, targets come from the data itself. A text-generation
+model can learn to predict the next **token**, a word or part of a word, using
+the actual next token in existing text as its target.
+
+```mermaid
+flowchart TD
+    subgraph S["Supervised learning"]
+        A["Review + sentiment label"] --> B["Input: review"]
+        A --> C["Target: positive"]
+    end
+    subgraph SS["Self-supervised next-token learning"]
+        D["Text: The cat sat on the mat"] --> E["Input: The cat sat on the"]
+        D --> F["Target: mat"]
+    end
 ```
-  Traditional programming:      Supervised learning:
-  Rules + Data → Answers        Data + Answers → Model
-```
 
-Not all machine learning needs labeled answers. A language model, for example,
-is first trained on ordinary text by predicting the next word, so the text
-itself provides the targets.
+These arrows show how an example supplies an input and a target. The target is
+used to calculate loss, not given to the model as a clue for its prediction.
+Many continuations can be valid: training learns probabilities, not a rule that
+"the" must always be followed by "cat".
 
-A **neural network** is a mathematical function with millions (or billions) of
-adjustable numbers called **weights**, or **parameters**. Training adjusts
-these weights so the function produces good outputs for given inputs.
+### Inference, Pre-training, and Fine-Tuning (~4 min)
 
-### Neural Networks in a Nutshell
-
-```
-  Input → [Layer 1] → [Layer 2] → ... → [Layer N] → Output
-              ↑            ↑                ↑
-           weights      weights          weights
-```
-
-Each training step has four parts:
-
-- **Forward pass**: data flows through the layers to produce predictions.
-- **Loss**: a number that measures how far the predictions are from the
-  training targets.
-- **Backpropagation**: computes the **gradient** of the loss with respect to
-  each trainable parameter, that is, which way and how strongly to nudge it to
-  reduce the loss.
-- **Optimizer step**: uses the gradients to update the trainable parameters.
-  This module uses the **AdamW** optimizer, which keeps two running averages
-  for every trainable parameter (its **optimizer state**) to choose the size of
-  each update.
-
-### Inference, Pre-training, and Fine-Tuning
-
-Fine-tuning is a form of training: it continues training a model that has
-already been pre-trained, to adapt it to a new task.
+**Inference** uses a trained model without updating its parameters.
+**Pre-training** develops a base model, usually from a large dataset and
+randomly initialized parameters. **Fine-tuning** continues training a pre-trained
+model to adapt it to a task or behavior.
 
 | | Inference | Pre-training | Fine-tuning |
 |---|---|---|---|
-| Purpose | Produce outputs with a trained model | Learn a base model, typically from a large dataset | Adapt a trained model to a task |
+| Purpose | Produce outputs | Develop a base model | Adapt a pre-trained model |
 | Parameters updated | None | Typically all | All, or a selected subset |
-| Data | The inputs to process | Training examples | Examples of the new task |
-| GPU memory holds | Weights, intermediate results, workspace, and (for text generation) a cache of earlier tokens | Weights, saved intermediate results (activations), gradients, optimizer state, and workspace | The same kinds as pre-training; LoRA reduces the trainable parameters and their gradients and optimizer state |
-| Compute required | Depends on the model, the inputs, and how many there are | Usually substantial | Depends on the model, the data, and the method |
+| Data | Inputs to process | Training examples; targets may come from the text itself | Examples relevant to the task |
+| Calculations | Forward passes | Forward passes, loss, backpropagation, optimizer updates | Same training steps as pre-training |
 
-### Two Models in This Module
+We use **two separate models**:
 
-This module uses two different models:
+| Model | Use in this module |
+|---|---|
+| **TinyLlama 1.1B Chat**, about 1.1 billion parameters | Generate text. A decoder-only Transformer that extends a prompt one token at a time in this workflow. Its chat template adds the conversation markers it expects. |
+| **DistilBERT**, about 67 million parameters | Classify IMDB reviews. An encoder-only Transformer that uses context from both directions. Its pre-training included masked-token prediction; the new classification layers start with random weights. |
 
-- **TinyLlama 1.1B Chat** (`TinyLlama/TinyLlama-1.1B-Chat-v1.0`, 1.1 billion
-  parameters) generates text. It predicts one **token** (a word or part of a
-  word) at a time, each based on the tokens before it. It is a chat model: a
-  base language model that was further trained to answer requests written in
-  a chat format, which is why the scripts wrap each prompt in its **chat
-  template**.
-- **DistilBERT** (`distilbert-base-uncased`, 67 million parameters) reads a
-  whole piece of text at once. You'll fine-tune it to classify movie reviews
-  from the IMDB dataset as positive or negative, training on 2,000 reviews and
-  evaluating on 500 others. DistilBERT was pre-trained on ordinary text; the
-  classification layers on top of it are new, and start with random weights.
+Fine-tuning DistilBERT does not change TinyLlama. We train on 2,000 reviews and
+evaluate on 500 separate reviews.
 
-Fine-tuning the classifier does not change the text-generation model.
+### Neural Networks and Training (~5 min)
 
-### Generating Text with Hugging Face
+A **neural network** has layers of mathematical operations with adjustable
+**parameters**, including weights. Each layer transforms its input; layers
+generally have their own parameters.
 
-The inference scripts take the same steps for every prompt:
+For our classifier, tokenization prepares the input. The neural network then
+turns token IDs into sentiment scores:
 
-1. Format the prompt with the tokenizer's **chat template**, which adds the
-   conversation markers this chat model was trained on (`format_prompt()` in
-   the scripts).
-2. Tokenize the formatted text into token IDs.
-3. Move those input tensors to the device.
-4. Generate new token IDs with `model.generate()`.
-5. Remove the input part from the output, and decode the rest (the
-   continuation) back to text.
-
-The call that generates looks like this:
-
-```python
-outputs = model.generate(
-    **inputs,           # the tokenized prompt: input_ids and attention_mask
-    max_new_tokens=64,  # generate at most 64 new tokens
-    do_sample=True,     # choose each token at random from the likely ones
-    temperature=0.7,    # lower is more focused, higher is more varied
-    top_p=0.9,          # sample only from the most likely tokens
-)
+```mermaid
+flowchart TD
+    A["Review text"] --> B["Tokenizer: token IDs"]
+    B --> C["Embedding layer: numerical vectors"]
+    C --> D["Transformer layers: contextual representations"]
+    D --> E["Classification layers: negative and positive scores"]
 ```
 
-- `**inputs` expands the dictionary the tokenizer returned into named
-  arguments, including `input_ids` and `attention_mask`.
-- `max_new_tokens` is an upper limit: generation stops sooner if the model
-  produces its end-of-response token.
-- `do_sample=True` turns on sampling. With `do_sample=False`, the model always
-  picks the most likely token, which is called **greedy decoding**.
-- `temperature` reshapes the probabilities that sampling uses.
-- `top_p` limits sampling to the smallest set of likely tokens whose
-  probabilities add up to 0.9.
-- A lower temperature doesn't make an answer more factually correct.
+This is a **forward pass**. Training adds loss calculation, backpropagation,
+and an optimizer update:
 
-The scripts also pass `pad_token_id=tokenizer.eos_token_id`, which tells
-`generate()` which token marks padding, and `max_length=None`, so that only
-`max_new_tokens` limits the length.
+```mermaid
+flowchart TD
+    A["Batch of reviews"] --> B["Forward pass"]
+    B --> C["Predicted sentiment scores"]
+    C --> D["Loss calculation"]
+    T["Correct sentiment labels"] --> D
+    D --> E["Backpropagation: compute gradients"]
+    E --> F["Optimizer: update trainable parameters"]
+    F --> B
+```
 
-The other calls in the scripts:
-- `AutoTokenizer.from_pretrained(name)` loads the tokenizer, and
-  `AutoModelForCausalLM.from_pretrained(name)` loads the generation model.
-- `model.eval()` selects evaluation behavior, and `torch.inference_mode()`
-  turns off gradient tracking, which generating text doesn't need (see
-  [Training and Evaluation Modes](#training-and-evaluation-modes)).
-- `"cuda"` is PyTorch's name for the GPU, on this ROCm installation too.
+- **Loss** measures the match between predictions and targets. For our
+  classifier, it penalizes assigning low probability to the correct class.
+- **Gradients** describe how small parameter changes would affect loss.
+  Backpropagation calculates them; it does not change parameters.
+- The **optimizer** uses gradients to update parameters. AdamW also maintains
+  running statistics called **optimizer state**.
+
+A **batch** groups examples for processing together. Here, one update follows
+each batch of up to 32 reviews. An **epoch** is one pass through the training data.
+Inference uses forward passes without the loss-driven parameter updates.
 
 ### Why GPUs for AI?
 
-Neural networks are mostly **matrix multiplications**, which split into many
-independent multiply-adds that a GPU can run in parallel:
+Neural networks use large matrix multiplications, containing many multiply-adds
+that GPUs execute in parallel. Data movement matters too: our MI210 has 64 GB
+of HBM2e and approximately 1.6 TB/s peak memory bandwidth.
 
-- The MI210 has **104 compute units** with **6656 stream processors**. A stream
-  processor is a simple arithmetic lane, not an independent CPU-style core:
-  lanes work in groups of 64 (a wavefront, as in Module 5) that run the same
-  instruction on different data.
-- **64 GB HBM2e** with **1.6 TB/s bandwidth** for fast data access.
+Text generation uses forward passes in two phases:
 
-Generating text has two phases. First the model processes the whole prompt at
-once, which is a lot of parallel work. Then it generates one token per step,
-and each step depends on the token before it. For a single prompt, each step
-does a little arithmetic but has to move a large share of the model's weights
-from memory, so it can use only a small part of the GPU's compute capacity and
-is often limited by memory bandwidth instead.
+| Phase | Work performed |
+|---|---|
+| **Prefill** | Process prompt positions together and save attention keys and values in a **KV cache**. The final prompt position supplies scores for selecting the first new token. |
+| **Decode** | Process each newly selected token using the cache, extend the cache, and predict the following token. |
 
-**Batching**, generating for several prompts in the same steps, lets those
-sequences share each pass of the model, which can greatly raise the total
-number of tokens generated per second. How much depends on the model, the
-sequence lengths, the batch size, and the software. A batch needs more memory,
-and it doesn't make every individual response arrive sooner. The shared AI
-server behind the tutorial's agent batches requests from the whole classroom.
-Servers like it add requests to the batch and remove finished ones as they
-go; this module's Agent Practice uses a simpler, fixed batch.
+Calculations within a step run in parallel, but successive generated tokens
+depend on previous ones. For one sequence, decode often reads much of the model's
+weights to produce just one token, making memory bandwidth a common limit.
 
-### What a Training Batch Contains
+**Batching** processes several sequences together, reusing weights across them.
+It can raise **aggregate tokens per second**, while requiring more memory.
+Higher throughput does not necessarily mean a faster individual response.
+The Agent Practice uses a fixed batch; the shared Qwen Code server uses
+**continuous batching**, adding requests and removing completed ones as it runs.
 
-A **batch** groups several reviews (32 in this exercise) so the GPU processes
-them together. For each batch, the training loop works with:
+### Parameter-Efficient Fine-Tuning: LoRA (~5 min)
 
-| Name | Meaning |
-|------|---------|
-| `input_ids` | Token IDs representing the reviews |
-| `attention_mask` | 1 for real tokens, 0 for padding |
-| `labels` | The correct sentiment classes: 0 for negative, 1 for positive |
-| `outputs.logits` | Two prediction scores per review, one for each class |
-| `outputs.loss` | One number: the classification loss, calculated using the labels |
+Full fine-tuning updates every parameter. **LoRA (Low-Rank Adaptation)** freezes
+the original model and adds small trainable updates to selected weight matrices.
+Each update is the product of two smaller matrices; its **rank** controls their
+size and the maximum rank of the update.
 
-- The tokenizer produces `input_ids` and `attention_mask`; the labels come
-  from the dataset.
-- Logits are scores, not probabilities. `argmax` selects the class with the
-  larger score.
-- Passing `labels` to this Hugging Face model asks it to calculate the
-  classification loss as well as the logits.
-- The script's `evaluate()` function uses the labels differently: it doesn't
-  give them to the model, but compares the predicted classes with them and
-  counts the correct ones.
+**Effective weight = frozen original weight + scaled low-rank update**
 
-### One Training Step
+Our exercise adapts two matrices in each of DistilBERT's six transformer layers
+and trains the new classification layers. Together, these are about **740,000
+trainable parameters**, versus about **67 million** for full fine-tuning.
+The code reference in Exercise 4 explains rank, scaling, and exact counts.
 
-Here is the training step for one batch, which you'll enable in Exercise 4:
+| Memory component | Inference | LoRA training |
+|---|---|---|
+| Model weights | Required | Required, including frozen weights |
+| Intermediate results and workspace | Required; generation also uses a KV cache | Required; saves activations needed for backpropagation |
+| Gradients and optimizer state | Not needed | Needed for trainable parameters |
 
-```python
-# Discard gradients from the previous batch.
-optimizer.zero_grad()
-
-# Predict the labels and compute the classification loss.
-outputs = model(
-    input_ids=input_ids,
-    attention_mask=attention_mask,
-    labels=labels,
-)
-loss = outputs.loss
-
-# Compute gradients for the trainable parameters.
-loss.backward()
-
-# Update those parameters using the gradients.
-optimizer.step()
-```
-
-- The forward pass, `model(...)`, produces predictions and, because labels
-  are supplied, the loss.
-- `loss.backward()` computes gradients. It doesn't change any weights.
-- `optimizer.step()` updates the trainable parameters using their gradients.
-  The script's optimizer is AdamW, created with only the parameters whose
-  `requires_grad` is `True`, that is, the trainable ones.
-- PyTorch adds new gradients to the ones already stored unless they are
-  cleared. This script makes one update per batch, so it clears them at the
-  start of each batch.
-
-### Training and Evaluation Modes
-
-- `model.train()` turns on training behavior, such as dropout, which randomly
-  zeroes some values during training to discourage memorizing the examples.
-- `model.eval()` switches to evaluation behavior, for example turning dropout
-  off. It doesn't turn off gradient tracking by itself.
-- `torch.inference_mode()` turns off gradient tracking, which saves memory
-  and time when evaluating or generating.
-
-The fine-tuning script calls `model.train()` before each epoch, and its
-`evaluate()` function uses `model.eval()` inside `torch.inference_mode()`.
-
-### Parameter-Efficient Fine-Tuning (LoRA)
-
-Full fine-tuning updates **every** weight in the model, so it needs a gradient
-and optimizer state for every one. **LoRA (Low-Rank Adaptation)** freezes
-selected weight matrices and trains a small, low-rank update for each:
-
-```
-  Original weight matrix W (frozen, d × d)
-  +
-  Low-rank update: B × A, where B is d × r and A is r × d, and the rank r
-                   is much smaller than d; the update is scaled by lora_alpha / r
-  =
-  Effective weight: W + (lora_alpha / r) × B × A
-```
-
-In this module's exercise, LoRA adapts two weight matrices (`q_lin` and
-`v_lin`) in each of DistilBERT's 6 layers with rank r = 8, which adds 147,456
-trainable parameters. The new classification layers are trained as well, and
-they have 592,130 parameters. Together that is 739,586 trainable parameters,
-about 90 times fewer than the 66,955,010 that full fine-tuning trains.
-
-Wrapping the model with LoRA also adds parameters: the adapters, and, in this
-configuration, trainable copies of the classification layers, which PEFT keeps
-alongside the frozen originals. So the wrapped model has 67,694,596
-parameters, and the script reports the trainable share against that number,
-about 1.09%.
-
-Fewer trainable parameters means less memory for gradients and optimizer
-state. But the frozen model must still be in GPU memory, and each training
-step still runs the whole model forward and backward and stores its
-intermediate results, so 90 times fewer trainable parameters does not mean 90
-times less memory or time. This exercise uses a small model and a subset of
-the dataset to keep training practical within the tutorial. LoRA reduces the
-number of trainable parameters and their associated gradient and
-optimizer-state memory.
-
-### Configuring LoRA
-
-Exercise 4's LoRA configuration uses these settings:
-
-| Setting | Meaning |
-|---------|---------|
-| `task_type=TaskType.SEQ_CLS` | Configure PEFT for sequence classification |
-| `r=8` | Rank of the low-rank update |
-| `lora_alpha=16` | Scales the update by `lora_alpha / r`, which is 2 here |
-| `lora_dropout=0.1` | Dropout probability on the adapters' input during training |
-| `target_modules=["q_lin", "v_lin"]` | The DistilBERT layers that get adapters |
-| `get_peft_model(model, lora_config)` | Attaches the adapters and sets which parameters are trainable |
-
-`q_lin` and `v_lin` are the query and value projections inside attention, the
-part of each layer that decides which other words in the review each word
-draws information from. You don't need the details of attention for this
-exercise. The adapters are separate from the classification layers, which
-train too.
+LoRA mainly saves gradient and optimizer-state memory. It still runs the model
+forward and backpropagates through the operations needed to train the adapters.
+**About 90 times fewer trainable parameters does not mean 90 times less total
+memory or training time.**
 
 ---
 
@@ -369,6 +260,53 @@ GPU work runs in the background, so the script calls
 `torch.cuda.synchronize()` before and after `model.generate()` to make sure the
 timer covers all of the generation. It counts each response's tokens up to and
 including the token that ends the response.
+
+##### Generating Text with Hugging Face
+
+**Code reference for Exercises 2 and 3.** The scripts already perform these
+steps; no additional edits are needed here. The model is
+`TinyLlama/TinyLlama-1.1B-Chat-v1.0`.
+
+| Call or value | What to recognize in the script |
+|---|---|
+| `AutoTokenizer.from_pretrained(name)` | Loads the tokenizer; `format_prompt()` applies its chat template |
+| `AutoModelForCausalLM.from_pretrained(name)` | Loads the generation model |
+| `model.to(device)` | Moves the model; input tensors must be on the same device |
+| `input_ids`, `attention_mask` | Token IDs and a mask marking real tokens with 1 and padding with 0 |
+| `model.eval()` with `torch.inference_mode()` | Evaluation behavior and disabled gradient tracking |
+
+The central call is:
+
+```python
+outputs = model.generate(
+    **inputs,
+    max_new_tokens=64,
+    do_sample=True,
+    temperature=0.7,
+    top_p=0.9,
+    pad_token_id=tokenizer.eos_token_id,
+    max_length=None,
+)
+```
+
+| Setting | Meaning |
+|---|---|
+| `**inputs` | Pass the tokenizer's dictionary as named arguments |
+| `max_new_tokens` | Maximum new tokens, excluding the prompt; an end-of-sequence token can stop generation sooner |
+| `do_sample=True` | Sample tokens from the adjusted probabilities |
+| `temperature` | Positive values below 1 concentrate probabilities; above 1 spread them more broadly |
+| `top_p=0.9` | Sample from the smallest set of most likely tokens whose cumulative probability reaches at least 0.9 |
+| `pad_token_id` | Here, use the end-of-sequence token ID for padding too |
+| `max_length=None` | Leave the length limit to `max_new_tokens` in this call |
+
+With `do_sample=False`, these scripts use **greedy decoding**: choose the
+highest-scoring next token. Temperature and `top_p` then do not apply.
+
+For this model, the output contains the input followed by the continuation.
+The scripts remove the input before decoding the response. Generation timing
+excludes loading, warm-up, tokenization, input transfers, and decoding.
+
+**Output tokens per second = actual generated tokens ├╖ generation time in seconds**
 
 #### Step 3: Submit the Batch Job
 
@@ -539,6 +477,109 @@ isn't enabled.)
 > your terminal pastes instead), press `j` to extend the selection down to the
 > line before `END`, then press `x`.
 
+##### What a Training Batch Contains
+
+**Code reference for the three TODO blocks.** The base checkpoint is
+`distilbert-base-uncased`. For **B reviews** and **L token positions** after
+truncation and padding:
+
+| Value | Shape | Meaning |
+|---|---|---|
+| `input_ids` | `B ├ù L` | Token IDs, including padding |
+| `attention_mask` | `B ├ù L` | 1 for real tokens, 0 for padding |
+| `labels` | `B` | Dataset targets: 0 negative, 1 positive |
+| `outputs.logits` | `B ├ù 2` | Negative and positive scores per review |
+| `outputs.loss` | Scalar | Cross-entropy loss averaged over the reviews |
+
+The tokenizer supplies IDs and masks; the dataset supplies labels. Padding
+makes the batch rectangular, and the mask prevents attention to padding.
+
+##### Configuring LoRA
+
+TODO 1 attaches the adapters:
+
+```python
+lora_config = LoraConfig(
+    task_type=TaskType.SEQ_CLS,
+    r=8,
+    lora_alpha=16,
+    lora_dropout=0.1,
+    target_modules=["q_lin", "v_lin"],
+)
+model = get_peft_model(model, lora_config)
+```
+
+| Setting | Meaning |
+|---|---|
+| `TaskType.SEQ_CLS` | One classification per input sequence |
+| `r=8` | Adapter rank; larger values add trainable parameters |
+| `lora_alpha=16` | Scale the update by `lora_alpha / r`, here 2 |
+| `lora_dropout=0.1` | Randomly zero 10% of adapter-input values on average during training |
+| `target_modules` | Adapt query and value projections in attention: two matrices per layer, 12 total |
+| `get_peft_model(...)` | Attach adapters and set trainable parameters, including classification layers for this configuration |
+
+The effective weight is **W + (lora_alpha / r) ├ù B ├ù A**. Here **A** and **B**
+are the two adapter matrices, not the batch-size symbol above.
+
+| Parameter count | This configuration |
+|---|---:|
+| Original model | 66,955,010 |
+| Trainable LoRA adapters | 147,456 |
+| Trainable classification layers | 592,130 |
+| Total trainable | 739,586 |
+| Total after wrapping | 67,694,596 |
+
+PEFT retains frozen originals of the classification layers alongside trainable
+copies. Including those copies and the adapters increases the total parameter
+count; the trainable share is **1.09% of the wrapped model**.
+
+##### One Training Step
+
+TODO 2 performs one update per batch:
+
+```python
+optimizer.zero_grad()  # Clear previous gradients.
+outputs = model(
+    input_ids=input_ids,
+    attention_mask=attention_mask,
+    labels=labels,
+)
+loss = outputs.loss
+loss.backward()        # Compute gradients; no parameter update yet.
+optimizer.step()      # Update trainable parameters using AdamW.
+```
+
+Labels are used to calculate loss, not as clues to the prediction layers.
+PyTorch accumulates gradients unless cleared. This optimizer includes only
+parameters with `requires_grad=True`: the adapters and classification layers.
+AdamW maintains running gradient and squared-gradient averages as optimizer state.
+
+TODO 3 calls `evaluate()`, which obtains logits without passing labels to the
+model, then compares predictions with the labels:
+
+```python
+predicted_labels = outputs.logits.argmax(dim=-1)
+correct = (predicted_labels == labels).sum().item()
+```
+
+Logits are scores, not probabilities. `argmax` chooses the higher-scoring class.
+Evaluation totals correct predictions and divides by the number of reviews
+to report accuracy; it does not update parameters.
+
+##### Training and Evaluation Modes
+
+| Call | Effect |
+|---|---|
+| `model.train()` | Enable training behavior, including dropout |
+| `model.eval()` | Disable dropout; does not disable gradient tracking |
+| `torch.inference_mode()` | Disable gradient tracking and extra bookkeeping; does not change the model's train/eval setting |
+
+Dropout randomly zeroes some intermediate values during training to discourage
+overreliance on particular features. The script calls `model.train()` before
+each epoch; `evaluate()` uses `model.eval()` inside `torch.inference_mode()`.
+These mode controls do not themselves update parameters. They are already
+implemented in the script.
+
 #### Step 3: Predict, Then Submit
 
 Before you submit, answer:
@@ -637,6 +678,13 @@ Count only actual generated tokens, excluding prompt tokens and padding after a 
 Preserve the existing shared environment, local model cache, and Slurm workflow.
 ```
 
+**Batching reference.** For this decoder-only workflow, use **left padding**
+and pass the attention mask. Slice off the **full padded input width** before
+decoding continuations. Count each response through its first end-of-sequence
+token if present, excluding later padding, using `count_generated_tokens()`.
+Greedy outputs can still differ because batch shapes can change floating-point
+rounding and occasionally change which token has the highest score.
+
 #### Step 2: Review Before You Approve
 
 If the agent shows only part of the change, press `Ctrl+S` to see all of it.
@@ -701,6 +749,13 @@ A solution that measures both modes is in
 ---
 
 ### Challenge A (Optional): LoRA Hyperparameters
+
+**Reference:** for a matrix with dimensions `d_out ├ù d_in`, the adapter
+has `r ├ù d_in + d_out ├ù r` parameters. Each adapted matrix here is `768 ├ù 768`:
+at rank 8, that is 12,288 parameters per adapter and 147,456 across all 12.
+The classification parameter count does not depend on rank. Scaling both rank
+and alpha together preserves `lora_alpha / r`, but need not preserve the actual
+update magnitudes or training behavior.
 
 Start with a prediction. In `finetune_lora.py`, change `r=8` and
 `lora_alpha=16` to `r=16` and `lora_alpha=32`. Before you submit, predict the
@@ -769,7 +824,7 @@ A full fine-tuning solution with the smaller learning rate is in
 | **Fine-tuning** | Further training a pre-trained model for a specific task |
 | **LoRA** | Parameter-efficient fine-tuning that trains low-rank updates to frozen weights |
 | **Tokenizer** | Converts text to and from the numerical tokens the model understands |
-| **Temperature** | Controls randomness when sampling: lower is more focused, higher (>1) more varied. Must be above 0; for deterministic output, turn sampling off with `do_sample=False` (greedy decoding) |
+| **Temperature** | Controls randomness when sampling: lower is more focused, higher (>1) more varied. Must be above 0; to select the highest-scoring token instead, turn sampling off with `do_sample=False` (greedy decoding) |
 | **Batching** | Generating for several prompts in the same steps, to raise total throughput |
 
 | PyTorch / Hugging Face | Purpose |
