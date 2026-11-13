@@ -46,7 +46,11 @@ int main(int argc, char **argv) {
         partial_sum += sqrt((double)i);
     }
 
+    double global_sum = 0.0;
+
     /* TODO 3: Use MPI_Reduce to sum all partial sums into global_sum on rank 0.
+     *         Every rank must call it, so write it here, outside the
+     *         rank-0 printing below.
      *
      *   MPI_Reduce(&partial_sum, &global_sum, 1, MPI_DOUBLE,
      *              ???, ???, MPI_COMM_WORLD);
@@ -55,7 +59,6 @@ int main(int argc, char **argv) {
      *   - The reduction operation (MPI_SUM)
      *   - The root rank (0)
      */
-    double global_sum = 0.0;
 
     double elapsed = MPI_Wtime() - t_start;
 

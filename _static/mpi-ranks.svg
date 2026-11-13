@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="234" viewBox="0 0 800 260" role="img" aria-labelledby="title desc">
+  <title id="title">MPI ranks with private memory on one compute node</title>
+  <desc id="desc">Four processes, ranks 0 through 3, run on one compute node. Each rank has its own private memory and variables. Arrows between adjacent ranks show example messages that exchange data.</desc>
+  <defs>
+    <marker id="arrow-end" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#2b6cb0"/>
+    </marker>
+    <marker id="arrow-start" markerWidth="8" markerHeight="8" refX="0" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 8 0 L 0 4 L 8 8 Z" fill="#2b6cb0"/>
+    </marker>
+  </defs>
+  <rect width="800" height="260" fill="#ffffff"/>
+  <rect x="20" y="16" width="760" height="228" rx="16" fill="#f6f9fc" stroke="#cbd9e9" stroke-width="2"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
+    <text x="400" y="49" font-size="20" font-weight="700" fill="#07091f">One compute node</text>
+    <g fill="#eff6ff" stroke="#368fd8" stroke-width="2">
+      <rect x="40" y="86" width="132" height="110" rx="10"/>
+      <rect x="236" y="86" width="132" height="110" rx="10"/>
+      <rect x="432" y="86" width="132" height="110" rx="10"/>
+      <rect x="628" y="86" width="132" height="110" rx="10"/>
+    </g>
+    <g font-size="20" font-weight="700" fill="#07091f">
+      <text x="106" y="121">Rank 0</text>
+      <text x="302" y="121">Rank 1</text>
+      <text x="498" y="121">Rank 2</text>
+      <text x="694" y="121">Rank 3</text>
+    </g>
+    <g font-size="14" fill="#25305f">
+      <text x="106" y="153">Private memory</text>
+      <text x="302" y="153">Private memory</text>
+      <text x="498" y="153">Private memory</text>
+      <text x="694" y="153">Private memory</text>
+    </g>
+    <g font-size="12" fill="#5f6677">
+      <text x="106" y="175">own variables</text>
+      <text x="302" y="175">own variables</text>
+      <text x="498" y="175">own variables</text>
+      <text x="694" y="175">own variables</text>
+      <text x="204" y="129">messages</text>
+      <text x="400" y="129">messages</text>
+      <text x="596" y="129">messages</text>
+    </g>
+    <g fill="none" stroke="#2b6cb0" stroke-width="2.5" marker-start="url(#arrow-start)" marker-end="url(#arrow-end)">
+      <path d="M 180 145 H 228"/>
+      <path d="M 376 145 H 424"/>
+      <path d="M 572 145 H 620"/>
+    </g>
+    <text x="400" y="225" font-size="14" fill="#25305f">Ranks exchange data explicitly. Their variables remain private.</text>
+  </g>
+</svg>

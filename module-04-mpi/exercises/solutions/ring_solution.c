@@ -29,16 +29,28 @@ int main(int argc, char **argv) {
     printf("Rank %d: sent %d to rank %d, received %d from rank %d\n",
            rank, send_val, dest, recv_val, source);
 
+    /* Derive the expected value independently of the communication variables. */
+    int expected = (rank == 0) ? size - 1 : rank - 1;
+    int local_failure = (recv_val != expected);
+    if (local_failure)
+        fprintf(stderr, "Rank %d: expected %d but received %d\n",
+                rank, expected, recv_val);
+
+    /* Every rank participates, so one bad result makes the whole test fail. */
+    int failed_ranks;
+    MPI_Allreduce(&local_failure, &failed_ranks, 1, MPI_INT, MPI_SUM,
+                  MPI_COMM_WORLD);
+
     if (rank == 0) {
-        if (recv_val == size - 1) {
+        if (failed_ranks == 0)
             printf("\nRing communication successful! "
-                   "Rank 0 received %d from rank %d.\n", recv_val, size - 1);
-        } else {
+                   "All %d ranks received the expected value.\n", size);
+        else
             printf("\nRing communication FAILED. "
-                   "Expected %d but got %d.\n", size - 1, recv_val);
-        }
+                   "%d of %d ranks received an incorrect value.\n",
+                   failed_ranks, size);
     }
 
     MPI_Finalize();
-    return 0;
+    return failed_ranks == 0 ? 0 : 1;
 }

@@ -126,13 +126,20 @@ def batch(run, args, name, command, *options, timeout=1800):
     """Run a check's command in a batch job; return (exit code, job ID, output).
 
     The site filter allows only 4 interactive (srun) jobs per user in the
-    queue, so the checks use batch jobs and leave those for the agents.
+    queue, so the checks use batch jobs and leave those for the agents. It
+    also allows only one queued job per user in some partitions (devel), so a
+    submission it rejects for that reason is retried for up to 10 minutes. If
+    the job never runs, the job ID is None and the output is sbatch's error.
     """
     out_file = run.dir / f"check_{name}.txt"
-    rc, out, err = sh(["sbatch", "--wait", "--parsable",
-                       f"--partition={args.partition}", "--nodes=1",
-                       f"--output={out_file}", *options, f"--wrap={command}"],
-                      run.workdir, run.env, timeout)
+    for _ in range(60):
+        rc, out, err = sh(["sbatch", "--wait", "--parsable",
+                           f"--partition={args.partition}", "--nodes=1",
+                           f"--output={out_file}", *options, f"--wrap={command}"],
+                          run.workdir, run.env, timeout)
+        if "maximum allowed jobs" not in err:
+            break
+        time.sleep(10)
     job = out.strip().split(";")[0] if out.strip() else None
     text = out_file.read_text(errors="replace") if out_file.exists() else err
     return rc, job, text
@@ -229,14 +236,24 @@ def reference_m3(run):
 
 
 # --- Module 4: a ring, tested with synchronous sends ------------------------
+M4_RANKS = (1, 3, 4, 8)
+
+
 def check_m4(run, args):
     src_path = run.workdir / "ring_agent.c"
     if not src_path.exists():
         return False, {"error": "ring_agent.c not written"}
     src = src_path.read_text()
-    notes = {"sendrecv": "MPI_Sendrecv" in src,
-             "nonblocking": bool(re.search(r"MPI_I(send|recv)\b", src)),
-             "blocking_send": bool(re.search(r"\bMPI_Send\s*\(", src))}
+    # Count calls, not text in comments: a comment that mentions MPI_Send(...)
+    # would otherwise make the MPI_Ssend copy look tested when nothing changed.
+    code = re.sub(r"//[^\n]*", "", re.sub(r"/\*.*?\*/", "", src, flags=re.S))
+    notes = {"send_calls": len(re.findall(r"\bMPI_Send\s*\(", code)),
+             "sendrecv": "MPI_Sendrecv" in code,
+             "nonblocking": bool(re.search(r"MPI_I(send|recv)\b", code))}
+    # The prompt asks for MPI_Send and MPI_Recv, which the students check too;
+    # without a real MPI_Send call, the MPI_Ssend copy tests nothing.
+    notes["requested_calls"] = (notes["send_calls"] > 0 and not notes["sendrecv"]
+                                and not notes["nonblocking"])
     (run.workdir / "ring_ssend.c").write_text(
         re.sub(r"\bMPI_Send\s*\(", "MPI_Ssend(", src))
     rc, out, err = sh(["mpicc", "-O2", "-o", "ring_ssend", "ring_ssend.c"],
@@ -244,17 +261,26 @@ def check_m4(run, args):
     if rc != 0:
         notes["compile_error"] = err.strip()[-300:]
         return False, notes
-    passed = True
-    for n in (4, 8):
-        rc, job, out = batch(run, args, f"ssend_{n}", "srun ./ring_ssend",
-                             f"--ntasks={n}", "--time=1:00")
-        ok = rc == 0
+    # Every rank count is a step of one job: one allocation, no resubmission
+    # between counts, and timeout ends a deadlocked step after 20 seconds.
+    steps = " ".join(f'echo "=== ranks={n} ==="; srun --ntasks={n} timeout 20 '
+                     f'./ring_ssend; echo "=== rc={n} $? ===";' for n in M4_RANKS)
+    rc, job, out = batch(run, args, "ssend", steps,
+                         f"--ntasks={max(M4_RANKS)}", "--time=3:00")
+    if job is None:  # the job never ran, so the agent's code wasn't checked
+        notes["infrastructure"] = out.strip()[-300:]
+        return None, notes
+    passed = notes["requested_calls"]
+    for n in M4_RANKS:
+        m = re.search(rf"=== ranks={n} ===\n(.*?)=== rc={n} (\d+) ===", out, re.S)
+        block, step_rc = (m.group(1), int(m.group(2))) if m else ("", None)
+        ok = step_rc == 0
         for r in range(n):
-            m = re.search(rf"Rank\s+{r}\b[^\n]*?received\D*?(-?\d+)", out)
-            ok = ok and m is not None and int(m.group(1)) == (r - 1) % n
+            v = re.search(rf"Rank\s+{r}\b[^\n]*?received\D*?(-?\d+)", block)
+            ok = ok and v is not None and int(v.group(1)) == (r - 1) % n
         notes[f"ssend_{n}_ok"] = ok
-        if "TIME LIMIT" in out:
-            notes[f"ssend_{n}"] = "deadlock (time limit)"
+        if step_rc == 124:
+            notes[f"ssend_{n}"] = "deadlock (timeout)"
         passed = passed and ok
     return passed, notes
 
@@ -351,7 +377,7 @@ TASKS = {t.name: t for t in [
     Task("m4-ring", "module-04-mpi/exercises", "code",
          "Write ring_agent.c: an MPI program in which every rank sends its rank "
          "number to the next rank (the last rank sends to rank 0) and receives "
-         "from the previous rank, then prints a line 'Rank <r> received <v>'. "
+         "from the previous rank, then prints a line `Rank <r> received <v>`. "
          "Use MPI_Send and MPI_Recv.",
          files=["ring_agent.c"], reference=reference_m4, check=check_m4),
     Task("m5-sweep", "module-05-hip/exercises", "code",

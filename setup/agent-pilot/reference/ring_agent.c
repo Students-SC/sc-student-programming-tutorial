@@ -11,7 +11,9 @@ int main(int argc, char **argv) {
     int dest = (rank + 1) % size;
     int source = (rank - 1 + size) % size;
 
-    if (rank % 2 == 0) {
+    if (size == 1) {
+        recv_val = send_val;
+    } else if (rank % 2 == 0) {
         MPI_Send(&send_val, 1, MPI_INT, dest, 0, MPI_COMM_WORLD);
         MPI_Recv(&recv_val, 1, MPI_INT, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     } else {

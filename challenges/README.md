@@ -48,16 +48,40 @@ The batch script runs four splits of the node's 16 cores: 16 ranks x 1
 thread, 4 x 4, 2 x 8, and 1 x 16. For each one, `srun --cpus-per-task` gives
 every rank its own cores for its threads.
 
+Note the job ID printed by `sbatch`. Wait for the job to finish, using
+`squeue -u $USER` to check pending and running jobs. Disappearing from that
+list does not establish success.
+
 #### Step 4: Examine the Output
+
+Replace `<JOBID>` with the ID of your submission:
 
 ```bash
 cat hybrid-sum_<JOBID>.out
+cat hybrid-sum_<JOBID>.err
+sacct -j <JOBID> --format=JobID,JobName%20,State,ExitCode
 ```
+
+Check that the job and all four numbered run steps are `COMPLETED` with exit
+code `0:0`, and inspect the error log. If accounting is initially empty, try
+again shortly. The script stops at the first failed run; do not interpret an
+incomplete sweep as a performance comparison.
+
+Expect a sum of approximately `2.11e13`, consistent with Module 4's one-rank
+baseline. Small differences in the last digits can result from changing the
+addition order. The reported time is rank 0's calculation and reduction
+interval, not job startup or a repeated benchmark. The threads label reports
+`omp_get_max_threads()`, the configured maximum; it does not prove that the
+loop actually used a team of threads.
 
 **Questions:**
 - Do all four splits give the same sum? About the same time?
 - If the time grows as the number of ranks drops, what does that tell you
   about your threads?
+- All four splits use the same node's 16 cores. How does the amount of private
+  process memory and the number of MPI contributions change as you use fewer
+  ranks and more threads? How do threads combine their partial sums before
+  MPI combines the ranks' results?
 - On one node, the splits can perform about the same. On a large cluster, why
   might an application prefer fewer ranks with more threads on each node?
   (Hint: think about how many messages are exchanged, and how much memory
@@ -69,5 +93,5 @@ A completed version is in `solutions/hybrid_sum_solution.c`.
 
 ## OpenMP Offload
 
-This bonus module covers OpenMP directives for GPU programming. This requires completing [Module 3 OpenMP](../module-03-openmp/README.md) and [Module 5 HIP](../module-05-hip/README.md). [Click here to get started](./bonus-openmp-offload/README).
+This bonus module covers OpenMP directives for GPU programming. This requires completing [Module 3 OpenMP](../module-03-openmp/README.md) and [Module 5 HIP](../module-05-hip/README.md). [Click here to get started](./bonus-openmp-offload/README.md).
 
