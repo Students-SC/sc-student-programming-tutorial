@@ -324,7 +324,7 @@ gcc -fopenmp -o openmp_hello ../examples/openmp_hello.c
 Use `srun` to execute the compiled program on a compute node:
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
   bash -c 'export OMP_NUM_THREADS=4; ./openmp_hello'
 ```
 
@@ -334,7 +334,7 @@ Run the program with 1, 4, 8, and 16 threads in a single job and observe the
 output:
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
   bash -c 'for t in 1 4 8 16; do export OMP_NUM_THREADS=$t; ./openmp_hello; done'
 ```
 
@@ -358,7 +358,7 @@ cat pi_serial.c
 
 ```bash
 gcc -O2 -o pi_serial pi_serial.c -lm
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./pi_serial
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 ./pi_serial
 ```
 
 #### Step 3: Record the Result
@@ -464,7 +464,7 @@ run it:
 
 ```bash
 gcc -fopenmp -O2 -o pi_race pi_race.c -lm
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
   bash -c 'export OMP_NUM_THREADS=8; for run in 1 2 3; do ./pi_race; done'
 ```
 
