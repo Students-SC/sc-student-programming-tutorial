@@ -13,6 +13,9 @@
 #SBATCH --output=hybrid-sum_%j.out
 #SBATCH --error=hybrid-sum_%j.err
 
+# Stop the sweep if a command fails, including any srun step.
+set -euo pipefail
+
 echo "Hybrid MPI + OpenMP Sum -- Job $SLURM_JOB_ID on $(hostname)"
 echo ""
 
