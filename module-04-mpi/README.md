@@ -61,14 +61,7 @@ Sharing a node does not make the ranks' variables shared: each rank computes
 its own partial result, and a message or collective operation combines data
 from the different processes.
 
-```mermaid
-flowchart LR
-    subgraph N["One compute node"]
-        R0["Rank 0: private memory"] <-->|messages| R1["Rank 1: private memory"]
-        R1 <-->|messages| R2["Rank 2: private memory"]
-        R2 <-->|messages| R3["Rank 3: private memory"]
-    end
-```
+![Four MPI ranks on one compute node, each with private memory, exchanging messages.](../_static/mpi-ranks.svg)
 
 Both MPI and OpenMP can divide work among the node's CPU cores. The difference
 you will practice is how they coordinate: OpenMP threads can update shared
@@ -332,15 +325,7 @@ In a ring pattern, each rank sends its rank number to the next rank and
 receives the previous rank's number. Each value moves one hop. The last rank
 sends back to rank 0:
 
-```mermaid
-flowchart LR
-    subgraph N["One compute node: each value moves one hop"]
-        R0["Rank 0"] --> R1["Rank 1"]
-        R1 --> R2["Rank 2"]
-        R2 --> R3["Rank 3"]
-        R3 --> R0
-    end
-```
+![One-hop ring exchange on one compute node: rank 0 sends to 1, 1 to 2, 2 to 3, and 3 to 0.](../_static/mpi-ring.svg)
 
 #### Step 1: Open the Template
 
