@@ -355,7 +355,7 @@ or an existing VS Code Remote SSH connection.
 #### Step 2: Change the Settings
 
 The script runs as it is; its settings are working values for you to change
-(see [Generating Text with Hugging Face](#generating-text-with-hugging-face)).
+(see [Generating Text with Hugging Face](#understanding-the-code-generating-text-with-hugging-face)).
 There are **3 TODOs**, plus an optional fourth:
 
 1. **TODO 1**: Choose the device: change `"cpu"` to `"cuda"`.
