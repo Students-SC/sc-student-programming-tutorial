@@ -1,6 +1,6 @@
 # Module 6 -- AI on HPC: Inference & Fine-Tuning
 
-> **Time:** 2:00 to 3:00 PM CST ┬╖ 60 min total ┬╖ ~20 min lecture ┬╖ ~40 min hands-on
+> **Time:** 2:00 to 3:00 PM CST · 60 min total · ~20 min lecture · ~40 min hands-on
 
 ## Learning Objectives
 
@@ -306,7 +306,7 @@ For this model, the output contains the input followed by the continuation.
 The scripts remove the input before decoding the response. Generation timing
 excludes loading, warm-up, tokenization, input transfers, and decoding.
 
-**Output tokens per second = actual generated tokens ├╖ generation time in seconds**
+**Output tokens per second = actual generated tokens ÷ generation time in seconds**
 
 #### Step 3: Submit the Batch Job
 
@@ -485,10 +485,10 @@ truncation and padding:
 
 | Value | Shape | Meaning |
 |---|---|---|
-| `input_ids` | `B ├ù L` | Token IDs, including padding |
-| `attention_mask` | `B ├ù L` | 1 for real tokens, 0 for padding |
+| `input_ids` | `B × L` | Token IDs, including padding |
+| `attention_mask` | `B × L` | 1 for real tokens, 0 for padding |
 | `labels` | `B` | Dataset targets: 0 negative, 1 positive |
-| `outputs.logits` | `B ├ù 2` | Negative and positive scores per review |
+| `outputs.logits` | `B × 2` | Negative and positive scores per review |
 | `outputs.loss` | Scalar | Cross-entropy loss averaged over the reviews |
 
 The tokenizer supplies IDs and masks; the dataset supplies labels. Padding
@@ -518,7 +518,7 @@ model = get_peft_model(model, lora_config)
 | `target_modules` | Adapt query and value projections in attention: two matrices per layer, 12 total |
 | `get_peft_model(...)` | Attach adapters and set trainable parameters, including classification layers for this configuration |
 
-The effective weight is **W + (lora_alpha / r) ├ù B ├ù A**. Here **A** and **B**
+The effective weight is **W + (lora_alpha / r) × B × A**. Here **A** and **B**
 are the two adapter matrices, not the batch-size symbol above.
 
 | Parameter count | This configuration |
@@ -750,8 +750,8 @@ A solution that measures both modes is in
 
 ### Challenge A (Optional): LoRA Hyperparameters
 
-**Reference:** for a matrix with dimensions `d_out ├ù d_in`, the adapter
-has `r ├ù d_in + d_out ├ù r` parameters. Each adapted matrix here is `768 ├ù 768`:
+**Reference:** for a matrix with dimensions `d_out × d_in`, the adapter
+has `r × d_in + d_out × r` parameters. Each adapted matrix here is `768 × 768`:
 at rank 8, that is 12,288 parameters per adapter and 147,456 across all 12.
 The classification parameter count does not depend on rank. Scaling both rank
 and alpha together preserves `lora_alpha / r`, but need not preserve the actual
