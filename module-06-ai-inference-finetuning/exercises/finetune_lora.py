@@ -113,8 +113,7 @@ def main():
     print(f"Original model parameters: {original_params:,}")
 
     # --- Apply LoRA ---
-    # TODO 1: Read the configuration, then enable it. Be ready to explain r and
-    # target_modules (see "Configuring LoRA" in the README).
+    # TODO 1: Read and enable the LoRA configuration.
     # ----- BEGIN TODO 1 -----
 #    lora_config = LoraConfig(
 #        task_type=TaskType.SEQ_CLS,         # sequence classification
@@ -186,9 +185,8 @@ def main():
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["label"].to(device)
 
-            # TODO 2: Read the training step, then enable it (see "One Training
-            # Step" in the README). Lines that are still comments afterward are
-            # explanations.
+            # TODO 2: Read and enable the training step. Lines that are still
+            # comments afterward are explanations.
             # ----- BEGIN TODO 2 -----
 #            # Discard gradients from the previous batch.
 #            optimizer.zero_grad()
