@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="405" viewBox="0 0 800 450" role="img" aria-labelledby="title desc">
+  <title id="title">Five MPI collective operations on four ranks</title>
+  <desc id="desc">Each row shows every rank's data before and after one collective call, with rank 0 as the root. MPI_Bcast: rank 0 has A; afterwards every rank has A. MPI_Reduce: ranks hold 1, 2, 3 and 4; afterwards rank 0 has their sum, 10, and the other ranks receive nothing. MPI_Allreduce: ranks hold 1, 2, 3 and 4; afterwards every rank has 10. MPI_Scatter: rank 0 holds A B C D; afterwards ranks 0 to 3 hold A, B, C and D. MPI_Gather: ranks hold A, B, C and D; afterwards rank 0 holds A B C D and the other ranks receive nothing.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="9" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 9 4.5 L 0 9 Z" fill="#2b6cb0"/>
+    </marker>
+  </defs>
+  <rect width="800" height="450" fill="#ffffff"/>
+  <rect x="20" y="16" width="760" height="418" rx="16" fill="#f6f9fc" stroke="#cbd9e9" stroke-width="2"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
+    <text x="400" y="49" font-size="20" font-weight="700" fill="#07091f">Collective operations on four ranks</text>
+    <g font-size="14" font-weight="700" fill="#25305f">
+      <text x="317" y="86">Before</text>
+      <text x="627" y="86">After</text>
+    </g>
+    <g font-size="12" fill="#5f6677">
+      <text x="224" y="110">Rank 0</text><text x="286" y="110">Rank 1</text><text x="348" y="110">Rank 2</text><text x="410" y="110">Rank 3</text>
+      <text x="534" y="110">Rank 0</text><text x="596" y="110">Rank 1</text><text x="658" y="110">Rank 2</text><text x="720" y="110">Rank 3</text>
+    </g>
+
+    <g font-size="16" font-weight="700" fill="#07091f" text-anchor="start">
+      <text x="44" y="147">MPI_Bcast</text>
+      <text x="44" y="203">MPI_Reduce</text>
+      <text x="44" y="259">MPI_Allreduce</text>
+      <text x="44" y="315">MPI_Scatter</text>
+      <text x="44" y="371">MPI_Gather</text>
+    </g>
+
+    <!-- Cells holding data -->
+    <g fill="#eff6ff" stroke="#368fd8" stroke-width="2">
+      <rect x="196" y="122" width="56" height="40" rx="8"/>
+      <rect x="506" y="122" width="56" height="40" rx="8"/><rect x="568" y="122" width="56" height="40" rx="8"/><rect x="630" y="122" width="56" height="40" rx="8"/><rect x="692" y="122" width="56" height="40" rx="8"/>
+      <rect x="196" y="178" width="56" height="40" rx="8"/><rect x="258" y="178" width="56" height="40" rx="8"/><rect x="320" y="178" width="56" height="40" rx="8"/><rect x="382" y="178" width="56" height="40" rx="8"/>
+      <rect x="506" y="178" width="56" height="40" rx="8"/>
+      <rect x="196" y="234" width="56" height="40" rx="8"/><rect x="258" y="234" width="56" height="40" rx="8"/><rect x="320" y="234" width="56" height="40" rx="8"/><rect x="382" y="234" width="56" height="40" rx="8"/>
+      <rect x="506" y="234" width="56" height="40" rx="8"/><rect x="568" y="234" width="56" height="40" rx="8"/><rect x="630" y="234" width="56" height="40" rx="8"/><rect x="692" y="234" width="56" height="40" rx="8"/>
+      <rect x="196" y="290" width="56" height="40" rx="8"/>
+      <rect x="506" y="290" width="56" height="40" rx="8"/><rect x="568" y="290" width="56" height="40" rx="8"/><rect x="630" y="290" width="56" height="40" rx="8"/><rect x="692" y="290" width="56" height="40" rx="8"/>
+      <rect x="196" y="346" width="56" height="40" rx="8"/><rect x="258" y="346" width="56" height="40" rx="8"/><rect x="320" y="346" width="56" height="40" rx="8"/><rect x="382" y="346" width="56" height="40" rx="8"/>
+      <rect x="506" y="346" width="56" height="40" rx="8"/>
+    </g>
+    <!-- The root's cells -->
+    <g fill="none" stroke="#2b6cb0" stroke-width="3">
+      <rect x="196" y="122" width="56" height="40" rx="8"/><rect x="506" y="122" width="56" height="40" rx="8"/>
+      <rect x="196" y="178" width="56" height="40" rx="8"/><rect x="506" y="178" width="56" height="40" rx="8"/>
+      <rect x="196" y="290" width="56" height="40" rx="8"/><rect x="506" y="290" width="56" height="40" rx="8"/>
+      <rect x="196" y="346" width="56" height="40" rx="8"/><rect x="506" y="346" width="56" height="40" rx="8"/>
+    </g>
+    <!-- Nothing to send, or nothing received -->
+    <g fill="#ffffff" stroke="#cbd9e9" stroke-width="2" stroke-dasharray="5 4">
+      <rect x="258" y="122" width="56" height="40" rx="8"/><rect x="320" y="122" width="56" height="40" rx="8"/><rect x="382" y="122" width="56" height="40" rx="8"/>
+      <rect x="568" y="178" width="56" height="40" rx="8"/><rect x="630" y="178" width="56" height="40" rx="8"/><rect x="692" y="178" width="56" height="40" rx="8"/>
+      <rect x="258" y="290" width="56" height="40" rx="8"/><rect x="320" y="290" width="56" height="40" rx="8"/><rect x="382" y="290" width="56" height="40" rx="8"/>
+      <rect x="568" y="346" width="56" height="40" rx="8"/><rect x="630" y="346" width="56" height="40" rx="8"/><rect x="692" y="346" width="56" height="40" rx="8"/>
+    </g>
+
+    <g font-size="15" font-weight="700" fill="#07091f">
+      <text x="224" y="147">A</text>
+      <text x="534" y="147">A</text><text x="596" y="147">A</text><text x="658" y="147">A</text><text x="720" y="147">A</text>
+      <text x="224" y="203">1</text><text x="286" y="203">2</text><text x="348" y="203">3</text><text x="410" y="203">4</text>
+      <text x="534" y="203">10</text>
+      <text x="224" y="259">1</text><text x="286" y="259">2</text><text x="348" y="259">3</text><text x="410" y="259">4</text>
+      <text x="534" y="259">10</text><text x="596" y="259">10</text><text x="658" y="259">10</text><text x="720" y="259">10</text>
+      <text x="224" y="315">ABCD</text>
+      <text x="534" y="315">A</text><text x="596" y="315">B</text><text x="658" y="315">C</text><text x="720" y="315">D</text>
+      <text x="224" y="371">A</text><text x="286" y="371">B</text><text x="348" y="371">C</text><text x="410" y="371">D</text>
+      <text x="534" y="371">ABCD</text>
+    </g>
+
+    <g fill="none" stroke="#2b6cb0" stroke-width="2.5" marker-end="url(#arrow)">
+      <path d="M 450 142 H 490"/>
+      <path d="M 450 198 H 490"/>
+      <path d="M 450 254 H 490"/>
+      <path d="M 450 310 H 490"/>
+      <path d="M 450 366 H 490"/>
+    </g>
+
+    <text x="400" y="414" font-size="12" fill="#5f6677">Thick outline: the root, rank 0</text>
+  </g>
+</svg>

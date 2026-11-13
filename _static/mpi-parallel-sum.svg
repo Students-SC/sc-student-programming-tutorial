@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="306" viewBox="0 0 800 340" role="img" aria-labelledby="title desc">
+  <title id="title">Parallel Sum on four ranks</title>
+  <desc id="desc">The index range from 0 to 1,000,000,000 is split into four equal parts, one per rank, with boundaries at 250,000,000, 500,000,000 and 750,000,000. Each rank sums sqrt(i) over its part: about 2.64e12, 4.82e12, 6.24e12 and 7.39e12. MPI_Reduce with MPI_SUM adds the four partial sums, and only rank 0 receives the total, about 2.11e13.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="9" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 9 4.5 L 0 9 Z" fill="#2b6cb0"/>
+    </marker>
+  </defs>
+  <rect width="800" height="340" fill="#ffffff"/>
+  <rect x="20" y="16" width="760" height="306" rx="16" fill="#f6f9fc" stroke="#cbd9e9" stroke-width="2"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
+    <text x="400" y="49" font-size="20" font-weight="700" fill="#07091f">Parallel Sum on four ranks</text>
+
+    <!-- The index range, split into four equal parts -->
+    <g fill="#eff6ff" stroke="#368fd8" stroke-width="2">
+      <rect x="40" y="72" width="174" height="34" rx="6"/>
+      <rect x="222" y="72" width="174" height="34" rx="6"/>
+      <rect x="404" y="72" width="174" height="34" rx="6"/>
+      <rect x="586" y="72" width="174" height="34" rx="6"/>
+    </g>
+    <g font-size="14" font-weight="700" fill="#07091f">
+      <text x="127" y="94">Rank 0</text>
+      <text x="309" y="94">Rank 1</text>
+      <text x="491" y="94">Rank 2</text>
+      <text x="673" y="94">Rank 3</text>
+    </g>
+    <g font-size="12" fill="#25305f">
+      <text x="40" y="124" text-anchor="start">i = 0</text>
+      <text x="218" y="124">250,000,000</text>
+      <text x="400" y="124">500,000,000</text>
+      <text x="582" y="124">750,000,000</text>
+      <text x="760" y="124" text-anchor="end">1,000,000,000</text>
+    </g>
+
+    <!-- Each rank's partial sum -->
+    <g fill="none" stroke="#2b6cb0" stroke-width="2.5" marker-end="url(#arrow)">
+      <path d="M 127 108 V 136"/>
+      <path d="M 309 108 V 136"/>
+      <path d="M 491 108 V 136"/>
+      <path d="M 673 108 V 136"/>
+    </g>
+    <g fill="#ffffff" stroke="#368fd8" stroke-width="2">
+      <rect x="40" y="138" width="174" height="34" rx="8"/>
+      <rect x="222" y="138" width="174" height="34" rx="8"/>
+      <rect x="404" y="138" width="174" height="34" rx="8"/>
+      <rect x="586" y="138" width="174" height="34" rx="8"/>
+    </g>
+    <g font-size="13" fill="#25305f">
+      <text x="127" y="160">partial_sum ≈ 2.64e12</text>
+      <text x="309" y="160">partial_sum ≈ 4.82e12</text>
+      <text x="491" y="160">partial_sum ≈ 6.24e12</text>
+      <text x="673" y="160">partial_sum ≈ 7.39e12</text>
+    </g>
+
+    <!-- Every rank calls MPI_Reduce; only rank 0 gets the total -->
+    <g fill="none" stroke="#2b6cb0" stroke-width="2.5" marker-end="url(#arrow)">
+      <path d="M 127 174 V 202"/>
+      <path d="M 309 174 V 202"/>
+      <path d="M 491 174 V 202"/>
+      <path d="M 673 174 V 202"/>
+      <path d="M 127 242 V 270"/>
+    </g>
+    <rect x="40" y="204" width="720" height="36" rx="10" fill="#ffffff" stroke="#2b6cb0" stroke-width="2"/>
+    <text x="400" y="227" font-size="14" font-weight="700" fill="#07091f">MPI_Reduce with MPI_SUM</text>
+    <rect x="40" y="272" width="260" height="36" rx="10" fill="#eff6ff" stroke="#2b6cb0" stroke-width="3"/>
+    <text x="170" y="295" font-size="14" font-weight="700" fill="#07091f">Rank 0: global_sum ≈ 2.11e13</text>
+  </g>
+</svg>

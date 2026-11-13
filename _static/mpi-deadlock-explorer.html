@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ring Deadlock Explorer</title>
+<style>
+  :root {
+    --page: #ffffff; --panel: #f6f9fc; --line: #cbd9e9;
+    --ink: #07091f; --ink2: #25305f; --ink3: #5f6677;
+    --rank: #eff6ff; --brand: #368fd8; --arrow: #2b6cb0;
+    --wait: #fff7ed; --wait-line: #c05621; --wait-ink: #7b341e;
+    --done: #f0fdf4; --done-line: #2f855a; --done-ink: #22543d;
+  }
+  * { box-sizing: border-box; }
+  html { color-scheme: light; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: Arial, Helvetica, sans-serif; line-height: 1.4; }
+  main { max-width: 880px; margin: 0 auto; padding: 16px; }
+  .panel { background: var(--panel); border: 2px solid var(--line); border-radius: 16px; padding: 16px 20px 20px; }
+  h1 { font-size: 20px; margin: 4px 0; text-align: center; }
+  .sub { font-size: 14px; color: var(--ink2); text-align: center; margin: 0 auto 14px; max-width: 660px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 16px; justify-content: center; align-items: flex-end; }
+  .controls label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; color: var(--ink2); }
+  select { font: inherit; font-size: 14px; font-weight: 400; color: var(--ink); background: #ffffff; border: 2px solid var(--brand); border-radius: 8px; padding: 6px 8px; max-width: 100%; }
+  select:disabled { border-color: var(--line); color: var(--ink3); }
+  .buttons { display: flex; gap: 8px; }
+  button { font: inherit; font-size: 14px; font-weight: 700; border-radius: 8px; padding: 7px 14px; border: 2px solid var(--arrow); background: var(--arrow); color: #ffffff; cursor: pointer; }
+  button.secondary { background: #ffffff; color: var(--arrow); }
+  button:disabled { opacity: 0.45; cursor: default; }
+  button:focus-visible, select:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+  .stage { margin: 14px 0 6px; background: #ffffff; border: 2px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .stage svg { display: block; width: 100%; height: auto; }
+  .legend { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; font-size: 12px; color: var(--ink3); margin: 6px 0 10px; }
+  .legend span::before { content: ""; display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 2px solid; }
+  .legend .l-run::before { background: var(--rank); border-color: var(--brand); }
+  .legend .l-wait::before { background: var(--wait); border-color: var(--wait-line); }
+  .legend .l-done::before { background: var(--done); border-color: var(--done-line); }
+  .legend .l-buf::before, .legend .l-sent::before { width: 22px; height: 0; border: 0; border-radius: 0; border-top: 2px dashed var(--arrow); vertical-align: 3px; }
+  .legend .l-sent::before { border-top-style: solid; }
+  .status { min-height: 3em; margin: 4px 0 12px; padding: 10px 14px; border-radius: 10px; background: #ffffff; border: 2px solid var(--line); font-size: 15px; }
+  .status.deadlock { border-color: var(--wait-line); background: var(--wait); color: var(--wait-ink); }
+  .status.done { border-color: var(--done-line); background: var(--done); color: var(--done-ink); }
+  .box h2 { font-size: 13px; color: var(--ink2); margin: 12px 0 6px; }
+  pre, .log { margin: 0; font-family: Menlo, Consolas, "Liberation Mono", monospace; font-size: 12.5px; background: #ffffff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  pre { white-space: pre; overflow-x: auto; }
+  .log { max-height: 220px; overflow-y: auto; }
+  .log p { margin: 0 0 4px; }
+  .log .r { color: var(--ink3); font-weight: 700; }
+  .note { font-size: 12px; color: var(--ink3); margin: 12px 0 0; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <div class="panel">
+    <h1>Ring deadlock explorer</h1>
+    <p class="sub">Choose a version of the ring exchange, predict whether it finishes, then step through it.</p>
+    <div class="controls">
+      <label for="ranks">Ranks
+        <select id="ranks">
+          <option>1</option><option>2</option><option>3</option><option selected>4</option>
+          <option>5</option><option>6</option><option>7</option><option>8</option>
+        </select>
+      </label>
+      <label for="order">Ordering
+        <select id="order">
+          <option value="naive">Every rank sends first</option>
+          <option value="evenodd">Even ranks send first, odd ranks receive first</option>
+          <option value="evenodd1">Even/odd, with a one-rank ring handled separately</option>
+          <option value="sendrecv">One MPI_Sendrecv call</option>
+        </select>
+      </label>
+      <label for="mode">Send call
+        <select id="mode">
+          <option value="send">MPI_Send (this small message is buffered)</option>
+          <option value="ssend">MPI_Ssend (waits for the matching receive)</option>
+        </select>
+      </label>
+      <div class="buttons">
+        <button id="step" type="button">Step</button>
+        <button id="run" type="button">Run to end</button>
+        <button id="reset" type="button" class="secondary">Reset</button>
+      </div>
+    </div>
+    <div class="stage"><svg id="ring" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 410" role="img" aria-label="Ring of ranks"></svg></div>
+    <div class="legend"><span class="l-run">can act next</span><span class="l-wait">waiting</span><span class="l-done">finished</span><span class="l-buf">message in a buffer</span><span class="l-sent">message delivered</span></div>
+    <p id="status" class="status" aria-live="polite"></p>
+    <div class="box"><h2>The exchange in C</h2><pre id="code"></pre></div>
+    <div class="box"><h2>What happened</h2><div id="log" class="log"></div></div>
+    <p class="note">In each step, every rank that can act does. MPI_Send here always buffers this small message, as Open MPI does; correct programs must not rely on that.</p>
+  </div>
+</main>
+<script>
+// MODEL-START
+var Ring = (function () {
+  var C = {
+    ink: "#07091f", ink2: "#25305f", ink3: "#5f6677", line: "#cbd9e9",
+    rank: "#eff6ff", brand: "#368fd8", arrow: "#2b6cb0",
+    wait: "#fff7ed", waitLine: "#c05621", waitInk: "#7b341e",
+    done: "#f0fdf4", doneLine: "#2f855a", doneInk: "#22543d"
+  };
+  var LOOK = {
+    run: { fill: C.rank, line: C.brand, a: C.ink3, b: C.ink2 },
+    wait: { fill: C.wait, line: C.waitLine, a: C.waitInk, b: C.waitInk },
+    done: { fill: C.done, line: C.doneLine, a: C.doneInk, b: C.doneInk }
+  };
+
+  // Each rank's calls, in order, for the chosen version of the exchange.
+  function program(r, n, order) {
+    var dest = (r + 1) % n, src = (r - 1 + n) % n;
+    if (order === "sendrecv") return [{ type: "sendrecv", dest: dest, src: src }];
+    if (order === "evenodd1" && n === 1) return [{ type: "local" }];
+    var send = { type: "send", peer: dest }, recv = { type: "recv", peer: src };
+    if (order === "naive" || r % 2 === 0) return [send, recv];
+    return [recv, send];
+  }
+
+  function create(n, order, mode) {
+    var s = { n: n, order: order, mode: order === "sendrecv" ? "send" : mode, round: 0,
+              started: false, outcome: null, cycle: null, ranks: [], msgs: [], log: [] };
+    for (var r = 0; r < n; r++) {
+      s.ranks.push({ r: r, ops: program(r, n, order), pc: 0, recv: null });
+      s.msgs.push({ from: r, to: (r + 1) % n, status: "none" });  // each rank sends one message
+    }
+    if (order === "evenodd1" && n === 1) s.msgs[0].status = "local";
+    return s;
+  }
+
+  function op(s, r) { var R = s.ranks[r]; return R.pc < R.ops.length ? R.ops[R.pc] : null; }
+
+  // Everything that can happen next, judged from the current state.
+  function events(s) {
+    var ev = [];
+    for (var r = 0; r < s.n; r++) {
+      var o = op(s, r);
+      if (!o) continue;
+      if (o.type === "local") ev.push({ kind: "local", r: r });
+      else if (o.type === "sendrecv") {
+        var d = op(s, o.dest);
+        if (s.msgs[r].status === "none" && d && d.type === "sendrecv") ev.push({ kind: "sendrecv", from: r, to: o.dest });
+      } else if (o.type === "send") {
+        if (s.mode === "send") ev.push({ kind: "bufsend", from: r, to: o.peer });
+        else {
+          var t = op(s, o.peer);  // MPI_Ssend needs the receiver to be in its matching receive
+          if (o.peer !== r && t && t.type === "recv" && t.peer === r) ev.push({ kind: "rendezvous", from: r, to: o.peer });
+        }
+      } else if (o.type === "recv") {
+        if (s.msgs[o.peer].status === "buffered") ev.push({ kind: "take", from: o.peer, to: r });
+      }
+    }
+    return ev;
+  }
+
+  function movable(s) {
+    var m = {};
+    events(s).forEach(function (e) {
+      if (e.kind === "local") m[e.r] = true;
+      else if (e.kind === "bufsend") m[e.from] = true;
+      else if (e.kind === "take") m[e.to] = true;
+      else { m[e.from] = true; m[e.to] = true; }
+    });
+    return m;
+  }
+
+  function waitsFor(s, r) {
+    var o = op(s, r);
+    if (!o) return null;
+    if (o.type === "send" || o.type === "recv") return o.peer;
+    if (o.type === "sendrecv") return o.src;
+    return null;
+  }
+
+  function findCycle(s) {
+    var start = null;
+    for (var r = 0; r < s.n; r++) if (op(s, r)) { start = r; break; }
+    if (start === null) return null;
+    var seen = {}, path = [], x = start;
+    while (x !== null && !(x in seen)) { seen[x] = path.length; path.push(x); x = waitsFor(s, x); }
+    return x === null ? path : path.slice(seen[x]);
+  }
+
+  function step(s) {
+    if (s.outcome) return s;
+    s.started = true;
+    var ev = events(s);
+    s.lastEvents = ev;  // the moves of this step, for the animation
+    if (!ev.length) {
+      s.outcome = "deadlock";
+      s.cycle = findCycle(s);
+      s.log.push({ round: null, lines: [[null, "No rank can act: deadlock."]] });
+      return s;
+    }
+    s.round += 1;
+    var lines = [];
+    ev.forEach(function (e) {
+      var R;
+      if (e.kind === "local") {
+        R = s.ranks[e.r]; R.recv = R.r; R.pc += 1;
+        lines.push([e.r, "one-rank ring: keeps its own number, " + R.r + ", without sending a message"]);
+      } else if (e.kind === "bufsend") {
+        s.msgs[e.from].status = "buffered"; s.ranks[e.from].pc += 1;
+        lines.push([e.from, "MPI_Send to rank " + e.to + " returns at once; MPI keeps the message in a buffer"]);
+      } else if (e.kind === "take") {
+        s.msgs[e.from].status = "delivered"; R = s.ranks[e.to]; R.recv = e.from; R.pc += 1;
+        lines.push([e.to, "MPI_Recv takes " + e.from + " from the buffer"]);
+      } else if (e.kind === "rendezvous") {
+        s.msgs[e.from].status = "delivered"; s.ranks[e.from].pc += 1;
+        R = s.ranks[e.to]; R.recv = e.from; R.pc += 1;
+        lines.push([e.from, "MPI_Ssend to rank " + e.to + " completes because rank " + e.to + " is receiving; rank " + e.to + " gets " + e.from]);
+      } else if (e.kind === "sendrecv") {
+        s.msgs[e.from].status = "delivered";
+        lines.push([e.from, "MPI_Sendrecv delivers " + e.from + " to rank " + e.to]);
+      }
+    });
+    s.ranks.forEach(function (R) {
+      var o = op(s, R.r);
+      if (o && o.type === "sendrecv" && s.msgs[R.r].status === "delivered" && s.msgs[o.src].status === "delivered") {
+        R.recv = o.src; R.pc += 1;
+      }
+    });
+    if (s.ranks.every(function (R) { return R.pc >= R.ops.length; })) s.outcome = "done";
+    s.log.push({ round: s.round, lines: lines });
+    return s;
+  }
+
+  function runToEnd(n, order, mode) {
+    var s = create(n, order, mode);
+    for (var i = 0; i < 100 && !s.outcome; i++) step(s);
+    return s;
+  }
+
+  function callName(s, o) {
+    if (o.type === "send") return (s.mode === "ssend" ? "MPI_Ssend" : "MPI_Send") + " to " + o.peer;
+    if (o.type === "recv") return "MPI_Recv from " + o.peer;
+    if (o.type === "sendrecv") return "MPI_Sendrecv";
+    return "keep own number";
+  }
+
+  function rankView(s, r, mv) {
+    var R = s.ranks[r], o = op(s, r);
+    if (!o) return { look: "done", a: "finished", b: "received " + R.recv };
+    if (s.started && (s.outcome === "deadlock" || !mv[r])) return { look: "wait", a: "waiting in", b: callName(s, o) };
+    return { look: "run", a: "next", b: callName(s, o) };
+  }
+
+  function msgView(s, r, mv) {
+    var m = s.msgs[r], o = op(s, r);
+    if (m.status === "delivered") return { color: C.arrow, dash: "", marker: "m-blue", label: "value " + r, ink: C.ink2 };
+    if (m.status === "buffered") return { color: C.arrow, dash: "7 5", marker: "m-blue", label: "value " + r, ink: C.ink2 };
+    var sending = o && (o.type === "send" || o.type === "sendrecv");
+    if (s.started && sending && (s.outcome === "deadlock" || !mv[r]))
+      return { color: C.waitLine, dash: "7 5", marker: "m-wait", label: "", ink: C.waitInk };
+    return { color: C.line, dash: "7 5", marker: "m-idle", label: "", ink: C.ink3 };
+  }
+
+  function n1(x) { return Math.round(x * 10) / 10; }
+  function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function text(x, y, t, size, fill, extra) {
+    return '<text x="' + n1(x) + '" y="' + n1(y) + '" font-size="' + size + '" fill="' + fill + '"' + (extra || "") + ">" + esc(t) + "</text>";
+  }
+  function marker(id, color) {
+    return '<marker id="' + id + '" markerWidth="9" markerHeight="9" refX="9" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">' +
+           '<path d="M 0 0 L 9 4.5 L 0 9 Z" fill="' + color + '"/></marker>';
+  }
+  function stroke(v) {
+    return 'fill="none" stroke="' + v.color + '" stroke-width="2.5"' + (v.dash ? ' stroke-dasharray="' + v.dash + '"' : "") +
+           ' marker-end="url(#' + v.marker + ')"';
+  }
+
+  var CX = 320, CY = 210;
+  function layout(n) {
+    // Larger rings get a wider ellipse and smaller boxes so every arrow stays visible.
+    var g = n <= 4 ? { rx: 215, ry: 135, w: 150, h: 78, f: 18, t: 12, b: 12.5 }
+          : n <= 6 ? { rx: 235, ry: 145, w: 120, h: 64, f: 16, t: 11.5, b: 12 }
+          : { rx: 250, ry: 150, w: 100, h: 56, f: 14, t: 11, b: 11.5 };
+    var pts = [];
+    if (n === 1) pts.push({ x: CX, y: CY + 30 });
+    else for (var r = 0; r < n; r++) {
+      var a = (-90 - 180 / n + 360 * r / n) * Math.PI / 180;
+      pts.push({ x: CX + g.rx * Math.cos(a), y: CY + g.ry * Math.sin(a) });
+    }
+    return { size: g, pts: pts };
+  }
+
+  function edge(p, q, w, h, off) {
+    var dx = q.x - p.x, dy = q.y - p.y, len = Math.sqrt(dx * dx + dy * dy), ux = dx / len, uy = dy / len;
+    var t = Math.min(ux ? (w / 2) / Math.abs(ux) : 1e9, uy ? (h / 2) / Math.abs(uy) : 1e9);
+    var nx = -uy * off, ny = ux * off;
+    return { x1: p.x + ux * (t + 6) + nx, y1: p.y + uy * (t + 6) + ny, x2: q.x - ux * (t + 8) + nx, y2: q.y - uy * (t + 8) + ny,
+             mx: (p.x + q.x) / 2 + nx, my: (p.y + q.y) / 2 + ny };
+  }
+
+  // The arrow drawn for rank r's message: a straight line, or a loop when one rank is its own neighbor.
+  function geometry(s, r) {
+    var L = layout(s.n), w = L.size.w, h = L.size.h, P = L.pts;
+    if (s.n === 1) {
+      var p = P[0], x1 = p.x + w / 2 + 4, y1 = p.y - 14, x2 = p.x + 20, y2 = p.y - h / 2 - 6;
+      return { cubic: [x1, y1, x1 + 110, y1, x2 + 40, y2 - 110, x2, y2] };
+    }
+    var e = edge(P[r], P[(r + 1) % s.n], w, h, s.n === 2 ? -16 : 0);
+    return { line: [e.x1, e.y1, e.x2, e.y2] };
+  }
+
+  function pointAt(s, r, t) {
+    var g = geometry(s, r), c, u = 1 - t;
+    if (g.line) { c = g.line; return { x: c[0] + (c[2] - c[0]) * t, y: c[1] + (c[3] - c[1]) * t }; }
+    c = g.cubic;
+    return { x: u * u * u * c[0] + 3 * u * u * t * c[2] + 3 * u * t * t * c[4] + t * t * t * c[6],
+             y: u * u * u * c[1] + 3 * u * u * t * c[3] + 3 * u * t * t * c[5] + t * t * t * c[7] };
+  }
+
+  function render(s) {
+    var L = layout(s.n), w = L.size.w, h = L.size.h, P = L.pts, mv = movable(s), out = [];
+    out.push('<rect width="640" height="410" fill="#ffffff"/>');
+    out.push("<defs>" + marker("m-blue", C.arrow) + marker("m-wait", C.waitLine) + marker("m-idle", C.line) + "</defs>");
+    out.push('<g font-family="Arial, Helvetica, sans-serif" text-anchor="middle">');
+    out.push(text(CX, 30, s.n === 1 ? "One rank: rank 0 is its own neighbor" : "Each value moves one hop", 14, C.ink2, ""));
+    var v, r;
+    if (s.n === 1) {
+      v = msgView(s, 0, mv);
+      if (s.msgs[0].status !== "local") {
+        var p = P[0], q = geometry(s, 0).cubic;
+        out.push('<path d="M ' + n1(q[0]) + " " + n1(q[1]) + " C " + n1(q[2]) + " " + n1(q[3]) + " " + n1(q[4]) + " " + n1(q[5]) +
+                 " " + n1(q[6]) + " " + n1(q[7]) + '" ' + stroke(v) + "/>");
+        if (v.label) out.push(text(p.x + w / 2 + 70, p.y - h / 2 - 50, v.label, 13, v.ink, ""));
+      } else {
+        out.push(text(P[0].x, P[0].y - h / 2 - 22, "no message needed", 13, C.ink3, ""));
+      }
+    } else {
+      for (r = 0; r < s.n; r++) {
+        var e = edge(P[r], P[(r + 1) % s.n], w, h, s.n === 2 ? -16 : 0);
+        v = msgView(s, r, mv);
+        out.push('<path d="M ' + n1(e.x1) + " " + n1(e.y1) + " L " + n1(e.x2) + " " + n1(e.y2) + '" ' + stroke(v) + "/>");
+        // Labels sit beside their arrow; from six ranks up, the line style and the boxes carry the state.
+        if (v.label && s.n <= 5) {
+          var lx, ly, anchor = "middle";
+          if (s.n === 2) { lx = e.mx; ly = e.my + (r === 0 ? -10 : 22); }
+          else {
+            var vx = e.mx - CX, vy = e.my - CY, vl = Math.sqrt(vx * vx + vy * vy) || 1, ox = vx / vl, oy = vy / vl;
+            if (Math.abs(ox) > 0.7) { anchor = ox > 0 ? "start" : "end"; lx = e.mx + ox * 14; ly = e.my + 5; }
+            else { lx = e.mx + ox * 30; ly = e.my + oy * 22 + 4; }
+          }
+          out.push(text(lx, ly, v.label, 13, v.ink, anchor === "middle" ? "" : ' text-anchor="' + anchor + '"'));
+        }
+      }
+    }
+    for (r = 0; r < s.n; r++) {
+      var view = rankView(s, r, mv), look = LOOK[view.look], c = P[r], top = c.y - h / 2;
+      out.push('<rect x="' + n1(c.x - w / 2) + '" y="' + n1(top) + '" width="' + w + '" height="' + h + '" rx="10" fill="' +
+               look.fill + '" stroke="' + look.line + '" stroke-width="2"/>');
+      out.push(text(c.x, top + h * 0.33, "Rank " + r, L.size.f, C.ink, ' font-weight="700"'));
+      out.push(text(c.x, top + h * 0.60, view.a, L.size.t, look.a, ""));
+      out.push(text(c.x, top + h * 0.84, view.b, L.size.b, look.b, ' font-weight="700"'));
+    }
+    out.push("</g>");
+    return out.join("");
+  }
+
+  function code(order, mode) {
+    var S = "MPI_Send(&send_val, 1, MPI_INT, dest, 0, MPI_COMM_WORLD);";
+    var R = "MPI_Recv(&recv_val, 1, MPI_INT, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);";
+    var c;
+    if (order === "sendrecv") {
+      c = "MPI_Sendrecv(&send_val, 1, MPI_INT, dest,   0,\n             &recv_val, 1, MPI_INT, source, 0,\n             MPI_COMM_WORLD, MPI_STATUS_IGNORE);";
+    } else if (order === "naive") {
+      c = S + "\n" + R;
+    } else {
+      c = (order === "evenodd1" ? "if (size == 1) {\n    recv_val = send_val;   /* rank 0 is its own neighbor */\n} else if" : "if") +
+          " (rank % 2 == 0) {\n    " + S + "\n    " + R + "\n} else {\n    " + R + "\n    " + S + "\n}";
+    }
+    return mode === "ssend" && order !== "sendrecv" ? c.replace(/MPI_Send\(/g, "MPI_Ssend(") : c;
+  }
+
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+
+  function verdict(s) {
+    var n = s.n, t;
+    if (!s.started) return { cls: "", text: "Predict first: will this version finish with " + plural(n, "rank", "ranks") + "? Then press Step or Run to end." };
+    if (s.outcome === "deadlock") {
+      var c = s.cycle, why;
+      if (c.length === 1) {
+        why = "rank " + c[0] + " waits for itself: its MPI_Ssend can't finish until rank " + c[0] + " starts the receive that comes after it";
+      } else {
+        var parts = c.map(function (r) {
+          var o = op(s, r);
+          return "rank " + r + " waits for rank " + waitsFor(s, r) + (o.type === "send" ? " to start receiving" : " to send");
+        });
+        why = parts.length > 4 ? parts.slice(0, 2).join(", ") + ", …, " + parts[parts.length - 1] : parts.join(", ");
+      }
+      return { cls: "deadlock", text: "Deadlock: " + why + ". No rank can continue, so the program hangs. Under timeout 10, srun reports exit code 124." };
+    }
+    if (s.outcome === "done") {
+      t = "Finished in " + plural(s.round, "round", "rounds") + ": every rank received the previous rank's number.";
+      if (s.order === "sendrecv") t += " MPI_Sendrecv posts its send and its receive together, so the ring can't deadlock.";
+      else if (s.mode === "send" && runToEnd(n, s.order, "ssend").outcome === "deadlock")
+        t += " It finished only because MPI_Send buffered the messages. Switch the send call to MPI_Ssend to test whether this ordering relies on buffering.";
+      else if (s.mode === "ssend") {
+        t += " It finished with MPI_Ssend, so with " + plural(n, "rank", "ranks") + " this ordering doesn't rely on buffering.";
+        if (s.order === "evenodd" && n > 1) t += " Does it still finish with one rank?";
+      }
+      return { cls: "done", text: t };
+    }
+    var mv = movable(s), waiting = s.ranks.filter(function (R) { return op(s, R.r) && !mv[R.r]; }).length;
+    return { cls: "", text: "Round " + s.round + " done. " + (waiting ? plural(waiting, "rank is", "ranks are") + " waiting." : "No rank is waiting.") + " Press Step to continue." };
+  }
+
+  function summary(s) {
+    var mv = movable(s), parts = [];
+    for (var r = 0; r < s.n; r++) { var v = rankView(s, r, mv); parts.push("Rank " + r + ": " + v.a + " " + v.b + "."); }
+    return plural(s.n, "rank", "ranks") + " in a ring. " + parts.join(" ");
+  }
+
+  return { create: create, step: step, runToEnd: runToEnd, render: render, code: code, verdict: verdict,
+           summary: summary, waitsFor: waitsFor, op: op, pointAt: pointAt };
+})();
+// MODEL-END
+
+(function () {
+  var el = function (id) { return document.getElementById(id); };
+  var state = null, timer = null;
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+
+  function draw() {
+    var svg = el("ring");
+    svg.innerHTML = Ring.render(state);
+    svg.setAttribute("aria-label", Ring.summary(state));
+    el("code").textContent = Ring.code(state.order, state.mode);
+    var v = Ring.verdict(state), status = el("status");
+    status.textContent = v.text;
+    status.className = "status" + (v.cls ? " " + v.cls : "");
+    var log = el("log");
+    log.textContent = "";
+    if (!state.log.length) {
+      var empty = document.createElement("p");
+      empty.textContent = "Nothing has happened yet.";
+      log.appendChild(empty);
+    }
+    state.log.forEach(function (entry) {
+      var head = document.createElement("p"), tag = document.createElement("span");
+      tag.className = "r";
+      tag.textContent = entry.round ? "Round " + entry.round : "End";
+      head.appendChild(tag);
+      log.appendChild(head);
+      entry.lines.forEach(function (l) {
+        var p = document.createElement("p");
+        p.textContent = (l[0] === null ? "" : "Rank " + l[0] + ": ") + l[1];
+        log.appendChild(p);
+      });
+    });
+    log.scrollTop = log.scrollHeight;
+    buttons();
+  }
+
+  function buttons() {
+    var over = !!state.outcome;
+    el("step").disabled = over || !!timer;
+    el("run").disabled = over || !!timer;
+  }
+
+  function reset() {
+    stop();
+    var order = el("order").value;
+    el("mode").disabled = order === "sendrecv";
+    state = Ring.create(+el("ranks").value, order, el("mode").value);
+    draw();
+  }
+
+  // Each step, a numbered token travels along every arrow whose message just moved.
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function animate(s) {
+    var moves = (s.lastEvents || []).filter(function (e) { return e.kind !== "local"; });
+    if (reduced || !moves.length || !window.requestAnimationFrame) return;
+    try {
+      var svg = el("ring"), tokens = moves.map(function (e) {
+        var g = document.createElementNS(SVGNS, "g"), c = document.createElementNS(SVGNS, "circle"), t = document.createElementNS(SVGNS, "text");
+        c.setAttribute("r", "12"); c.setAttribute("fill", "#2b6cb0"); c.setAttribute("stroke", "#ffffff"); c.setAttribute("stroke-width", "2");
+        t.setAttribute("y", "4.5"); t.setAttribute("text-anchor", "middle"); t.setAttribute("font-size", "12"); t.setAttribute("font-weight", "700");
+        t.setAttribute("font-family", "Arial, Helvetica, sans-serif"); t.setAttribute("fill", "#ffffff"); t.textContent = String(e.from);
+        g.appendChild(c); g.appendChild(t); svg.appendChild(g);
+        return { g: g, r: e.from, t0: e.kind === "take" ? 0.6 : 0 };  // a buffered message only finishes its trip
+      });
+      var start = null;
+      var frame = function (now) {
+        if (start === null) start = now;
+        var k = Math.min(1, (now - start) / 600), ease = k < 0.5 ? 2 * k * k : 1 - Math.pow(2 - 2 * k, 2) / 2;
+        tokens.forEach(function (tok) {
+          var p = Ring.pointAt(s, tok.r, tok.t0 + (1 - tok.t0) * ease);
+          tok.g.setAttribute("transform", "translate(" + p.x.toFixed(1) + " " + p.y.toFixed(1) + ")");
+        });
+        if (k < 1) window.requestAnimationFrame(frame);
+        else tokens.forEach(function (tok) { if (tok.g.parentNode) tok.g.parentNode.removeChild(tok.g); });
+      };
+      window.requestAnimationFrame(frame);
+    } catch (err) { /* the animation is decoration; the state is already drawn */ }
+  }
+
+  function advance() { Ring.step(state); draw(); animate(state); }
+
+  el("step").addEventListener("click", advance);
+  el("run").addEventListener("click", function () {
+    if (reduced) { while (!state.outcome) Ring.step(state); draw(); return; }
+    advance();
+    if (!state.outcome) {
+      timer = setInterval(function () { advance(); if (state.outcome) { stop(); buttons(); } }, 900);
+      buttons();
+    }
+  });
+  el("reset").addEventListener("click", reset);
+  ["ranks", "order", "mode"].forEach(function (id) { el(id).addEventListener("change", reset); });
+  reset();
+})();
+</script>
+</body>
+</html>

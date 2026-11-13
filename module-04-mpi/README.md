@@ -25,16 +25,11 @@ By the end of this module, you will be able to:
 | Exercise 3 | 10 min | Observe a deadlock, fix the ordering, and check the ring |
 | Agent Practice | 9 min | Predict, inspect, and test a generated ring |
 
-This is a suggested 50-minute plan, including editing, submission, and output
-review. Every `srun` or `sbatch` reserves a whole compute node, and the class
-shares a limited number of nodes, so each step uses one job, and the ring
-runs, which can hang, stop themselves after 10 seconds. Queue waits and agent response times
-can still affect the pace. The code references below are lookups for the
-exercises, not extra lecture material. If time is short, stop Agent Practice
-after the first four-rank synchronous-send test and discuss what it
-establishes. After one agent repair, record any remaining problem and move
-on. The [extra tests](#extra-tests-optional) and the hybrid challenge are
-outside this plan.
+This is a suggested plan; queue waits and agent response times can change
+it. If time is short, stop Agent Practice after the first four-rank
+synchronous-send test and discuss what it shows. The
+[extra tests](#extra-tests-optional) and the hybrid challenge are outside
+this plan.
 
 ---
 
@@ -120,6 +115,8 @@ Instead of manually sending between every pair of ranks, MPI provides
 | `MPI_Allreduce` | Like Reduce, but every rank gets the result |
 | `MPI_Scatter` | One rank distributes different pieces to each rank |
 | `MPI_Gather` | Each rank sends a piece; one rank collects them all |
+
+![Five collective operations on four ranks, each showing every rank's data before and after the call: Bcast copies the root's value to every rank, Reduce sums values onto the root, Allreduce gives every rank the sum, Scatter splits the root's array, and Gather collects one piece from each rank on the root.](../_static/mpi-collectives.svg)
 
 Example -- sum a value across all ranks:
 
@@ -211,6 +208,8 @@ The program divides an index range across ranks. Each rank computes
 `sqrt(i)` for the indices in its range and adds those values locally, then
 `MPI_Reduce` combines the partial sums into a global total. No array is stored
 or distributed.
+
+![Parallel Sum on four ranks: the index range from 0 to 999,999,999 splits into four equal parts, each rank sums sqrt(i) over its part in private memory, and MPI_Reduce adds the four partial sums on rank 0.](../_static/mpi-parallel-sum.svg)
 
 #### Step 2: Complete the TODOs
 
@@ -363,6 +362,13 @@ was still waiting when its 10 seconds ran out. Each run reserves a whole
 compute node, so the time limit keeps a hung program from holding one any
 longer. To stop it sooner, press `Ctrl-C` twice within a second.
 
+To see the waiting step by step, open the ring deadlock explorer. Choose four
+ranks, *Every rank sends first*, and `MPI_Ssend`, then press **Step**. Then
+switch to `MPI_Send` to see how buffering hides the problem. The explorer runs
+on the tutorial website; GitHub shows only its source.
+
+<a href="../_static/mpi-deadlock-explorer.html">Open the ring deadlock explorer</a>
+
 With plain `MPI_Send`, this same code often works, because MPI copies small
 messages into a buffer and returns right away. Larger messages, or another
 MPI library, can make it deadlock, so correct programs never rely on that
@@ -445,7 +451,8 @@ Ask it:
 > Write ring_agent.c: an MPI program in which every rank sends its rank number to the next rank (the last rank sends to rank 0) and receives from the previous rank, then prints a line `Rank <r> received <v>`. Use MPI_Send and MPI_Recv.
 
 Before you approve the file, read the sends and receives. Predict: would this
-version deadlock if MPI couldn't buffer the messages?
+version deadlock if MPI couldn't buffer the messages? You can check a
+prediction in the ring deadlock explorer from Exercise 3.
 
 With four ranks, ranks 0, 1, 2, and 3 should receive 3, 0, 1, and 2. Press
 `Ctrl+S` if Qwen shows only part of the file. Approve only `ring_agent.c`;
