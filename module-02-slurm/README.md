@@ -338,11 +338,13 @@ let the agent edit files, but only after you approve each change.
 
 #### Step 1: Give the Agent the Spec
 
-Start Aider from this directory:
+Start Aider from main directory:
 
 ```bash
-bash ../../setup/launch_aider.sh
+cd ../.. && bash setup/launch_aider.sh
 ```
+
+and switch to code mode with `/code`, and add the `module-02-slurm` directory with `/add module-02-slurm`.
 
 Ask it:
 
@@ -361,7 +363,7 @@ Slurm will accept it.
 
 #### Step 3: Submit and Iterate
 
-If the agent offers to run `sbatch agent_job.sh`, you can approve that, or
+If the agent offers to run `sbatch agent_job.sh`, you can approve that (Aider might not be able to), or
 `/quit` and run it yourself. If the filter rejects the job, give the agent the
 lines that start with `-->` and ask it to fix the script. When the job
 finishes, check its output:
@@ -421,7 +423,7 @@ srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --ti
 srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=8 \
   bash -c 'echo "I have $SLURM_CPUS_PER_TASK CPUs"'
 
-# Check the GPU on the node (every mi2101x node has an MI210)
+# Check the GPU on the node (every node has an MI250X GPUs)
 srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=1 \
   bash -c 'echo "GPU node: $(hostname)"; rocm-smi --showproductname 2>/dev/null | head -10'
 ```
@@ -437,7 +439,7 @@ times does `hostname` print?
 |--------------|---------|
 | Submit a job | `sbatch script.sh` |
 | See my jobs | `squeue -u $USER` |
-| See all jobs on our partition | `squeue -p mi2101x` |
+| See all jobs on our partition | `squeue -p batch` |
 | Get details on a job | `scontrol show job <JOBID>` |
 | Cancel a job | `scancel <JOBID>` |
 | Cancel all my jobs | `scancel -u $USER` |

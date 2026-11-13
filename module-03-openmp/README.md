@@ -493,13 +493,14 @@ already know.
 
 #### Step 1: Ask for a Script
 
-Start Qwen Code:
+Start Aider from the main directory :
 
 ```bash
-bash ../../setup/launch_qwen.sh
+cd ../.. && bash setup/launch_aider.sh
 ```
 
-Ask it, using your job ID from Exercise 3:
+Switch to code mode with `/code`, add this directory to the LLM context window with `/add
+module-03-openmp`. Ask it, using your job ID from Exercise 3:
 
 > Write speedup.py, which reads an output file like openmp-pi_<JOBID>.out (given as a command-line argument) and prints a table of threads, time, and speedup (the 1-thread time divided by the N-thread time).
 
@@ -546,7 +547,7 @@ performance with the serial version. Compile and run it with:
 
 ```bash
 gcc -fopenmp -O2 -o matvec_openmp matvec_openmp.c -lm
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 --cpus-per-task=16 \
   bash -c 'export OMP_NUM_THREADS=16; ./matvec_openmp'
 ```
 

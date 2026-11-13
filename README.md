@@ -132,6 +132,9 @@ cd ~/sc-student-programming-tutorial
 bash setup/launch_aider.sh
 ```
 
+Note that for Aider, you always need to start it from the main `~/sc-student-programming-tutorial`
+directory as it relies on being able to read the QWEN.md file there.
+
 Type requests in plain English. Unlike a chatbot, Qwen Code reads and searches
 the files in the directory it starts in, and -- when you allow it -- edits files
 and runs commands. When it starts anywhere in the tutorial repository, it also
