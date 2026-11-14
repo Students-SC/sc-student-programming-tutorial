@@ -1,0 +1,151 @@
+/*
+ * matvec_hip_wholeblock_solution.cpp -- Solution: matrix-vector multiply on the
+ * GPU
+ *
+ * Compile:  hipcc -O2 -o matvec_hip matvec_hip_wholeblock_solution.cpp
+ * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./matvec_hip
+ */
+
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <hip/hip_runtime.h>
+
+#define M 4096
+#define K 4096
+#define BLOCK_SIZE 256 // needs to be value of a power of 2
+
+/* Check a HIP call's return value. On failure, report which call failed,
+ * where, and why, then exit with a nonzero status. */
+#define HIP_CHECK(call)                                                        \
+  do {                                                                         \
+    hipError_t err_ = (call);                                                  \
+    if (err_ != hipSuccess) {                                                  \
+      fprintf(stderr, "HIP error at %s:%d: %s failed: %s\n", __FILE__,         \
+              __LINE__, #call, hipGetErrorString(err_));                       \
+      exit(1);                                                                 \
+    }                                                                          \
+  } while (0)
+
+__global__ void matvec_kernel(const double *A, const double *x, double *y,
+                              int m, int k) {
+  __shared__ double partial[BLOCK_SIZE];
+  int row = blockIdx.x;
+  int tid = threadIdx.x;
+
+  if (row >= m)
+    return;
+
+  double sum = 0.0;
+  // thread tid strides across the whole row
+  for (int i = tid; i < k; i += blockDim.x) {
+    sum += A[i + row * k] * x[i];
+  }
+  partial[tid] = sum;
+  __syncthreads();
+
+  // parallel reduction within the local data share (only works if BLOCK_SIZE is
+  // set to a power of 2
+  for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+    if (tid < stride) {
+      partial[tid] = partial[tid] + partial[tid + stride];
+    }
+    __syncthreads();
+  }
+
+  if (tid == 0)
+    y[row] = partial[0];
+}
+
+int main(void) {
+  size_t bytes_A = (size_t)M * K * sizeof(double);
+  size_t bytes_x = K * sizeof(double);
+  size_t bytes_y = M * sizeof(double);
+
+  double *h_A = (double *)malloc(bytes_A);
+  double *h_x = (double *)malloc(bytes_x);
+  double *h_y = (double *)malloc(bytes_y);
+  double *h_ref = (double *)malloc(bytes_y);
+
+  for (int i = 0; i < M; i++)
+    for (int j = 0; j < K; j++)
+      h_A[i * K + j] = (double)(i + j) / K;
+  for (int j = 0; j < K; j++)
+    h_x[j] = 1.0;
+  for (int i = 0; i < M; i++)
+    h_y[i] = NAN; /* so validation fails if no result is copied back */
+
+  for (int i = 0; i < M; i++) {
+    h_ref[i] = 0.0;
+    for (int j = 0; j < K; j++)
+      h_ref[i] += h_A[i * K + j] * h_x[j];
+  }
+
+  double *d_A, *d_x, *d_y;
+  HIP_CHECK(hipMalloc(&d_A, bytes_A));
+  HIP_CHECK(hipMalloc(&d_x, bytes_x));
+  HIP_CHECK(hipMalloc(&d_y, bytes_y));
+
+  HIP_CHECK(hipMemcpy(d_A, h_A, bytes_A, hipMemcpyHostToDevice));
+  HIP_CHECK(hipMemcpy(d_x, h_x, bytes_x, hipMemcpyHostToDevice));
+
+  int blocks = M;
+
+  matvec_kernel<<<blocks, BLOCK_SIZE>>>(d_A, d_x, d_y, M, K);
+  HIP_CHECK(hipGetLastError());
+  HIP_CHECK(hipDeviceSynchronize());
+
+  /* Time the kernel. The first launch includes one-time setup, so time 10
+   * more launches and report the average. */
+  const int reps = 10;
+  hipEvent_t start, stop;
+  HIP_CHECK(hipEventCreate(&start));
+  HIP_CHECK(hipEventCreate(&stop));
+  HIP_CHECK(hipEventRecord(start));
+  for (int rep = 0; rep < reps; rep++)
+    matvec_kernel<<<blocks, BLOCK_SIZE>>>(d_A, d_x, d_y, M, K);
+  HIP_CHECK(hipGetLastError());
+  HIP_CHECK(hipEventRecord(stop));
+  HIP_CHECK(hipEventSynchronize(stop));
+
+  float total_ms = 0.0f;
+  HIP_CHECK(hipEventElapsedTime(&total_ms, start, stop));
+  float kernel_ms = total_ms / reps;
+
+  HIP_CHECK(hipMemcpy(h_y, d_y, bytes_y, hipMemcpyDeviceToHost));
+
+  /* Validate against the CPU reference. NaN fails every comparison, so
+   * reject non-finite values explicitly. */
+  int mismatches = 0;
+  double max_error = 0.0;
+  for (int i = 0; i < M; i++) {
+    double error = fabs(h_y[i] - h_ref[i]);
+    if (!std::isfinite(h_y[i]) || error > 1e-6)
+      mismatches++;
+    else if (error > max_error)
+      max_error = error;
+  }
+  int passed = (mismatches == 0);
+
+  printf("Matrix-Vector Multiply (%d x %d) on GPU\n", M, K);
+  printf("  Launch:               %d blocks x %d threads\n", blocks,
+         BLOCK_SIZE);
+  printf("  Kernel time:          %.3f ms (average of %d)\n", kernel_ms, reps);
+  printf("  Effective bandwidth:  %.1f GB/s (reads A and x, writes y)\n",
+         (bytes_A + bytes_x + bytes_y) / (kernel_ms / 1e3) / 1e9);
+  printf("  Max error:            %.2e\n", max_error);
+  printf("  Mismatches:           %d of %d\n", mismatches, M);
+  printf("  Status:               %s\n", passed ? "PASSED" : "FAILED");
+
+  HIP_CHECK(hipEventDestroy(start));
+  HIP_CHECK(hipEventDestroy(stop));
+  HIP_CHECK(hipFree(d_A));
+  HIP_CHECK(hipFree(d_x));
+  HIP_CHECK(hipFree(d_y));
+  free(h_A);
+  free(h_x);
+  free(h_y);
+  free(h_ref);
+
+  return passed ? 0 : 1;
+}
