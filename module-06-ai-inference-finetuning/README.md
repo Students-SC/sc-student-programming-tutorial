@@ -53,6 +53,10 @@ flowchart TD
         A["Review + sentiment label"] --> B["Input: review"]
         A --> C["Target: positive"]
     end
+```
+
+```mermaid
+flowchart TD
     subgraph SS["Self-supervised next-token learning"]
         D["Text: The cat sat on the mat"] --> E["Input: The cat sat on the"]
         D --> F["Target: mat"]
