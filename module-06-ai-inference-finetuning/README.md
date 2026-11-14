@@ -32,9 +32,9 @@ agent response times can affect the pace.
 
 ---
 
-## Key Concepts (~20 min)
+## Key Concepts
 
-### What is Machine Learning? (~2 min)
+### What is Machine Learning?
 
 **Machine learning** uses data or experience to fit **models** that make
 predictions, discover patterns, or guide decisions. A model maps inputs to
@@ -64,7 +64,7 @@ used to calculate loss, not given to the model as a clue for its prediction.
 Many continuations can be valid: training learns probabilities, not a rule that
 "the" must always be followed by "cat".
 
-### Inference, Pre-training, and Fine-Tuning (~4 min)
+### Inference, Pre-training, and Fine-Tuning
 
 **Inference** uses a trained model without updating its parameters.
 **Pre-training** develops a base model, usually from a large dataset and
@@ -88,7 +88,7 @@ We use **two separate models**:
 Fine-tuning DistilBERT does not change TinyLlama. We train on 2,000 reviews and
 evaluate on 500 separate reviews.
 
-### Neural Networks and Training (~5 min)
+### Neural Networks and Training
 
 A **neural network** has layers of mathematical operations with adjustable
 **parameters**, including weights. Each layer transforms its input; layers
@@ -153,7 +153,7 @@ Higher throughput does not necessarily mean a faster individual response.
 The shared Qwen Code server uses **continuous batching**, adding requests and
 removing completed ones as it runs.
 
-### Parameter-Efficient Fine-Tuning: LoRA (~5 min)
+### Parameter-Efficient Fine-Tuning: LoRA
 
 Full fine-tuning updates every parameter. **LoRA (Low-Rank Adaptation)** freezes
 the original model and adds small trainable updates to selected weight matrices.
@@ -180,7 +180,7 @@ memory or training time.**
 
 ---
 
-## Hands-On Exercises (~40 min)
+## Hands-On Exercises
 
 Suggested pacing: about 5 minutes for Exercises 1 and 2, 8 minutes for
 Exercise 3, 12 minutes for Exercise 4, and 15 minutes for the Agent Practice.
@@ -414,6 +414,10 @@ block, then remove exactly the first `#` from every line inside it. This keeps
 the code's indentation and leaves its explanatory comments as comments. Leave
 the marker lines unchanged.
 
+> **Tip**
+> 
+> When using `vim` in editor mode, pressing `x` will delete the first character in front of the cursor. 
+
 | TODO | What it enables | What to notice |
 |---|---|---|
 | **1: LoRA configuration** | Adds trainable adapters to the model | `r` is the adapter rank; `target_modules` selects the attention matrices to adapt. |
@@ -481,8 +485,17 @@ before reaching it:
 
 ```bash
 cp run_inference.py token_stats_agent.py
-sed -i 's/^NUM_PROMPTS = .*/NUM_PROMPTS = len(PROMPTS)/' token_stats_agent.py
-sed -i 's/^    max_new_tokens = .*/    max_new_tokens = 128/' token_stats_agent.py
+vim token_stats_agent.py
+```
+
+Make these two changes, then save and close the file:
+
+- Set `NUM_PROMPTS` to `len(PROMPTS)`.
+- Set `max_new_tokens` to `128`.
+
+Check your settings:
+
+```bash
 grep -nE 'NUM_PROMPTS =|max_new_tokens =|temperatures =' token_stats_agent.py
 ```
 
@@ -510,13 +523,30 @@ Preserve the existing throughput measurement. Do not change model.generate(), th
 #### Step 2: Review Before You Approve
 
 If the agent shows only part of the change, press `Ctrl+S` to see all of it.
-The change should use ordinary Python data and calculations. Check that:
+The agent should only add bookkeeping and output. Variable names may differ,
+but look for these specific changes:
 
-- It keeps the existing `n_tokens` value for each response instead of
-  tokenizing the response text again.
-- Each count stays paired with the prompt and response it describes.
-- The minimum, maximum, average, and total come from those per-prompt counts.
-- The `model.generate()` call and its settings are unchanged.
+- Inside `generate_responses()`, it creates an empty list for the per-prompt
+  counts and appends the existing `n_tokens` value after each response. It
+  should not call the tokenizer again on the decoded response text.
+- `generate_responses()` returns that count list, and `main()` receives it
+  along with the responses and generation time.
+- The loop that prints each prompt and response also prints its matching count
+  as `Generated tokens: N`.
+- After printing the responses for one temperature, the script uses the same
+  count list to calculate and print the minimum, maximum, average, and total.
+- No lines inside the existing `model.generate()` call are changed.
+
+> **Tip**
+> 
+> Use this command to see side-by-side differences between the original
+> `run_inference.py` script you copied and the `token_stats_agent.py`
+> agent the edited.
+> 
+> `diff --side-by-side run_inference.py token_stats_agent.py | less`
+>
+> Press `q` to quit.
+> 
 
 #### Step 3: Run It and Check
 
@@ -527,7 +557,7 @@ sbatch submit_inference.sh token_stats_agent.py
 When the job finishes, inspect `inference_<JOBID>.out`. For every temperature,
 check that:
 
-- All five prompts have a generated-token count between 1 and 128.
+- All prompts have a generated-token count between 1 and 128.
 - The reported total equals the five per-prompt counts added together.
 - The average equals the total divided by 5.
 - The minimum and maximum match the five displayed counts.
