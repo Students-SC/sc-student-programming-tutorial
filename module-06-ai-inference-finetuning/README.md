@@ -150,7 +150,7 @@ weights to produce just one token, making memory bandwidth a common limit.
 **Batching** processes several sequences together, reusing weights across them.
 It can raise **aggregate tokens per second**, while requiring more memory.
 Higher throughput does not necessarily mean a faster individual response.
-The Agent Practice uses a fixed batch; the shared Qwen Code server uses
+The Agent Practice uses a fixed batch; the shared server behind Aider uses
 **continuous batching**, adding requests and removing completed ones as it runs.
 
 ### Parameter-Efficient Fine-Tuning: LoRA (~5 min)
@@ -635,18 +635,19 @@ grep -nE '^NUM_PROMPTS|device = ' batch_agent.py
 ```
 
 The `grep` output should show `NUM_PROMPTS = len(PROMPTS)` and
-`device = "cuda"`. Then start Qwen Code:
+`device = "cuda"`. Then start Aider from the main directory:
 
 ```bash
-bash ../../setup/launch_qwen.sh
+cd ../.. && bash setup/launch_aider.sh
 ```
 
-Copy this whole prompt (the copy button at the top right of the box copies all
-of it) and paste it into Qwen Code. Because it is long, Qwen Code shows it as
-`[Pasted Content ... chars]`; press `Enter` to send it.
+Switch to code mode with `/code`, add this directory to the LLM context window with `/add
+module-06-ai-inference-finetuning`. Copy this whole prompt (the copy button at
+the top right of the box copies all of it), paste it into Aider, and press
+`Enter` to send it.
 
 ```text
-Update batch_agent.py to compare sequential and batched text generation on the same prompts using the same model.
+Update module-06-ai-inference-finetuning/exercises/batch_agent.py to compare sequential and batched text generation on the same prompts using the same model.
 
 Use greedy decoding with do_sample=False for this comparison. Keep the model, precision, prompts, and maximum new-token limit the same in both modes. Load the model once and warm up both modes before timing.
 
@@ -668,10 +669,10 @@ token if present, excluding later padding, using `count_generated_tokens()`.
 Greedy outputs can still differ because batch shapes can change floating-point
 rounding and occasionally change which token has the highest score.
 
-#### Step 2: Review Before You Approve
+#### Step 2: Review Before You Run
 
-If the agent shows only part of the change, press `Ctrl+S` to see all of it.
-Before you approve it, check:
+In code mode, Aider edits `batch_agent.py` directly and shows the change in the
+chat. Before you run it, check:
 - **Padding.** The prompts have different lengths, so a batch is padded to the
   longest one. Which side does the agent pad on, and is a pad token set? (A
   text generation model continues from the *end* of its input.)
@@ -686,6 +687,10 @@ Before you approve it, check:
   and greedy decoding, with the inputs on the GPU?
 
 #### Step 3: Run It and Check
+
+Aider was started from the main directory, so run this from
+`module-06-ai-inference-finetuning/exercises`: in a second terminal, or leave
+Aider with `/exit` and `cd module-06-ai-inference-finetuning/exercises` first.
 
 ```bash
 sbatch submit_inference.sh batch_agent.py
@@ -721,10 +726,7 @@ fix that one problem.
   of prompts? What doesn't it tell you about how soon each response starts
   arriving?
 - How does batching help a shared inference service like the one behind
-  Qwen Code?
-- Type `/stats model` in Qwen Code to see how many tokens your session has
-  sent and received. The server reuses cached work for text it has seen
-  before, so this isn't the same as the work the GPU did.
+  Aider?
 
 A solution that measures both modes is in
 `solutions/batch_inference_solution.py`.
