@@ -13,8 +13,8 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from datasets import load_dataset
 from peft import LoraConfig, get_peft_model, TaskType
 
-MODEL_NAME = "distilbert-base-uncased"
-DATASET = "imdb"
+MODEL_NAME = "distilbert/distilbert-base-uncased"
+DATASET = "stanfordnlp/imdb"
 NUM_EPOCHS = 3
 BATCH_SIZE = 32
 LEARNING_RATE = 2e-4

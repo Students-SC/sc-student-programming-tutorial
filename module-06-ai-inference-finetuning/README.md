@@ -151,7 +151,7 @@ Two hardware capabilities matter:
 
 **Batching** groups several examples so the GPU can process them together. This exposes more parallel work and reuses model weights across examples, often increasing total throughput. Larger batches also require more memory, so batch size is a tradeoff.
 
-In our fine-tuning exercise, each batch contains up to 32 reviews. The shared Qwen Code server batches requests from multiple students to improve aggregate throughput. Higher throughput means more work completed per second, but does not necessarily mean a faster individual response.
+In our fine-tuning exercise, each batch contains up to 32 reviews. The shared server behind Aider batches requests from multiple students to improve aggregate throughput. Higher throughput means more work completed per second, but does not necessarily mean a faster individual response.
 
 ### Parameter-Efficient Fine-Tuning: LoRA
 
@@ -497,16 +497,17 @@ grep -nE 'NUM_PROMPTS =|max_new_tokens =|temperatures =' token_stats_agent.py
 ```
 
 The output should show all prompts, a 128-token limit, and the three
-temperatures from Exercise 3. Then start Qwen Code:
+temperatures from Exercise 3. Then start Aider from the main directory:
 
 ```bash
-bash ../../setup/launch_qwen.sh
+cd ../.. && bash setup/launch_aider.sh
 ```
 
-Copy and paste this prompt:
+Switch to code mode with `/code`, add this directory to the LLM context window
+with `/add module-06-ai-inference-finetuning`, then copy and paste this prompt:
 
 ```text
-Update token_stats_agent.py to report the actual generated-token count for each prompt.
+Update module-06-ai-inference-finetuning/exercises/token_stats_agent.py to report the actual generated-token count for each prompt.
 
 Reuse the existing count_generated_tokens() result. Do not tokenize the decoded response again.
 
@@ -517,11 +518,11 @@ For each temperature, print:
 Preserve the existing throughput measurement. Do not change model.generate(), the prompts, temperatures, maximum token limit, model loading, shared cache, or Slurm workflow.
 ```
 
-#### Step 2: Review Before You Approve
+#### Step 2: Review Before You Run
 
-If the agent shows only part of the change, press `Ctrl+S` to see all of it.
-The agent should only add bookkeeping and output. Variable names may differ,
-but look for these specific changes:
+In code mode, Aider edits `token_stats_agent.py` directly and shows the change
+in the chat. Before you run it, check that it only adds bookkeeping and output.
+Variable names may differ, but look for these specific changes:
 
 - Inside `generate_responses()`, it creates an empty list for the per-prompt
   counts and appends the existing `n_tokens` value after each response. It
@@ -548,6 +549,10 @@ but look for these specific changes:
 
 #### Step 3: Run It and Check
 
+Aider was started from the main directory, so run this from
+`module-06-ai-inference-finetuning/exercises`: in a second terminal, or leave
+Aider with `/exit` and `cd module-06-ai-inference-finetuning/exercises` first.
+
 ```bash
 sbatch submit_inference.sh token_stats_agent.py
 ```
@@ -572,8 +577,6 @@ specific problem.
   experiment?
 - Why should the script count generated token IDs instead of words or
   characters in the decoded response?
-- Type `/stats model` in Qwen Code. How many tokens did your agent session send
-  and receive?
 
 A completed version is in `solutions/token_stats_solution.py`.
 
