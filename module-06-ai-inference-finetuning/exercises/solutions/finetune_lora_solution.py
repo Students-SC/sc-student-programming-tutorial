@@ -111,7 +111,7 @@ def main():
     if lora_params == 0:
         sys.exit("ERROR: no LoRA parameters are trainable, so this would train every "
                  "weight. Did you enable the TODO 1 block?\n"
-                 "(For Challenge B's full fine-tuning, delete this check.)")
+                 "(For Challenge A's full fine-tuning, delete this check.)")
 
     model.to(device)
     print(f"Allocated GPU memory after model load: "

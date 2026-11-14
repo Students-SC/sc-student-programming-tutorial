@@ -657,9 +657,10 @@ Compare the two runs:
 - How much did training time change?
 - Did full fine-tuning improve accuracy at the same learning rate?
 
-Do not compare these memory results with Exercise 2 as though only the training
-method changed. Exercise 2 used TinyLlama rather than DistilBERT and different
-inputs. What else differs between those runs?
+If full fine-tuning produced worse accuracy than LoRA, that is not the end of
+the comparison. A learning rate that works well for small adapters can be too
+aggressive when it updates all 67 million parameters. The smaller learning
+rate in Step 4 should bring the full fine-tuning accuracy back up.
 
 #### Step 4: Try a Smaller Learning Rate
 
@@ -674,6 +675,17 @@ sbatch submit_finetune.sh finetune_full.py
 Compare the loss and final accuracy from both full fine-tuning runs. Did the
 smaller learning rate help? Why might full fine-tuning need smaller updates to
 the pre-trained weights?
+
+The **learning rate** controls how large a change the optimizer makes to the
+model's trainable parameters at each training step. During fine-tuning, it
+affects how quickly the model adapts and whether those changes improve its
+performance.
+
+| Learning rate | Typical effect | What you might observe |
+|---|---|---|
+| Too low | The model learns slowly and may make little progress within the available training time. | Training loss changes little; evaluation accuracy barely improves. |
+| Appropriate | The model makes useful progress while keeping training reasonably stable. | Training loss generally decreases; evaluation performance improves. |
+| Too high | Updates can overshoot useful parameter values, making learning unstable or damaging useful pretrained behavior. | Loss fluctuates strongly or increases; evaluation performance can worsen. |
 
 A completed full fine-tuning script with the smaller learning rate is in
 `solutions/finetune_full_solution.py`.
