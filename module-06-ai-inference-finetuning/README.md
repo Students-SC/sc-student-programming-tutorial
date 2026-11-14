@@ -485,8 +485,17 @@ before reaching it:
 
 ```bash
 cp run_inference.py token_stats_agent.py
-sed -i 's/^NUM_PROMPTS = .*/NUM_PROMPTS = len(PROMPTS)/' token_stats_agent.py
-sed -i 's/^    max_new_tokens = .*/    max_new_tokens = 128/' token_stats_agent.py
+vim token_stats_agent.py
+```
+
+Make these two changes, then save and close the file:
+
+- Change `NUM_PROMPTS` to `len(PROMPTS)`.
+- Change `max_new_tokens` to `128`.
+
+Check your settings:
+
+```bash
 grep -nE 'NUM_PROMPTS =|max_new_tokens =|temperatures =' token_stats_agent.py
 ```
 
