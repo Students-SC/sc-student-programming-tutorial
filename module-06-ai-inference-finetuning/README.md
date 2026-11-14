@@ -36,7 +36,7 @@ agent response times can affect the pace.
 
 ### What is Machine Learning?
 
-**Machine learning** uses data or experience to fit **models** that make
+**Machine learning** uses data or experience to train **models** that make
 predictions, discover patterns, or guide decisions. A model maps inputs to
 outputs. Training adjusts it based on examples or feedback, with the goal of
 performing well on new inputs.
