@@ -570,7 +570,8 @@ If you look at the [OpenMP API spec for `pragma for`](https://www.openmp.org/spe
 
 ### Advanced: OpenMP Offload
 
-OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, visit the [OpenMP Offload bonus module in the challenges directory](../challenges/bonus-openmp-offload/README.md) to learn how additional OpenMP directives can be used to accomplish tasks on the GPU.
+OpenMP can also be used for programming GPUs. After you finish `module-05-hip`, visit the [OpenMP Offload bonus module](../bonus-openmp-offload/README.md) to learn how additional OpenMP directives can be used to accomplish tasks on the GPU.
+
 
 
 

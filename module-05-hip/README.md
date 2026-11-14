@@ -881,10 +881,17 @@ the kernel. Then at each step of the loop, neighboring threads read
 neighboring addresses, and the GPU can combine their reads. This fixes the
 access pattern, but it doesn't change the number of output threads or blocks,
 so the first limit remains. Measure how much it helps. A completed version is
-in `solutions/matvec_hip_transposed_solution.cpp`. The other limit, too few
-blocks, needs a different design: a whole block per row, combining partial
-sums in shared memory. Implementing that reduction is a possible further
-challenge.
+in `solutions/matvec_hip_transposed_solution.cpp`. 
+
+Another potential way to make it faster (and you don't need to transpose the matrix for this) 
+is to have a whole block working per row (as opposed to one thread working per row to 
+do the dot product of the whole row). Each thread in the block operates on one element in the row of the matrix and 
+its corresponding element in the vector. If the size of a row is bigger than the size of the block, each thread will work on
+a strided subset of elements in the matrix row/vector (each thread striding by BLOCKSIZE). For each chunk, the sum can be calculated
+with parallel reduction ([see here for some slides on the idea](https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf)) using the 
+[local data share](https://developer.nvidia.com/blog/using-shared-memory-cuda-cc/) (the link is an Nvidia article but the format is same for HIP).
+You can see a completed version in `solutions/matvec_hip_wholeblock_solution.cpp` (but try it out yourself first, look for articles and blogs 
+or ask your agent to give you hints instead of giving you the answer).
 
 ---
 
