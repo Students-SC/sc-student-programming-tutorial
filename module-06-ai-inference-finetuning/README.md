@@ -490,8 +490,8 @@ vim token_stats_agent.py
 
 Make these two changes, then save and close the file:
 
-- Change `NUM_PROMPTS` to `len(PROMPTS)`.
-- Change `max_new_tokens` to `128`.
+- Set `NUM_PROMPTS` to `len(PROMPTS)`.
+- Set `max_new_tokens` to `128`.
 
 Check your settings:
 
