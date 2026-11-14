@@ -523,13 +523,19 @@ Preserve the existing throughput measurement. Do not change model.generate(), th
 #### Step 2: Review Before You Approve
 
 If the agent shows only part of the change, press `Ctrl+S` to see all of it.
-The change should use ordinary Python data and calculations. Check that:
+The agent should only add bookkeeping and output. Variable names may differ,
+but look for these specific changes:
 
-- It keeps the existing `n_tokens` value for each response instead of
-  tokenizing the response text again.
-- Each count stays paired with the prompt and response it describes.
-- The minimum, maximum, average, and total come from those per-prompt counts.
-- The `model.generate()` call and its settings are unchanged.
+- Inside `generate_responses()`, it creates an empty list for the per-prompt
+  counts and appends the existing `n_tokens` value after each response. It
+  should not call the tokenizer again on the decoded response text.
+- `generate_responses()` returns that count list, and `main()` receives it
+  along with the responses and generation time.
+- The loop that prints each prompt and response also prints its matching count
+  as `Generated tokens: N`.
+- After printing the responses for one temperature, the script uses the same
+  count list to calculate and print the minimum, maximum, average, and total.
+- No lines inside the existing `model.generate()` call are changed.
 
 #### Step 3: Run It and Check
 
