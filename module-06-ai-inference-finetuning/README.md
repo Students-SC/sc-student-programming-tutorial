@@ -212,9 +212,11 @@ it with the GPU check in Getting Started.
 On the login node, activate the environment and list a few of its packages:
 
 ```bash
-source "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_venv/bin/activate"
+module load rocm/7.2
+module load miniforge3
+conda activate /lustre/orion/stf007/world-shared/subil/SC26_student_program/sc26_venv
 pip list 2>/dev/null | grep -iE '^(torch|transformers|datasets|peft) '
-deactivate
+conda deactivate
 ```
 
 > **Note**
@@ -820,6 +822,3 @@ A full fine-tuning solution with the smaller learning rate is in
 | `torch.cuda.synchronize()` | Wait for queued GPU work to finish, before reading a timer |
 | `get_peft_model(model, lora_config)` | Wrap a model with LoRA adapters |
 
----
-
-**Next up:** [Module 7 -- AI Agents & Capstone](../module-07-ai-agents/README.md)
