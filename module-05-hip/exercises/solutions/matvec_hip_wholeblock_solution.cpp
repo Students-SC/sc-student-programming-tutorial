@@ -1,7 +1,8 @@
 /*
- * matvec_hip_solution.cpp -- Solution: matrix-vector multiply on the GPU
+ * matvec_hip_wholeblock_solution.cpp -- Solution: matrix-vector multiply on the
+ * GPU
  *
- * Compile:  hipcc -O2 -o matvec_hip matvec_hip_solution.cpp
+ * Compile:  hipcc -O2 -o matvec_hip matvec_hip_wholeblock_solution.cpp
  * Run:      srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1
  * ./matvec_hip
  */
