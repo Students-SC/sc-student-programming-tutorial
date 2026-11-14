@@ -537,6 +537,17 @@ but look for these specific changes:
   count list to calculate and print the minimum, maximum, average, and total.
 - No lines inside the existing `model.generate()` call are changed.
 
+> **Tip**
+> 
+> Use this command to see side-by-side differences between the original
+> `run_inference.py` script you copied and the `token_stats_agent.py`
+> agent the edited.
+> 
+> `diff --side-by-side run_inference.py token_stats_agent.py | less`
+>
+> Press `q` to quit.
+> 
+
 #### Step 3: Run It and Check
 
 ```bash
@@ -546,7 +557,7 @@ sbatch submit_inference.sh token_stats_agent.py
 When the job finishes, inspect `inference_<JOBID>.out`. For every temperature,
 check that:
 
-- All five prompts have a generated-token count between 1 and 128.
+- All prompts have a generated-token count between 1 and 128.
 - The reported total equals the five per-prompt counts added together.
 - The average equals the total divided by 5.
 - The minimum and maximum match the five displayed counts.
