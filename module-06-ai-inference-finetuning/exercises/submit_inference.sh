@@ -5,7 +5,7 @@
 # Submit:  sbatch submit_inference.sh [script.py]
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=inference
-#SBATCH --partition=mi2101x
+#SBATCH -A TRN001 --reservation=sc26studentprogram --partition=batch
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=10:00
@@ -17,19 +17,23 @@ set -euo pipefail
 echo "LLM Inference -- Job ${SLURM_JOB_ID:-(not in Slurm)} on $(hostname)"
 echo ""
 
+module load rocm/7.2
+module load miniforge3
 # The shared, read-only Python environment that the instructors built
-SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
+SC26_SHARED_DIR="${SC26_SHARED_DIR:-/lustre/orion/stf007/world-shared/subil/SC26_student_program}"
 VENV_DIR="$SC26_SHARED_DIR/sc26_venv"
-if [[ ! -f "$VENV_DIR/bin/activate" ]]; then
+if [[ ! -d "$VENV_DIR" ]]; then
     echo "ERROR: shared Python environment not found at $VENV_DIR" >&2
     echo "       Please ask an instructor for help." >&2
     exit 1
 fi
-source "$VENV_DIR/bin/activate"
+conda activate $VENV_DIR
 
 # Load models from the shared, read-only Hugging Face cache, without
 # contacting the Hub (see setup/shared-env/README.md).
+export HF_HOME=$SC26_SHARED_DIR/sc26_hf_cache
 export HF_HUB_CACHE="$SC26_SHARED_DIR/sc26_hf_cache/hub"
+export HF_DATASETS_CACHE="$SC26_SHARED_DIR/sc26_hf_cache/datasets"
 export HF_HUB_OFFLINE=1
 
 echo "Python:  $(python3 --version)"

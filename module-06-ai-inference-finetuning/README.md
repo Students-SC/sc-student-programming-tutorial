@@ -207,9 +207,11 @@ it with the GPU check in Getting Started.
 On the login node, activate the environment and list a few of its packages:
 
 ```bash
-source "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_venv/bin/activate"
+module load rocm/7.2
+module load miniforge3
+conda activate /lustre/orion/stf007/world-shared/subil/SC26_student_program/sc26_venv
 pip list 2>/dev/null | grep -iE '^(torch|transformers|datasets|peft) '
-deactivate
+conda deactivate
 ```
 
 > **Note**
