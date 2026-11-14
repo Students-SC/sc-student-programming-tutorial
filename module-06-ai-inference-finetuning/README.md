@@ -32,9 +32,9 @@ agent response times can affect the pace.
 
 ---
 
-## Key Concepts (~20 min)
+## Key Concepts
 
-### What is Machine Learning? (~2 min)
+### What is Machine Learning?
 
 **Machine learning** uses data or experience to fit **models** that make
 predictions, discover patterns, or guide decisions. A model maps inputs to
@@ -64,7 +64,7 @@ used to calculate loss, not given to the model as a clue for its prediction.
 Many continuations can be valid: training learns probabilities, not a rule that
 "the" must always be followed by "cat".
 
-### Inference, Pre-training, and Fine-Tuning (~4 min)
+### Inference, Pre-training, and Fine-Tuning
 
 **Inference** uses a trained model without updating its parameters.
 **Pre-training** develops a base model, usually from a large dataset and
@@ -88,7 +88,7 @@ We use **two separate models**:
 Fine-tuning DistilBERT does not change TinyLlama. We train on 2,000 reviews and
 evaluate on 500 separate reviews.
 
-### Neural Networks and Training (~5 min)
+### Neural Networks and Training
 
 A **neural network** has layers of mathematical operations with adjustable
 **parameters**, including weights. Each layer transforms its input; layers
@@ -153,7 +153,7 @@ Higher throughput does not necessarily mean a faster individual response.
 The shared Qwen Code server uses **continuous batching**, adding requests and
 removing completed ones as it runs.
 
-### Parameter-Efficient Fine-Tuning: LoRA (~5 min)
+### Parameter-Efficient Fine-Tuning: LoRA
 
 Full fine-tuning updates every parameter. **LoRA (Low-Rank Adaptation)** freezes
 the original model and adds small trainable updates to selected weight matrices.
@@ -180,7 +180,7 @@ memory or training time.**
 
 ---
 
-## Hands-On Exercises (~40 min)
+## Hands-On Exercises
 
 Suggested pacing: about 5 minutes for Exercises 1 and 2, 8 minutes for
 Exercise 3, 12 minutes for Exercise 4, and 15 minutes for the Agent Practice.
