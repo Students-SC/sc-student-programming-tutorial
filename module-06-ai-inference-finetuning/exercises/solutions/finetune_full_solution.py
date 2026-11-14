@@ -1,5 +1,5 @@
 """
-finetune_full_solution.py -- Solution for Challenge B: full fine-tuning
+finetune_full_solution.py -- Solution for Challenge A: full fine-tuning
 
 Same as finetune_lora_solution.py, but without LoRA: every weight in the
 model is trained. Full fine-tuning often uses a smaller learning rate than
