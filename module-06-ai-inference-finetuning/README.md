@@ -10,7 +10,7 @@ By the end of this module, you will be able to:
 - Run inference with a pre-trained language model on the MI210 GPU and measure its throughput
 - Fine-tune a text classification model using LoRA (parameter-efficient fine-tuning)
 - Reason about GPU memory usage during inference and training
-- Check an agent's change using the program's output and simple calculations
+- Verify agent-written code by checking token counts and summary statistics
 
 ---
 
