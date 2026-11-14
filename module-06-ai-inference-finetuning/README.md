@@ -414,6 +414,10 @@ block, then remove exactly the first `#` from every line inside it. This keeps
 the code's indentation and leaves its explanatory comments as comments. Leave
 the marker lines unchanged.
 
+> **Tip**
+> 
+> When using `vim` in editor mode, pressing `x` will delete the first character in front of the cursor. 
+
 | TODO | What it enables | What to notice |
 |---|---|---|
 | **1: LoRA configuration** | Adds trainable adapters to the model | `r` is the adapter rank; `target_modules` selects the attention matrices to adapt. |
