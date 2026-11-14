@@ -15,9 +15,12 @@ source_suffix = {
 extensions = [
     "myst_parser",
     "sphinx_copybutton",
+    "sphinxcontrib.mermaid",
 ]
 
 myst_heading_anchors = 3
+# Render ```mermaid code fences as diagrams, as GitHub does
+myst_fence_as_directive = ["mermaid"]
 copybutton_prompt_text = r"^(\$ |>>> |\.\.\. )"
 copybutton_prompt_is_regexp = True
 

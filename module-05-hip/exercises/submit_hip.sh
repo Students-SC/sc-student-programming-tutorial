@@ -6,7 +6,7 @@
 # Then submit:    sbatch submit_hip.sh
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=hip-exercise
-#SBATCH --partition=mi2101x
+#SBATCH -A TRN001 --reservation=sc26studentprogram --partition=batch
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=5:00

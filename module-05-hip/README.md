@@ -431,7 +431,7 @@ hipcc -O2 -o vector_add ../examples/vector_add.cpp
 #### Step 3: Run on a Compute Node
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./vector_add
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 ./vector_add
 ```
 
 > **Note**
@@ -616,18 +616,20 @@ program could put counts in the wrong bins and still add up to 1,000,003.
 
 #### Step 2: Ask for a Basic Program
 
-Start Qwen Code:
+Start Aider from the main directory:
 
 ```bash
-bash ../../setup/launch_qwen.sh
+cd ../.. && bash setup/launch_aider.sh
 ```
 
-Ask it:
+Switch to code mode with `/code`, add this directory to the LLM context window with `/add
+module-05-hip`. Ask it:
 
-> Write a simple HIP C++ program that computes a 16-bin histogram of 1,000,003 integers on an AMD MI210. Initialize input[i] = i % 16. Include instructions to compile and run it. Save it as histogram_basic.cpp.
+> Write a simple HIP C++ program that computes a 16-bin histogram of 1,000,003 integers on an AMD MI210. Initialize input[i] = i % 16. Include instructions to compile and run it. Save it as module-05-hip/exercises/histogram_basic.cpp.
 
-If the agent shows only part of the file when it asks to create it, press
-`Ctrl+S` to see all of it.
+Aider was started from the main directory, so the commands below assume you
+are back in `module-05-hip/exercises`: run them in a second terminal, or leave
+Aider with `/exit` and `cd module-05-hip/exercises` first.
 
 Before you approve any command the agent offers to run, remember:
 - GPU programs must run on a compute node through Slurm. Approve a command
@@ -641,7 +643,7 @@ Before you approve any command the agent offers to run, remember:
 
 ```bash
 hipcc -O2 -o histogram_basic histogram_basic.cpp
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_basic
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 ./histogram_basic
 ```
 
 #### Step 3: Decide What the Output Establishes
@@ -680,9 +682,9 @@ the expected counts are your evidence.
 
 #### Step 4: Ask for a Detailed Version
 
-Type `/clear` in Qwen Code to start a fresh conversation. The earlier exchange
-is no longer in the agent's context, so it has less influence, but the agent
-can still read the files in this directory, including `histogram_basic.cpp`.
+Type `/clear` in Aider to clear the chat history. The earlier exchange is no
+longer in the agent's context, so it has less influence, but the files you
+added with `/add`, including `histogram_basic.cpp`, are still in its context.
 This is a teaching comparison, not a controlled test of the model.
 
 One idea in the next prompt is new: **concurrent updates**. Many GPU threads
@@ -691,11 +693,10 @@ increment can lose updates when threads access the counter concurrently. An
 atomic addition, such as HIP's `atomicAdd`, ensures each increment is applied.
 
 Copy this whole prompt (the copy button at the top right of the box copies all
-of it) and paste it into Qwen Code. Because it is long, Qwen Code shows it as
-`[Pasted Content ... chars]`; press `Enter` to send it.
+of it), paste it into Aider, and press `Enter` to send it.
 
 ```text
-Write histogram_checked.cpp, a complete HIP C++ program for an AMD MI210.
+Write module-05-hip/exercises/histogram_checked.cpp, a complete HIP C++ program for an AMD MI210.
 
 Task:
 - Compute a 16-bin histogram of N = 1,000,003 integers.
@@ -720,15 +721,16 @@ Validation and reporting:
   errors.
 - Do not print success after an API or execution failure.
 
-Provide compilation and Slurm execution commands using partition
-mi2101x. Run GPU work only through Slurm.
+Provide compilation and Slurm execution commands using account TRN001,
+reservation sc26studentprogram, and partition batch. Run GPU work only
+through Slurm.
 ```
 
 Then compile and run it:
 
 ```bash
 hipcc -O2 -o histogram_checked histogram_checked.cpp
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_checked
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 ./histogram_checked
 ```
 
 The basic program may already do much of what this prompt asks. If so, note
@@ -806,8 +808,8 @@ Then build and run both:
 ```bash
 hipcc -O2 -o histogram_basic_broken histogram_basic_broken.cpp
 hipcc -O2 -o histogram_checked_broken histogram_checked_broken.cpp
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_basic_broken
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./histogram_checked_broken
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 ./histogram_basic_broken
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 ./histogram_checked_broken
 ```
 
 What you should see in both programs' counts:
@@ -863,7 +865,7 @@ check your answer.) Then compile and run it:
 
 ```bash
 hipcc -O2 -o matvec_hip matvec_hip.cpp
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=1 ./matvec_hip
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 ./matvec_hip
 ```
 
 **Questions:**
@@ -881,9 +883,11 @@ the kernel. Then at each step of the loop, neighboring threads read
 neighboring addresses, and the GPU can combine their reads. This fixes the
 access pattern, but it doesn't change the number of output threads or blocks,
 so the first limit remains. Measure how much it helps. A completed version is
-in `solutions/matvec_hip_transposed_solution.cpp`. The other limit, too few
-blocks, needs a different design: a whole block per row, combining partial
-sums in shared memory, like the reduction in Module 7's
+in `solutions/matvec_hip_transposed_solution.cpp`. 
+
+We could optimize this further by having a whole block of threads work on a row,
+instead of having just one thread per row. You'd have to combine partial sums in shared 
+memory, like the reduction in Module 7's
 [capstone](../module-07-ai-agents/exercises/capstone.md).
 
 ---
@@ -911,7 +915,7 @@ sums in shared memory, like the reduction in Module 7's
 |--------------|---|
 | `hipcc -O2 -o prog prog.cpp` | Compile HIP code |
 | `hipcc -O2 -DBLOCK_SIZE=128 -DN=1000003 -o prog prog.cpp` | Compile with a different block size or length (`vector_scale.cpp`) |
-| `srun --partition=mi2101x --nodes=1 --time=2:00 ./prog` | Run on a GPU node |
+| `srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 ./prog` | Run on a GPU node |
 
 ---
 

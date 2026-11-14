@@ -1,8 +1,8 @@
 """
 run_inference.py -- LLM inference exercise
 
-EXERCISE: Complete TODOs 1-3 to run the model on the GPU and compare
-temperatures. TODO 4 (adding your own prompts) is optional.
+EXERCISE: Complete TODOs 1-2 to compare temperatures on the GPU. TODO 3
+(adding your own prompts) is optional.
 
 Usage (the batch script activates the shared Python environment):
   sbatch submit_inference.sh run_inference.py
@@ -23,7 +23,7 @@ PROMPTS = [
     "What is a neural network?",
     "Why do supercomputers use Linux?",
     "Write a short poem about debugging code.",
-    # TODO 4 (optional): add your own prompts here, and raise NUM_PROMPTS.
+    # TODO 3 (optional): add your own prompts here, and raise NUM_PROMPTS.
 ]
 
 # How many of PROMPTS to use, starting from the first. The temperature
@@ -96,17 +96,15 @@ def main():
     print("  LLM Inference Exercise")
     print("=" * 60)
 
-    # TODO 1: Choose the device. Change "cpu" to "cuda" to run on the GPU.
-    # PyTorch built for AMD GPUs (ROCm) still calls the GPU "cuda". Use "cpu"
-    # only for the optional CPU baseline.
-    device = "cpu"
+    # PyTorch built for AMD GPUs (ROCm) still calls the GPU "cuda".
+    device = "cuda"
 
-    # TODO 2: Choose the response-length limit: change it to 64. This is the
+    # TODO 1: Choose the response-length limit: change it to 64. This is the
     # most tokens to generate per response; a response can end sooner.
     # Longer limits take more time and can need more memory.
     max_new_tokens = 32
 
-    # TODO 3: Choose the temperatures to compare: change this to [0.1, 0.7, 1.5].
+    # TODO 2: Choose the temperatures to compare: change this to [0.1, 0.7, 1.5].
     # Every prompt runs at each temperature, so you can compare them side by side.
     temperatures = [0.7]
 
