@@ -2,7 +2,7 @@
  * hybrid_sum_solution.c -- Solution: parallel sum with MPI ranks AND
  * OpenMP threads
  *
- * From the challenge directory:
+ * From the exercises directory:
  *   mpicc -fopenmp -O2 -o hybrid_sum solutions/hybrid_sum_solution.c -lm
  *   sbatch submit_hybrid.sh
  */
