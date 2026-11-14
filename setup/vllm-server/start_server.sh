@@ -59,7 +59,7 @@ MODEL_NAME="Qwen/Qwen3-Coder-30B-A3B-Instruct"
 CACHE_DIR="$AGENT_DIR/sc26_model_cache"
 PORT=8321
 # Agents that call tools natively (Qwen Code) need vLLM to parse the model's
-# tool calls. aider and Module 7's simple agents don't send tools, so they
+# tool calls. Clients that don't send tools, such as aider and ask_model.py,
 # are unaffected. To try this model's other parser:
 #   TOOL_CALL_PARSER=qwen3_coder sbatch setup/vllm-server/start_server.sh
 TOOL_CALL_PARSER="${TOOL_CALL_PARSER:-qwen3_xml}"

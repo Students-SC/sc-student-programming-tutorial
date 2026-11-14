@@ -5,8 +5,8 @@
 # The tutorial's agent is Qwen Code (setup/launch_qwen.sh); this aider launcher
 # is kept as an instructor fallback.
 #
-# Aider is a CLI coding agent. This wrapper points it at the locally-served
-# Qwen3-Coder model from Module 7's vLLM backend, so no API keys or external
+# Aider is a CLI coding agent. This wrapper points it at the tutorial's
+# locally served Qwen3-Coder model, so no API keys or external
 # accounts are needed. It runs aider from the tutorial's shared, read-only
 # aider venv ($SC26_SHARED_DIR/sc26_aider_venv, built by the instructors with
 # setup/shared-env/build_aider_venv.sh).

@@ -1,9 +1,10 @@
 # vLLM Inference Server -- Instructor Deployment Guide
 
 This directory contains scripts to deploy a shared vLLM inference server for
-Module 7 (AI Agents). The server runs inside the official `vllm/vllm-openai-rocm`
-Docker image (via Apptainer/Singularity) on a dedicated MI300X compute node,
-providing an OpenAI-compatible API that all students can query concurrently.
+the tutorial's Qwen Code agents. The server runs inside the official
+`vllm/vllm-openai-rocm` Docker image (via Apptainer/Singularity) on a dedicated
+MI300X compute node, providing an OpenAI-compatible API that all students can
+query concurrently.
 
 ## Architecture
 
@@ -11,25 +12,18 @@ providing an OpenAI-compatible API that all students can query concurrently.
   ┌───────────────┐         ┌───────────────────────────────────┐
   │  Login Node   │         │  Dedicated mi3001x Compute Node   │
   │               │         │                                   │
-  │  Students     │  HTTP   │  Apptainer Container              │
-  │  submit jobs  │────────►│  vLLM + ROCm + PyTorch            │
-  │               │         │  Qwen3-Coder-30B-A3B-Instruct     │
+  │  Student      │  HTTP   │  Apptainer Container              │
+  │  Qwen Code    │────────►│  vLLM + ROCm + PyTorch            │
+  │  clients      │         │  Qwen3-Coder-30B-A3B-Instruct     │
   │               │         │  Port 8321                        │
   └───────────────┘         │  1x AMD Instinct MI300X (192 GB)  │
-         ▲                  └───────────────────────────────────┘
-         │                              ▲
-         │ HTTP                         │
-  ┌──────┴────────┐                     │
-  │ Student       │  HTTP               │
-  │ Compute Nodes │─────────────────────┘
-  │ (agent jobs)  │
-  └───────────────┘
+                            └───────────────────────────────────┘
 ```
 
-All nodes are on the same internal network, so HTTP requests between them
-work directly. The model is a 30B-parameter Mixture-of-Experts coder model
-with only ~3B parameters active per token, so inference is fast even under
-heavy concurrent load.
+The login and compute nodes are on the same internal network, so HTTP requests
+to the server work directly. The model is a 30B-parameter Mixture-of-Experts
+coder model with only ~3B parameters active per token, so inference is fast
+even under heavy concurrent load.
 
 ## Shared Tutorial Directory
 
@@ -46,9 +40,8 @@ the container SIF, the model cache, and the server URL file -- are in its
     └── sc26_agent_server_url                   # written by start_server.sh
 ```
 
-Every script in this directory (and `setup/launch_aider.sh`,
-`module-07-ai-agents/exercises/submit_agent.sh`) computes the shared directory
-as:
+Every script in this directory, along with `setup/launch_qwen.sh`,
+`setup/launch_aider.sh`, and `ask_model.py`, computes the shared directory as:
 
 ```bash
 SC26_SHARED_DIR="${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}"
@@ -195,8 +188,8 @@ Students load it with:
 export AGENT_API_URL=$(cat "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_agent/sc26_agent_server_url")
 ```
 
-This is already built into the Module 7 submit scripts and the `ask_model.py`
-helper.
+This is already built into the Qwen Code and aider launchers and the
+`ask_model.py` helper.
 
 ### Monitor the server
 
@@ -251,10 +244,9 @@ about 3 minutes.
    If the reserved node itself is down, ask a Slurm administrator to replace
    it in the reservation, or submit without `--reservation` if another
    `mi3001x` node is idle.
-5. **Tell students to restart Aider** (`/exit`, then run `launch_aider.sh`
-   again). Aider reads the URL only when it starts, and the new server may be
-   on a different node. Module 7 batch jobs read the URL when they start, so
-   students only need to resubmit jobs that failed.
+5. **Tell students to restart Qwen Code** (`/quit`, then run
+   `launch_qwen.sh` again). The launcher reads the URL only when it starts, and
+   the new server may be on a different node.
 
 ### Shut down after the tutorial
 

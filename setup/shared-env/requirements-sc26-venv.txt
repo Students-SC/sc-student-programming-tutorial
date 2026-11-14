@@ -1,7 +1,7 @@
 # requirements-sc26-venv.txt -- Exact package versions for the shared ML venv
 #
-# Frozen from a venv that ran every Module 6 and Module 7 script on the
-# MI210 partition (2026-11-05). build_venv.sh installs exactly these versions.
+# Frozen from a venv that ran every Module 6 script and the shared GPU check on
+# the MI210 partition (2026-11-05). build_venv.sh installs exactly these versions.
 # To upgrade a package, change it here and rebuild; don't edit the shared
 # venv by hand.
 #
