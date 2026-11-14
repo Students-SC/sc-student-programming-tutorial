@@ -21,7 +21,6 @@ parallel programs that run on GPUs and training AI models -- all on a real HPC c
 | 4 | Distributed-Memory Parallelism | MPI communication, multi-process programs |
 | 5 | GPU Programming | HIP kernels, GPU memory management |
 | 6 | AI on HPC | Inference, fine-tuning with LoRA |
-| 7 | AI Agents | Building a tool-using agent, capstone challenge |
 | 8 | (Bonus) OpenMP Offload | OpenMP directives for GPUs |
 
 ## Prerequisites
@@ -159,7 +158,7 @@ tutorial, which you add to starting in Module 1. It has three modes; press
 |------|-----------------------|----------------|
 | **Ask permissions** (the tutorial's default) | Read files and answer; edit files and run commands, each only after you approve it | Questions, explanations, and the Agent Practice steps |
 | **Plan** | Read files and research before answering; no edits, no commands | Planning a bigger change before letting the agent make it |
-| **Auto-edit** | Edit files without asking; still asks before every command | Module 7's capstone, if you want fewer interruptions |
+| **Auto-edit** | Edit files without asking; still asks before every command | Larger edits, after you understand the plan |
 
 To start a read-only session, pass `--approval-mode plan`:
 `bash setup/launch_qwen.sh --approval-mode plan`.
@@ -179,12 +178,13 @@ Inside Qwen Code, `/diff` shows the changes it has made, `/restore` undoes them,
 > tutorial-provided one works for everyone with no setup beyond what's already in
 > this README.
 
-### How the agent backend works (preview of Module 7)
+### How the agent backend works
 
-The agent is **the same kind of system you'll build yourself in Module 7**:
-an LLM running on the cluster, served via an OpenAI-compatible API, queried
-in a reasoning loop. By the end of the day you'll understand exactly how it
-works under the hood.
+Qwen Code sends requests to an LLM running on the cluster through an
+OpenAI-compatible API. The model can respond with text or request a tool, such
+as reading a file. Qwen Code runs tools only with the permission allowed by
+the current mode, returns their results to the model, and repeats until the
+task is complete.
 
 ## Repository Layout
 
@@ -196,7 +196,6 @@ module-03-openmp/                   Shared-memory parallelism
 module-04-mpi/                      Distributed-memory parallelism
 module-05-hip/                      GPU programming with HIP
 module-06-ai-inference-finetuning/  AI inference & fine-tuning
-module-07-ai-agents/                AI agents & capstone challenge
 ```
 
 Each module directory contains a `README.md` with instructions and an `exercises/`
@@ -216,5 +215,5 @@ folder with starter code and templates.
 | 12:45 to 1:45 CST | Module 5: HIP GPU Programming |
 | 1:45 to 2:00 CST | *Break* |
 | 2:00 to 3:00 CST | Module 6: AI Inference & Fine-Tuning |
-| 3:00 to 3:50 CST | Module 7: AI Agents & Capstone |
+| 3:00 to 3:50 CST | Open Lab: Optional Challenges & Instructor Q&A |
 | 3:50 to 4:10 CST | Wrap-Up |

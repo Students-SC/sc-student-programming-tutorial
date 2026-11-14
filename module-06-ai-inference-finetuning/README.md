@@ -718,4 +718,5 @@ A completed full fine-tuning script with the smaller learning rate is in
 
 ---
 
-**Next up:** [Module 7 -- AI Agents & Capstone](../module-07-ai-agents/README.md)
+**Next:** Try an [optional challenge](../challenges/README.md) or join the
+tutorial wrap-up.

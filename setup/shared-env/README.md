@@ -8,7 +8,7 @@ their jobs activate the shared environments directly.
 
 ```
 /work1/proj_sc26students/shared/                  ($SC26_SHARED_DIR)
-├── sc26_venv -> sc26_venv-<timestamp>/           ML stack for Modules 6-7 (build_venv.sh)
+├── sc26_venv -> sc26_venv-<timestamp>/           ML stack for Module 6 (build_venv.sh)
 ├── sc26_aider_venv -> sc26_aider_venv-<timestamp>/   aider CLI agent (build_aider_venv.sh)
 ├── sc26_qwen_code -> sc26_qwen_code-<timestamp>/     Qwen Code CLI agent (build_qwen_code.sh)
 ├── sc26_hf_cache/                                Module 6 models and dataset (download_hf_cache.sh)

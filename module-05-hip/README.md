@@ -883,8 +883,8 @@ access pattern, but it doesn't change the number of output threads or blocks,
 so the first limit remains. Measure how much it helps. A completed version is
 in `solutions/matvec_hip_transposed_solution.cpp`. The other limit, too few
 blocks, needs a different design: a whole block per row, combining partial
-sums in shared memory, like the reduction in Module 7's
-[capstone](../module-07-ai-agents/exercises/capstone.md).
+sums in shared memory. Implementing that reduction is a possible further
+challenge.
 
 ---
 
