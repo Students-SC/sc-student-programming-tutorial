@@ -25,8 +25,8 @@ By the end of this module, you will be able to:
 | Agent Practice | 15 min | Add per-prompt token statistics and check the calculations |
 
 The lecture covers concepts only. Code explanations appear beside the exercises
-as lookup references, rather than additional lecture material. Challenges A
-and B are optional extensions outside the planned 60 minutes.
+as lookup references, rather than additional lecture material. The challenge
+is an optional extension outside the planned 60 minutes.
 Hands-on timings include editing, submission, and output review; queue delays and
 agent response times can affect the pace.
 
@@ -184,7 +184,7 @@ memory or training time.**
 
 Suggested pacing: about 5 minutes for Exercises 1 and 2, 8 minutes for
 Exercise 3, 12 minutes for Exercise 4, and 15 minutes for the Agent Practice.
-The challenges are optional.
+The challenge is optional.
 
 First, navigate to the exercises directory for this module:
 
@@ -581,69 +581,101 @@ A completed version is in `solutions/token_stats_solution.py`.
 
 ---
 
-### Challenge A (Optional): LoRA Hyperparameters
+### Challenge A (Optional): LoRA vs. Full Fine-Tuning
 
-**Reference:** for a matrix with dimensions `d_out × d_in`, the adapter
-has `r × d_in + d_out × r` parameters. Each adapted matrix here is `768 × 768`:
-at rank 8, that is 12,288 parameters per adapter and 147,456 across all 12.
-The classification parameter count does not depend on rank. Scaling both rank
-and alpha together preserves `lora_alpha / r`, but need not preserve the actual
-update magnitudes or training behavior.
+LoRA trains about 740,000 parameters in this exercise. Full fine-tuning updates
+all 67 million parameters. Run both approaches with the same model, data, and
+training settings to see what LoRA saves.
 
-Start with a prediction. In `finetune_lora.py`, change `r=8` and
-`lora_alpha=16` to `r=16` and `lora_alpha=32`. Before you submit, predict the
-output's parameter counts: the LoRA adapter parameters, the other trainable
-(classification) parameters, and the total trainable parameters.
+#### Step 1: Predict
 
-Then check your prediction. For this model and these target layers, you should
-see 294,912 adapter parameters, twice as many as before, because `r` sets the
-size of each adapter; the classification layers are unchanged at 592,130; and
-the total is 887,042. `lora_alpha / r` is still 2. Note the training-loop time
-and peak memory as well.
+Use your Exercise 4 output as the LoRA baseline. Before creating the full
+fine-tuning version, predict:
 
-Then try other settings, changing one at a time and noting both `r` and
-`lora_alpha` for each run:
+- How many parameters will be trainable?
+- Will full fine-tuning use more or less GPU memory?
+- Will its training loop take more or less time?
+- Is it guaranteed to produce better accuracy?
 
-- `r=4` vs. `r=64`
-- `lora_alpha=16` vs. `lora_alpha=32`
-- `NUM_EPOCHS=1` vs. `NUM_EPOCHS=3` vs. `NUM_EPOCHS=5`
+#### Step 2: Create and Review the Full Fine-Tuning Script
 
-LoRA scales its update by `lora_alpha / r`, so changing `r` alone also changes
-that scale. A few runs are enough to see a pattern.
+Copy your completed Exercise 4 script and open the copy:
 
-How do these settings affect the final accuracy? Does the training time change
-with the rank? What might explain your result? A different seed could move the
-accuracy by a point or two, so don't read too much into small differences.
+```bash
+cp finetune_lora.py finetune_full.py
+vim finetune_full.py
+```
 
-### Challenge B (Optional): LoRA vs. Full Fine-Tuning
+Make these changes:
 
-How much does LoRA actually save? Fine-tune the same model without it:
+1. Delete the line `model = get_peft_model(model, lora_config)`. Without this
+   wrapper, the original model parameters remain trainable.
+2. Delete the entire `if lora_params == 0:` check, including its
+   `sys.exit(...)` call. Having no LoRA parameters is now intentional.
+3. Change the output label `Parameters after wrapping with LoRA` to
+   `Total model parameters`.
 
-1. Copy your completed script, with all three blocks enabled and their flags
-   set to `True`: `cp finetune_lora.py finetune_full.py`
-2. In `finetune_full.py`, delete two things: the line
-   `model = get_peft_model(model, lora_config)`, and the check that stops the
-   job when no LoRA parameters are trainable (the `if lora_params == 0:` block).
-   Every weight is then trained.
-3. Submit it: `sbatch submit_finetune.sh finetune_full.py`
+Keep `LEARNING_RATE=2e-4` for the first run so that the LoRA and full
+fine-tuning scripts use the same training settings. Before submitting, review
+the differences:
 
-In the output, confirm that all 66,955,010 parameters are trainable (100%).
-The count after wrapping now equals the original, because nothing was wrapped.
+```bash
+diff --side-by-side finetune_lora.py finetune_full.py | less
+```
 
-Compare the two runs: trainable parameters, peak allocated GPU memory during
-training, training-loop time, and accuracy after fine-tuning.
+Check that only the LoRA wrapper, the no-LoRA check, and the output label
+changed. The model, dataset, selected examples, epochs, batch size, and
+training and evaluation steps should be unchanged.
 
-Exercise 2's peak memory came from a different model (TinyLlama, 1.1 billion
-parameters) with different inputs, so comparing it with these training peaks
-isn't a controlled comparison of inference and training. What differs between
-those runs, besides inference versus training?
+#### Step 3: Run and Compare
+
+Submit the full fine-tuning script:
+
+```bash
+sbatch submit_finetune.sh finetune_full.py
+```
+
+When the job finishes, inspect `finetune_<JOBID>.out`. Confirm that:
+
+- The original and total model parameter counts are both 66,955,010.
+- All 66,955,010 parameters are trainable (100%).
+- The LoRA adapter count is zero.
+- Training and evaluation complete successfully.
+
+Compare the two runs:
+
+| Measurement | LoRA | Full fine-tuning |
+|---|---:|---:|
+| Trainable parameters | | |
+| Peak allocated GPU memory | | |
+| Training-loop time | | |
+| Accuracy after fine-tuning | | |
+
+**Questions:**
+
+- Which memory components grow when every parameter is trainable?
+- How much did training time change?
+- Did full fine-tuning improve accuracy at the same learning rate?
+
+Do not compare these memory results with Exercise 2 as though only the training
+method changed. Exercise 2 used TinyLlama rather than DistilBERT and different
+inputs. What else differs between those runs?
+
+#### Step 4: Try a Smaller Learning Rate
 
 Full fine-tuning often uses a smaller learning rate than adapter training.
-Change `LEARNING_RATE` in `finetune_full.py` from `2e-4` to `2e-5` and run it
-again. Does the smaller learning rate improve this run? (Hint: think about how
-far each update moves the pre-trained weights.)
+Change `LEARNING_RATE` in `finetune_full.py` from `2e-4` to `2e-5`, then submit
+it again:
 
-A full fine-tuning solution with the smaller learning rate is in
+```bash
+sbatch submit_finetune.sh finetune_full.py
+```
+
+Compare the loss and final accuracy from both full fine-tuning runs. Did the
+smaller learning rate help? Why might full fine-tuning need smaller updates to
+the pre-trained weights?
+
+A completed full fine-tuning script with the smaller learning rate is in
 `solutions/finetune_full_solution.py`.
 
 ---
