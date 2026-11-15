@@ -136,13 +136,8 @@ MPI headers and libraries, and run with `srun`, which starts one copy of the
 program for each rank. In general, for a program in `program.c`:
 
 ```bash
-<<<<<<< HEAD
-mpicc -O2 -o program program.c                                       # Compile (fine on the login node)
-srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=4 ./program  # Run 4 ranks on a compute node
-=======
 cc -O2 -o program program.c                                       # Compile (fine on the login node)
 srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=4 ./program  # Run 4 ranks on a compute node
->>>>>>> 070e950 (updating MPI for frontier)
 ```
 
 `--nodes=1` places all ranks on one compute node. `--ntasks=4` tells `srun`
@@ -184,11 +179,7 @@ cc -O2 -o mpi_hello ../examples/mpi_hello.c
 Run the program on a compute node with four ranks:
 
 ```bash
-<<<<<<< HEAD
-srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=4 ./mpi_hello
-=======
 srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=4 ./mpi_hello
->>>>>>> 070e950 (updating MPI for frontier)
 ```
 
 #### Step 4: Examine the Output
@@ -322,11 +313,6 @@ for OpenMP in Module 3. Speedup is the 1-rank time divided by the N-rank time:
 
 #### Step 6: Check the Remainder Handling
 
-<<<<<<< HEAD
-Find the three-rank block in the same output. 1 billion is not divisible by
-three, so the last rank computes one extra term. Its global sum should still
-match the one-rank baseline in at least the first 12 digits.
-=======
 Run your program once more, directly with `srun`, using three ranks:
 
 ```bash
@@ -335,7 +321,6 @@ srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --ti
 
 1 billion is not divisible by three, so the last rank computes one extra term.
 Its global sum should still agree closely with the one-rank baseline.
->>>>>>> 070e950 (updating MPI for frontier)
 
 ---
 
@@ -369,13 +354,8 @@ Compile it, then run it under `timeout 10`, which stops each rank after 10
 seconds:
 
 ```bash
-<<<<<<< HEAD
-mpicc -O2 -o ring ring.c
-srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=1:00 --ntasks=4 timeout 10 ./ring
-=======
 cc -O2 -o ring ring.c
 srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=1:00 --ntasks=4 ./ring
->>>>>>> 070e950 (updating MPI for frontier)
 ```
 
 After the job-submission filter's checks, the program prints nothing and hangs.
@@ -469,7 +449,7 @@ use the same trick to expose an ordering that relies on buffering.
 Start Aider from the main directory :
 
 ```bash
-cd ../../ bash setup/launch_aider.sh
+cd ../../ && bash setup/launch_aider.sh
 ```
 
 Ask it:
