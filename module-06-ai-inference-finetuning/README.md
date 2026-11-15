@@ -98,8 +98,9 @@ A **neural network** has layers of mathematical operations with adjustable
 parameters, such as weights. Training adjusts these parameters to improve the
 model's predictions. 
 
-For our classifier, tokenization prepares the input. The neural network then
-turns token IDs into sentiment scores:
+For our classifier, **tokenization** splits review text into tokens, such as
+words or parts of words, and converts them into numerical token IDs. The 
+neural network then turns those IDs into sentiment scores:
 
 ```mermaid
 flowchart TD
