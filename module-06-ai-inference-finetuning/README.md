@@ -98,9 +98,9 @@ We train on 2,000 reviews and evaluate on 500 separate reviews.
 A **neural network** has layers of mathematical operations with adjustable
 parameters, such as weights. 
 
-A **forward pass** uses the current parameter values to transform an input
-into an output. During inference, the model uses forward passes to produce
-predictions without updating its parameters. 
+A **forward pass** through a neural network uses the current parameter values
+to transform an input into an output. During inference, the model uses 
+forward passes to produce predictions without updating its parameters. 
 
 For our classifier, **tokenization** splits review text into **tokens**, such
 as words, parts of words, or punctuation, and maps them into numerical
@@ -142,51 +142,36 @@ each batch of up to 32 reviews. An **epoch** is one pass through the training da
 
 ### Why GPUs for AI?
 
-Neural networks use large matrix multiplications, containing many multiply-adds
-that GPUs execute in parallel. Data movement matters too: our MI210 has 64 GB
-of HBM2e and approximately 1.6 TB/s peak memory bandwidth.
+Neural networks repeatedly apply matrix operations to numerical representations of their inputs. These operations contain many calculations that GPUs can execute in parallel, making GPUs well suited to both inference and training.
 
-Text generation uses forward passes in two phases:
+Two hardware capabilities matter:
 
-| Phase | Work performed |
-|---|---|
-| **Prefill** | Process prompt positions together and save attention keys and values in a **KV cache**. The final prompt position supplies scores for selecting the first new token. |
-| **Decode** | Process each newly selected token using the cache, extend the cache, and predict the following token. |
+- **Compute throughput:** how quickly the GPU performs calculations, including the matrix multiplications used in forward passes and backpropagation.
+- **Memory capacity and bandwidth:** how much data the GPU can hold and how quickly it can move that data to its compute units. Our MI210 has 64 GB of HBM2e memory and approximately 1.6 TB/s peak memory bandwidth.
 
-Calculations within a step run in parallel, but successive generated tokens
-depend on previous ones. For one sequence, decode often reads much of the model's
-weights to produce just one token, making memory bandwidth a common limit.
+**Batching** groups several examples so the GPU can process them together. This exposes more parallel work and reuses model weights across examples, often increasing total throughput. Larger batches also require more memory, so batch size is a tradeoff.
 
-**Batching** processes several sequences together, reusing weights across them.
-It can raise **aggregate tokens per second**, while requiring more memory.
-Higher throughput does not necessarily mean a faster individual response.
-The shared Qwen Code server uses **continuous batching**, adding requests and
-removing completed ones as it runs.
+In our fine-tuning exercise, each batch contains up to 32 reviews. The shared Qwen Code server batches requests from multiple students to improve aggregate throughput. Higher throughput means more work completed per second, but does not necessarily mean a faster individual response.
 
 ### Parameter-Efficient Fine-Tuning: LoRA
 
-Full fine-tuning updates every parameter. **LoRA (Low-Rank Adaptation)** freezes
-the original model and adds small trainable updates to selected weight matrices.
-Each update is the product of two smaller matrices; its **rank** controls their
-size and the maximum rank of the update.
+Full fine-tuning updates every model parameter. **LoRA (Low-Rank Adaptation)** keeps the pre-trained weights frozen and adds trainable updates to selected weight matrices. These updates adapt the model without changing the original weights.
+
+Each update is calculated from two smaller matrices called **LoRA adapters**. Their shared inner dimension, **rank** (`r`), controls their size. A larger rank adds more trainable parameters and allows more flexible updates.
 
 **Effective weight = frozen original weight + scaled low-rank update**
 
-Our exercise adapts two matrices in each of DistilBERT's six transformer layers
-and trains the new classification layers. Together, these are about **740,000
-trainable parameters**, versus about **67 million** for full fine-tuning.
-The exercise script shows the LoRA configuration and reports the exact counts.
+Our exercise adds adapters to two attention weight matrices in each of DistilBERT's six Transformer layers. It also trains the newly initialized classification layers. Together, these account for about **740,000 trainable parameters**, compared with about **67 million** for full fine-tuning. The script reports the exact counts.
 
-| Memory component | Inference | LoRA training |
+Fewer trainable parameters mean fewer gradients and less optimizer state to store:
+
+| Memory component | Full fine-tuning | LoRA fine-tuning |
 |---|---|---|
-| Model weights | Required | Required, including frozen weights |
-| Intermediate results and workspace | Required; generation also uses a KV cache | Required; saves activations needed for backpropagation |
-| Gradients and optimizer state | Not needed | Needed for trainable parameters |
+| Model weights | All model weights | All model weights, plus adapters |
+| Intermediate results and workspace | Required for forward and backward passes | Still required for forward and backward passes |
+| Gradients and optimizer state | For all parameters | Only for adapters and other trainable layers |
 
-LoRA mainly saves gradient and optimizer-state memory. It still runs the model
-forward and backpropagates through the operations needed to train the adapters.
-**About 90 times fewer trainable parameters does not mean 90 times less total
-memory or training time.**
+LoRA still runs the model forward and backpropagates through the operations needed to train the adapters. **About 90 times fewer trainable parameters does not mean 90 times less total memory or training time.**
 
 ---
 
