@@ -312,12 +312,6 @@ Then add one fact of your own from Exercise 1, for example:
 echo "- Large files go in \$WORK, not \$HOME." >> QWEN.md
 ```
 
-Why here? Facts about one project belong in a `QWEN.md` at that project's top
-level, so every agent session in the project starts from them. Qwen Code also
-reads a personal `~/.qwen/QWEN.md` in every directory; keep that for
-preferences you want in all of your projects, not for facts about one
-project or tutorial.
-
 Look at what the configuration file says now:
 
 ```bash
