@@ -47,6 +47,9 @@ Our fine-tuning exercise uses reviews labeled positive or negative. In
 model can learn to predict the next **token**, a word or part of a word, using
 the actual next token in existing text as its target.
 
+The following diagrams show how training examples are split into inputs and
+targets:
+
 ```mermaid
 flowchart TD
     subgraph S["Supervised learning"]
@@ -63,10 +66,9 @@ flowchart TD
     end
 ```
 
-These arrows show how an example supplies an input and a target. The target is
-used to calculate loss, not given to the model as a clue for its prediction.
-Many continuations can be valid: training learns probabilities, not a rule that
-"the" must always be followed by "cat".
+The target is used to calculate **loss**, which measures the difference 
+between predictions and targets. Many continuations can be valid: training
+learns probabilities, not a rule that "the" must always be followed by "cat".
 
 ### Inference, Pre-training, and Fine-Tuning
 
@@ -89,17 +91,21 @@ We use **two separate models**:
 | **TinyLlama 1.1B Chat**, about 1.1 billion parameters | Generate text. A decoder-only Transformer that extends a prompt one token at a time in this workflow. Its chat template adds the conversation markers it expects. |
 | **DistilBERT**, about 67 million parameters | Classify IMDB reviews. An encoder-only Transformer that uses context from both directions. Its pre-training included masked-token prediction; the new classification layers start with random weights. |
 
-Fine-tuning DistilBERT does not change TinyLlama. We train on 2,000 reviews and
-evaluate on 500 separate reviews.
+We train on 2,000 reviews and evaluate on 500 separate reviews.
 
 ### Neural Networks and Training
 
 A **neural network** has layers of mathematical operations with adjustable
-**parameters**, including weights. Each layer transforms its input; layers
-generally have their own parameters.
+parameters, such as weights. 
 
-For our classifier, tokenization prepares the input. The neural network then
-turns token IDs into sentiment scores:
+A **forward pass** uses the current parameter values to transform an input
+into an output. During inference, the model uses forward passes to produce
+predictions without updating its parameters. 
+
+For our classifier, **tokenization** splits review text into **tokens**, such
+as words, parts of words, or punctuation, and maps them into numerical
+**token IDs**. The neural network then processes those tokens to produce
+sentiment scores:
 
 ```mermaid
 flowchart TD
@@ -109,8 +115,9 @@ flowchart TD
     D --> E["Classification layers: negative and positive scores"]
 ```
 
-This is a **forward pass**. Training adds loss calculation, backpropagation,
-and an optimizer update:
+The embedding layer converts token IDs into learned vectors and incorporates position information. The Transformer layers update those vectors using the surrounding text, and the classification layers produce scores for negative and positive sentiment.
+
+Training builds on the forward pass. The model's predictions are compared with the correct labels to calculate a **loss**, which is the difference between the prediction and the target. Backpropagation calculates gradients of that loss with respect to the trainable parameters, and an optimizer uses those gradients to update the parameters. This process repeats across batches of training examples:
 
 ```mermaid
 flowchart TD
@@ -125,14 +132,13 @@ flowchart TD
 
 - **Loss** measures the match between predictions and targets. For our
   classifier, it penalizes assigning low probability to the correct class.
-- **Gradients** describe how small parameter changes would affect loss.
-  Backpropagation calculates them; it does not change parameters.
+- **Gradients** describe how small parameter changes to trainable parameters
+  would affect the loss. Backpropagation calculates them.
 - The **optimizer** uses gradients to update parameters. AdamW also maintains
   running statistics called **optimizer state**.
 
 A **batch** groups examples for processing together. Here, one update follows
 each batch of up to 32 reviews. An **epoch** is one pass through the training data.
-Inference uses forward passes without the loss-driven parameter updates.
 
 ### Why GPUs for AI?
 
