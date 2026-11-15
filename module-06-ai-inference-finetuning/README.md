@@ -98,9 +98,9 @@ We train on 2,000 reviews and evaluate on 500 separate reviews.
 A **neural network** has layers of mathematical operations with adjustable
 parameters, such as weights. 
 
-A **forward pass** uses the current parameter values to transform an input
-into an output. During inference, the model uses forward passes to produce
-predictions without updating its parameters. 
+A **forward pass** through a neural network uses the current parameter values
+to transform an input into an output. During inference, the model uses 
+forward passes to produce predictions without updating its parameters. 
 
 For our classifier, **tokenization** splits review text into **tokens**, such
 as words, parts of words, or punctuation, and maps them into numerical
