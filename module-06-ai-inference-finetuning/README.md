@@ -420,7 +420,7 @@ the marker lines unchanged.
 
 > **Tip**
 > 
-> When using `vim` in editor mode, pressing `x` will delete the first character in front of the cursor. 
+> When using `vim` in editor mode, pressing `x` will delete the character under the cursor. 
 
 | TODO | What it enables | What to notice |
 |---|---|---|
@@ -550,7 +550,8 @@ but look for these specific changes:
 > `diff --side-by-side run_inference.py token_stats_agent.py | less`
 >
 > Press `q` to quit.
-> 
+>
+> NOTE: You will see the changes you made as well as the agent's changes. 
 
 #### Step 3: Run It and Check
 
@@ -663,8 +664,8 @@ Compare the two runs:
 
 If full fine-tuning produced worse accuracy than LoRA, that is not the end of
 the comparison. A learning rate that works well for small adapters can be too
-aggressive when it updates all 67 million parameters. The smaller learning
-rate in Step 4 should bring the full fine-tuning accuracy back up.
+aggressive when it updates all 67 million parameters. Check whether the smaller
+learning rate in Step 4 brings the full fine-tuning accuracy back up.
 
 #### Step 4: Try a Smaller Learning Rate
 
