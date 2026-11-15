@@ -313,7 +313,7 @@ for OpenMP in Module 3. Speedup is the 1-rank time divided by the N-rank time:
 
 #### Step 6: Check the Remainder Handling
 
-Run your program once more, directly with `srun`, using three ranks:
+Find the three-rank block in the same output. Run your program once more, directly with `srun`, using three ranks:
 
 ```bash
 srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=3 ./parallel_sum
