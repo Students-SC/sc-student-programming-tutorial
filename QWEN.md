@@ -1,6 +1,6 @@
 # Context for AI agents in this repository
 
-This is a hands-on HPC and AI tutorial on the AMD AI & HPC Fund cluster. The
+This is a hands-on HPC and AI tutorial on OLCF Frontier. The
 person you are working with is a student who is learning these topics, so
 help them understand your work, not just finish it.
 

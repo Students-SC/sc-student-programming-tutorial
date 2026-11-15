@@ -43,8 +43,8 @@ You're at the right conference to see this at scale. The
 published twice a year, and the November edition is announced here at SC.
 Several recent leaders are built on AMD hardware: Frontier pairs AMD EPYC CPUs
 with AMD Instinct MI250X GPUs, and El Capitan uses AMD Instinct MI300A chips
-that combine CPU and GPU cores. The MI210 you'll program today uses the same
-GPU architecture (CDNA 2) as Frontier's MI250X.
+that combine CPU and GPU cores. Today you'll program Frontier's MI250X
+GPUs, which use AMD's CDNA 2 architecture.
 
 ### Anatomy of an HPC Cluster
 
@@ -68,7 +68,7 @@ GPU architecture (CDNA 2) as Frontier's MI250X.
 │       ┌──────────┴─────┴─────┴─────┴────────────────┐       │
 │       │     Shared storage visible to all nodes     │       │
 │       ├──────────────────────┬──────────────────────┤       │
-│       │ $HOME                │ $WORK (/work1)       │       │
+│       │ $HOME                │ $WORK (Orion)        │       │
 │       │ Home filesystem      │ Parallel filesystem  │       │
 │       └──────────────────────┴──────────────────────┘       │
 └─────────────────────────────────────────────────────────────┘
@@ -80,7 +80,7 @@ GPU architecture (CDNA 2) as Frontier's MI250X.
 - **Do NOT run compute-intensive programs** (everyone shares these)
 
 **Compute nodes** are where your programs actually run:
-- The compute nodes we'll be using in this cluster have 16 CPU cores + 1 AMD MI210 GPU
+- Each Frontier compute node has 64 CPU cores and four MI250X packages, exposed as eight GPU devices
 - You access them by submitting **jobs** through the Slurm scheduler (Module 2)
 
 **High-speed network** connects nodes so they can communicate fast --
@@ -88,46 +88,46 @@ critical for HPC and AI applications.
 
 **Shared storage** means your files are visible from every node, so you don't need
 to copy them to each node. `$HOME` is your smaller home filesystem, while `$WORK`
-points to your larger project area on the `/work1` parallel filesystem.
+points to the tutorial work area on the Orion parallel filesystem (`/lustre/orion`).
 
 ### Inside a Compute Node
 
 A compute node is a complete computer, built for throughput rather than for a
 desk:
 
-- **CPUs** in one or more **sockets**, each CPU with many **cores** (the EPYC
-  7V13 in our login node has 64 cores per socket)
+- **CPUs** in one or more **sockets**, each CPU with many **cores** (a Frontier
+  compute node has one 64-core AMD EPYC CPU)
 - **Memory (DRAM)** shared by all the cores in the node
 - **GPUs**, each with its own fast memory (**HBM**, high-bandwidth memory). Data
   has to be copied between CPU memory and GPU memory, as you'll see in Module 5.
 - A **network card** that connects the node to the high-speed network
 
-**Our compute nodes are virtual.** So that more users can each have their own
-GPU, the physical servers in our partition are divided into slices. Each slice
-is a **virtual node** (a virtual machine) with 16 CPU cores, 64 GB of memory, and
-one MI210, and Slurm schedules it as if it were a whole computer. The node
-names show this: `k006-004-v3` through `k006-004-v8` are slices of the same
-physical server, `k006-004`.
+**Frontier compute nodes are physical nodes.** Each has one CPU and four
+MI250X packages. Each package contains two graphics compute dies (GCDs), so
+Slurm and HIP expose eight GPU devices per node. Each device has its own
+64 GB of HBM2e memory; the exercises use one device unless stated otherwise.
 
-One side effect: inside a virtual node, `lscpu` reports 16 "sockets" with one
-core each. Count the total `CPU(s)`, not the sockets.
+### Our Cluster: OLCF Frontier
 
-### Our Cluster: The AUP AI & HPC Cluster
-
-The AUP AI & HPC Cluster has nodes containing multiple generations of AMD Instinct GPUs.
-For this tutorial, we'll have access to the following resources:
+The tutorial uses Frontier at the Oak Ridge Leadership Computing Facility.
 
 | Component | Details |
 |-----------|---------|
-| Login node CPUs | AMD EPYC 7V13 64-Core (2 sockets, 128 cores total) |
-| Compute node CPUs | AMD EPYC 7V13 (16 cores per virtual node) |
-| Compute node GPUs | 1x AMD Instinct MI210 (64 GB HBM2e) |
-| Compute node RAM | 64 GB |
-| GPU software | ROCm 7.2.0 |
-| Compiler | GCC 12.2.0 |
-| MPI | OpenMPI 4.1.8 |
+| Compute node CPU | AMD EPYC 7A53, 64 physical cores |
+| Compute node GPUs | 4x AMD Instinct MI250X packages, exposed as 8 GPU devices |
+| GPU memory | 64 GB HBM2e per device |
+| Compute node RAM | 512 GB |
+| GPU software | ROCm 7.2 |
+| Compiler | GCC 12.2, `hipcc` |
+| MPI | Cray MPICH 9.1.0 |
 | Scheduler | Slurm |
-| Student partition | `mi2101x` |
+| Student partition | `batch` |
+| Tutorial account | `TRN001` |
+| Tutorial reservation | `sc26studentprogram` |
+
+See the [OLCF Frontier User Guide](https://docs.olcf.ornl.gov/systems/frontier_user_guide.html)
+for the node architecture. The exercises often use only 16 CPU cores; this
+is an exercise size, not the total number of cores on a node.
 
 ### The Software Stack: Environment Modules
 
@@ -143,9 +143,10 @@ module load <name>       # Load a module
 module unload <name>     # Unload a module
 ```
 
-On our cluster, the `hpcfund` module is loaded by default and provides the base
-environment (GCC, OpenMPI, ROCm, cmake). **Do not run `module purge`** -- it will
-remove this base.
+On Frontier, inspect the loaded programming environment with `module list`.
+The GPU exercises use `module load rocm/7.2`; the Python exercises also use
+`module load miniforge3`. Keep the instructor-provided environment loaded,
+and ask an instructor before changing the programming environment.
 
 ### Programming Models (Preview)
 
@@ -211,7 +212,7 @@ df -h $HOME       # Show disk space usage for your home directory.
 module list           # List the environment modules currently loaded in your shell.
 module avail          # Lists the modules that can be loaded given the currently loaded modules
 module spider         # Lists all the available modules on the system
-module show hpcfund   # Show details about what the 'hpcfund' module sets up when loaded.
+module show rocm/7.2  # Show details about the ROCm module used in this tutorial.
 ```
 
 #### Step 4: Inspect the Hardware (Login Node)
@@ -223,14 +224,14 @@ free -h           # Show memory usage and total RAM in human-readable units.
 
 > **Note**
 >
-> This is the LOGIN node. The compute nodes we'll use have 16 cores and 64 GB RAM.
+> This is the LOGIN node. Frontier compute nodes have 64 CPU cores and 512 GB RAM.
 
 #### Step 5: Preview the GPU Software
 
 ```bash
 which hipcc           # Find the path of the HIP compiler (AMD's equivalent of nvcc).
 hipcc --version       # Print the HIP compiler version.
-rocminfo | grep -E "Marketing Name|Device Type"   # List the CPUs and GPUs that ROCm (AMD's GPU software) can see.
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=1 rocminfo | grep -E "Marketing Name|Device Type"
 ```
 
 `rocminfo` prints over 300 lines, so `grep` keeps just the lines that name each
@@ -238,25 +239,23 @@ device.
 
 > **Note**
 >
-> This login node has two MI210 GPUs of its own, so GPU programs *will* run here
-> if you skip Slurm. Don't: every user on the cluster shares the login node.
-> Starting in Module 2, each of your jobs gets its own MI210 on a compute node.
+> Login nodes are shared by everyone. Inspecting the compiler is fine here,
+> but run GPU discovery and GPU programs on a compute node through Slurm.
+> Starting in Module 2, jobs use the MI250X devices on Frontier compute nodes.
 
 #### Step 6: Look at the Cluster
 
 ```bash
 sinfo                       # Show all Slurm partitions and the state of their nodes.
-sinfo -p mi2101x -N -l      # Show node-level details just for the mi2101x partition (the one we'll use).
-squeue -p mi2101x           # Show the job queue for our partition (plain 'squeue' lists every job on the cluster).
+sinfo -p batch -N -l      # Show node-level details just for the batch partition (the one we'll use).
+squeue -p batch           # Show the job queue for our partition (plain 'squeue' lists every job on the cluster).
 ```
 
 > **Note**
 >
 > `sinfo` lists every partition on the cluster, but this tutorial uses only
-> `mi2101x`. (The `*` marks the cluster's default partition, but this cluster
-> rejects jobs that don't name a partition, a node count, and a time limit, so
-> every command in this tutorial includes `--partition=mi2101x`, `--nodes=1`,
-> and `--time`.) Nodes
+> `batch`, with account `TRN001` and reservation `sc26studentprogram`.
+> Include these options, a node count, and a time limit in tutorial jobs. Nodes
 > set aside for this tutorial show the state `resv` (reserved) while they are
 > idle.
 
@@ -298,7 +297,7 @@ Add facts from Exercise 1 under its "Cluster notes" heading:
 
 ```bash
 cat >> QWEN.md << 'EOF'
-- This tutorial uses the mi2101x partition: 16 CPU cores, 64 GB of memory, and 1 AMD MI210 GPU per node.
+- This tutorial uses Frontier: batch partition, account TRN001, reservation sc26studentprogram; 64 CPU cores, 512 GB DRAM, and 8 MI250X GPU devices per node (64 GB HBM2e per device).
 - AMD GPUs: use rocm-smi and rocminfo, never nvidia-smi.
 EOF
 ```
@@ -406,7 +405,7 @@ bash setup/launch_qwen.sh
 | `module avail` | List all available modules |
 | `module show <name>` | Show what a module does |
 | `sinfo` | Show cluster partition and node information |
-| `squeue -p mi2101x` | Show the job queue for our partition |
+| `squeue -p batch` | Show the job queue for our partition |
 
 ---
 

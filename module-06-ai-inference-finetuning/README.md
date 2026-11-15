@@ -7,7 +7,7 @@
 By the end of this module, you will be able to:
 
 - Explain the difference between inference, pre-training, and fine-tuning
-- Run inference with a pre-trained language model on the MI210 GPU and measure its throughput
+- Run inference with a pre-trained language model on the MI250X GPU and measure its throughput
 - Fine-tune a text classification model using LoRA (parameter-efficient fine-tuning)
 - Reason about GPU memory usage during inference and training
 - Verify agent-written code by checking token counts and summary statistics
@@ -147,7 +147,7 @@ Neural networks repeatedly apply matrix operations to numerical representations 
 Two hardware capabilities matter:
 
 - **Compute throughput:** how quickly the GPU performs calculations, including the matrix multiplications used in forward passes and backpropagation.
-- **Memory capacity and bandwidth:** how much data the GPU can hold and how quickly it can move that data to its compute units. Our MI210 has 64 GB of HBM2e memory and approximately 1.6 TB/s peak memory bandwidth.
+- **Memory capacity and bandwidth:** how much data the GPU can hold and how quickly it can move that data to its compute units. Each MI250X GPU device (GCD) has 64 GB of HBM2e memory and approximately 1.6 TB/s peak memory bandwidth.
 
 **Batching** groups several examples so the GPU can process them together. This exposes more parallel work and reuses model weights across examples, often increasing total throughput. Larger batches also require more memory, so batch size is a tradeoff.
 

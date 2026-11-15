@@ -7,7 +7,7 @@
 By the end of this module, you will be able to:
 
 - Describe GPU architecture and how it differs from a CPU
-- Write a HIP kernel that runs on the AMD MI210 GPU
+- Write a HIP kernel that runs on the AMD MI250X GPU
 - Manage data transfers between host (CPU) and device (GPU) memory
 - Choose thread and block dimensions for a kernel launch
 - Check HIP calls and kernel launches for errors, knowing that launches are asynchronous
@@ -44,19 +44,24 @@ GPU:
 However, a GPU cannot do more specialized tasks like managing IO, network communication[^1], interacting
 with other devices. You still need a CPU for that.
 
-### The AMD MI210
+### The AMD MI250X on Frontier
 
-Our compute nodes each have an **AMD Instinct MI210** GPU:
+Each Frontier node has four **AMD Instinct MI250X** packages. Each package
+contains two graphics compute dies (GCDs), exposed as two separate HIP devices.
+The exercises use one device; the specifications below are **per GCD**, not
+per package or node:
 
-| Spec | MI210 |
+| Spec | MI250X GCD |
 |------|-------|
-| Compute Units | 104 |
-| Stream Processors | 6656 |
+| Compute Units | 110 |
+| Stream Processors | 7040 |
 | Wavefront size | 64 threads |
 | Maximum threads per block | 1024 |
 | Memory | 64 GB HBM2e |
 | Memory Bandwidth | 1.6 TB/s |
 | Architecture | CDNA2 (gfx90a) |
+
+See the [OLCF Frontier GPU documentation](https://docs.olcf.ornl.gov/systems/frontier_user_guide.html#gpus).
 
 #### Stream Processor
 
@@ -219,7 +224,7 @@ The 'i'th thread performs this operation for the 'i'th elements of a,b, and c.
 
 <a href="/sc-student-programming-tutorial/_static/thread_index_with_vecadd_visualizer.html">Let's see the visualization again, this time with the array addition</a>.
 
-**How this maps to the hardware.** On the MI210, threads execute in groups of
+**How this maps to the hardware.** On an MI250X GCD, threads execute in groups of
 64 called **wavefronts**. Each thread block runs entirely on one compute unit,
 and a compute unit can host multiple blocks when resources permit. Blocks are
 scheduled onto available compute units; a grid can contain many more blocks
@@ -355,7 +360,7 @@ check their timed launches with `hipGetLastError()` only.
 A few rules of thumb explain most GPU performance results, including the ones
 you'll measure today:
 
-1. **Give the GPU enough work.** The MI210 has 104 compute units. A kernel
+1. **Give the GPU enough work.** The MI250X GCD has 110 compute units. A kernel
    needs enough blocks and active wavefronts to keep the GPU busy. For
    example, 4,096 threads arranged as 16 blocks of 256 can use at most 16
    compute units at once (each block being assigned to a single compute unit) with
@@ -365,7 +370,7 @@ you'll measure today:
    wavefront read consecutive addresses, the GPU combines their reads into a
    few wide memory transactions (**coalescing**). Scattered reads waste memory
    bandwidth.
-3. **Think in wavefronts.** On the MI210, a wavefront is 64 threads (other
+3. **Think in wavefronts.** On an MI250X GCD, a wavefront is 64 threads (other
    GPUs differ; NVIDIA's equivalent, the warp, has 32). Block sizes that are
    multiples of 64 are a reasonable performance starting point on this GPU,
    not a correctness requirement: a 32-thread block is valid, but it uses only
@@ -394,7 +399,7 @@ The programs in this module measure performance the same way:
   2 × n × sizeof(double), for one read of the input and one write of the
   result; vector addition counts two reads and one write. It is calculated
   from the algorithm's nominal data movement, not measured from the GPU's
-  memory traffic, so treat the comparison with the MI210's 1.6 TB/s peak as a
+  memory traffic, so treat the comparison with the MI250X GCD's 1.6 TB/s peak as a
   rough guide.
 
 ---
@@ -402,9 +407,10 @@ The programs in this module measure performance the same way:
 ## Hands-On Exercises (~40 min)
 
 
-The compiler (`hipcc`) and tools are already set up on the cluster. If
-`hipcc --version` doesn't work, run the environment check from
-[Getting Started](../README.md#3-verify-your-environment).
+Load the Frontier ROCm module with `module load rocm/7.2`, then check
+`hipcc --version`. If the compiler is unavailable, ask an instructor. You can
+also run the GPU check from
+[Getting Started](../README.md#3-check-that-your-jobs-can-use-a-gpu).
 
 First, navigate to the exercises directory for this module:
 
@@ -530,7 +536,7 @@ which you'll compare across block sizes in Exercise 3.
 `vector_scale.cpp` takes `BLOCK_SIZE` from the compiler command line
 (`-DBLOCK_SIZE=...`), so you don't need to edit it. Build one program per
 block size from your completed `vector_scale.cpp`. 1024 is the largest block
-size the MI210 allows.
+size an MI250X device allows.
 
 ```bash
 for b in 64 128 256 512 1024; do
@@ -573,7 +579,7 @@ the reason is listed below it.
   and shared-memory needs, and the cost of starting and finishing a very
   large number of tiny blocks. Which of these could apply to a kernel this
   simple?
-- Compare the bandwidths with the MI210's 1.6 TB/s peak. Could the kernel
+- Compare the bandwidths with the MI250X GCD's 1.6 TB/s peak. Could the kernel
   already have enough parallelism to use the available memory bandwidth
   effectively?
 
@@ -625,7 +631,7 @@ cd ../.. && bash setup/launch_aider.sh
 Switch to code mode with `/code`, add this directory to the LLM context window with `/add
 module-05-hip`. Ask it:
 
-> Write a simple HIP C++ program that computes a 16-bin histogram of 1,000,003 integers on an AMD MI210. Initialize input[i] = i % 16. Include instructions to compile and run it. Save it as module-05-hip/exercises/histogram_basic.cpp.
+> Write a simple HIP C++ program that computes a 16-bin histogram of 1,000,003 integers on an AMD MI250X. Initialize input[i] = i % 16. Include instructions to compile and run it. Save it as module-05-hip/exercises/histogram_basic.cpp.
 
 Aider was started from the main directory, so the commands below assume you
 are back in `module-05-hip/exercises`: run them in a second terminal, or leave
@@ -696,7 +702,7 @@ Copy this whole prompt (the copy button at the top right of the box copies all
 of it), paste it into Aider, and press `Enter` to send it.
 
 ```text
-Write module-05-hip/exercises/histogram_checked.cpp, a complete HIP C++ program for an AMD MI210.
+Write module-05-hip/exercises/histogram_checked.cpp, a complete HIP C++ program for an AMD MI250X.
 
 Task:
 - Compute a 16-bin histogram of N = 1,000,003 integers.
@@ -859,7 +865,7 @@ thread must iterate over an entire row of the matrix. Name the kernel
 
 Before you run it, work out from the program's settings how many blocks it
 launches: the matrix has `M` = 4096 rows, each thread computes one row, and
-`BLOCK_SIZE` is 256. How many of the MI210's 104 compute units can that many
+`BLOCK_SIZE` is 256. How many of the MI250X GCD's 110 compute units can that many
 blocks use at once? (The program prints its launch configuration, so you can
 check your answer.) Then compile and run it:
 

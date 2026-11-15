@@ -81,17 +81,19 @@ If you get stuck, raise your hand. Instructors are in the room throughout the
 tutorial to help with cluster access, Slurm jobs, code errors, and conceptual
 questions.
 
-## Compute (virtual) Node Details
+## Frontier Compute Node Details
 
-In this tutorial, a **virtual compute node** is a slice of a larger physical
-server with its own CPU cores, memory, and GPU.
+This tutorial runs on Frontier at the Oak Ridge Leadership Computing Facility
+(OLCF). Each compute node has a CPU, system memory, and four MI250X packages.
+Each package contains two graphics compute dies (GCDs), exposed as eight
+separate GPU devices per node.
 [Module 1](module-01-hpc-foundations/README.md#inside-a-compute-node) explains
 how this works.
 
 | Resource | Details |
 |----------|---------|
 | CPU | AMD EPYC 7A53 64-Core Processor |
-| GPU | 8x AMD Instinct MI250X (64 GB HBM2e each) per node |
+| GPU | 4x AMD Instinct MI250X packages; 8 GPU devices (64 GB HBM2e each) |
 | RAM | 512 GB system DRAM per node |
 | Partition | `batch` |
 | Scheduler | Slurm |

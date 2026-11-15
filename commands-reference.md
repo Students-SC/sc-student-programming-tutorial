@@ -45,7 +45,7 @@ walkthrough.
 |--------------|---------|
 | List loaded modules | `module list` |
 | List available modules | `module avail` |
-| Inspect the tutorial base module | `module show hpcfund` |
+| Inspect the ROCm module | `module show rocm/7.2` |
 
 > **Note**
 >
@@ -58,9 +58,9 @@ walkthrough.
 |--------------|---------|
 | Submit a batch job | `sbatch script.sh` |
 | See my jobs | `squeue -u $USER` |
-| See all jobs on the tutorial partition | `squeue -p mi2101x` |
-| See partition and node status | `sinfo -p mi2101x` |
-| See detailed node status | `sinfo -p mi2101x -N -l` |
+| See all jobs on the tutorial partition | `squeue -p batch` |
+| See partition and node status | `sinfo -p batch` |
+| See detailed node status | `sinfo -p batch -N -l` |
 | Get details for one job | `scontrol show job <JOBID>` |
 | See accounting info after a job finishes | `sacct -j <JOBID>` |
 | Cancel one job | `scancel <JOBID>` |
@@ -97,10 +97,11 @@ See [Module 2](module-02-slurm/README.md) for the Slurm walkthrough.
 | I want to... | Command |
 |--------------|---------|
 | Check that your jobs can use a GPU (from the repo root) | `sbatch setup/check_gpu.sh` |
-| Activate the shared Python environment | `source "${SC26_SHARED_DIR:-/work1/proj_sc26students/shared}/sc26_venv/bin/activate"` |
+| Load Python and GPU modules | `module load rocm/7.2 miniforge3` |
+| Activate the shared Python environment | `conda activate "${SC26_SHARED_DIR:-/lustre/orion/stf007/world-shared/subil/SC26_student_program}/sc26_venv"` |
 | Verify PyTorch | `python3 -c "import torch; print(torch.__version__)"` |
 | Verify ROCm is visible to PyTorch | `python3 -c "import torch; print(torch.cuda.is_available())"` |
-| Leave the venv | `deactivate` |
+| Leave the Python environment | `conda deactivate` |
 
 ## C And OpenMP
 

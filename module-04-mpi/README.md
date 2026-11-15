@@ -137,7 +137,7 @@ program for each rank. In general, for a program in `program.c`:
 
 ```bash
 mpicc -O2 -o program program.c                                       # Compile (fine on the login node)
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./program  # Run 4 ranks on a compute node
+srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=4 ./program  # Run 4 ranks on a compute node
 ```
 
 `--nodes=1` places all ranks on one compute node. `--ntasks=4` tells `srun`
@@ -179,7 +179,7 @@ mpicc -O2 -o mpi_hello ../examples/mpi_hello.c
 Run the program on a compute node with four ranks:
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=2:00 --ntasks=4 ./mpi_hello
+srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=4 ./mpi_hello
 ```
 
 #### Step 4: Examine the Output
@@ -350,7 +350,7 @@ seconds:
 
 ```bash
 mpicc -O2 -o ring ring.c
-srun --partition=mi2101x --nodes=1 --time=1:00 --ntasks=4 timeout 10 ./ring
+srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=1:00 --ntasks=4 timeout 10 ./ring
 ```
 
 After the job-submission filter's checks, the program prints nothing and hangs.
@@ -401,7 +401,7 @@ mpicc -O2 -o ring ring.c
 Run on a compute node with four ranks:
 
 ```bash
-srun --partition=mi2101x --nodes=1 --time=1:00 --ntasks=4 timeout 10 ./ring
+srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=1:00 --ntasks=4 timeout 10 ./ring
 ```
 
 If `srun` reports exit code 124, the ordering still deadlocks: revisit Step 3.
@@ -478,7 +478,7 @@ ask it for `MPI_Send` and `MPI_Recv` first. Then compile and run the copy:
 
 ```bash
 mpicc -O2 -o ring_ssend ring_ssend.c &&
-  srun --partition=mi2101x --nodes=1 --time=1:00 --ntasks=4 timeout 10 ./ring_ssend
+  srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=1:00 --ntasks=4 timeout 10 ./ring_ssend
 ```
 
 If `srun` reports exit code 124, the copy hung, so the agent's ordering relies
@@ -543,7 +543,7 @@ If you finish the exercises above early, try this challenge; you can also come
 back to it after the tutorial. Large applications often combine both models: a
 few MPI ranks per node, each running several OpenMP threads. Here you turn
 Exercise 2's parallel sum into a hybrid program and compare different ways of
-splitting a node's 16 cores between ranks and threads.
+splitting 16 allocated CPU cores between ranks and threads.
 
 #### Step 1: Open the Template
 
@@ -570,7 +570,7 @@ mpicc -fopenmp -O2 -o hybrid_sum hybrid_sum.c -lm
 sbatch submit_hybrid.sh
 ```
 
-The batch script runs four splits of the node's 16 cores: 16 ranks x 1
+The batch script runs four splits of 16 allocated CPU cores: 16 ranks x 1
 thread, 4 x 4, 2 x 8, and 1 x 16. For each one, `srun --cpus-per-task` gives
 every rank its own cores for its threads.
 
@@ -604,7 +604,7 @@ loop actually used a team of threads.
 - Do all four splits give the same sum? About the same time?
 - If the time grows as the number of ranks drops, what does that tell you
   about your threads?
-- All four splits use the same node's 16 cores. How does the amount of private
+- All four splits use the same 16 allocated CPU cores. How does the amount of private
   process memory and the number of MPI contributions change as you use fewer
   ranks and more threads? How do threads combine their partial sums before
   MPI combines the ranks' results?
