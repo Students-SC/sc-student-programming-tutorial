@@ -95,8 +95,8 @@ evaluate on 500 separate reviews.
 ### Neural Networks and Training
 
 A **neural network** has layers of mathematical operations with adjustable
-**parameters**, including weights. Each layer transforms its input; layers
-generally have their own parameters.
+parameters, such as weights. Training adjusts these parameters to improve the
+model's predictions. 
 
 For our classifier, tokenization prepares the input. The neural network then
 turns token IDs into sentiment scores:
