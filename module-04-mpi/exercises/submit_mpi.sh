@@ -6,7 +6,7 @@
 # Then submit:    sbatch submit_mpi.sh
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=mpi-sum
-#SBATCH --partition=mi2101x
+#SBATCH -A TRN001 --reservation=sc26studentprogram --partition=batch
 #SBATCH --nodes=1
 #SBATCH --ntasks=16
 #SBATCH --time=2:00

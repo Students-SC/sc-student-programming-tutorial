@@ -12,7 +12,7 @@
 #   sbatch test_ring.sh ./ring_ssend
 # ---------------------------------------------------------------------------
 #SBATCH --job-name=ring-test
-#SBATCH --partition=mi2101x
+#SBATCH -A TRN001 --reservation=sc26studentprogram --partition=batch
 #SBATCH --nodes=1
 #SBATCH --ntasks=8
 #SBATCH --time=2:00

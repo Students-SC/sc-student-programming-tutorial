@@ -131,13 +131,18 @@ if (rank == 0)
 
 ### Compiling and Running
 
-MPI programs are compiled with `mpicc`, a wrapper around `gcc` that adds the
+MPI programs are compiled with `cc`, a wrapper around `gcc` that adds the
 MPI headers and libraries, and run with `srun`, which starts one copy of the
 program for each rank. In general, for a program in `program.c`:
 
 ```bash
+<<<<<<< HEAD
 mpicc -O2 -o program program.c                                       # Compile (fine on the login node)
 srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=4 ./program  # Run 4 ranks on a compute node
+=======
+cc -O2 -o program program.c                                       # Compile (fine on the login node)
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=4 ./program  # Run 4 ranks on a compute node
+>>>>>>> 070e950 (updating MPI for frontier)
 ```
 
 `--nodes=1` places all ranks on one compute node. `--ntasks=4` tells `srun`
@@ -171,7 +176,7 @@ cat ../examples/mpi_hello.c
 #### Step 2: Compile on the Login Node
 
 ```bash
-mpicc -O2 -o mpi_hello ../examples/mpi_hello.c
+cc -O2 -o mpi_hello ../examples/mpi_hello.c
 ```
 
 #### Step 3: Run with Four Ranks
@@ -179,7 +184,11 @@ mpicc -O2 -o mpi_hello ../examples/mpi_hello.c
 Run the program on a compute node with four ranks:
 
 ```bash
+<<<<<<< HEAD
 srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=2:00 --ntasks=4 ./mpi_hello
+=======
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=4 ./mpi_hello
+>>>>>>> 070e950 (updating MPI for frontier)
 ```
 
 #### Step 4: Examine the Output
@@ -242,7 +251,7 @@ datatype, and operation. Only the root uses the resulting `global_sum`.
 After filling in the TODOs, compile the program:
 
 ```bash
-mpicc -O2 -o parallel_sum parallel_sum.c -lm
+cc -O2 -o parallel_sum parallel_sum.c -lm
 ```
 
 #### Step 4: Submit the Batch Job
@@ -313,9 +322,20 @@ for OpenMP in Module 3. Speedup is the 1-rank time divided by the N-rank time:
 
 #### Step 6: Check the Remainder Handling
 
+<<<<<<< HEAD
 Find the three-rank block in the same output. 1 billion is not divisible by
 three, so the last rank computes one extra term. Its global sum should still
 match the one-rank baseline in at least the first 12 digits.
+=======
+Run your program once more, directly with `srun`, using three ranks:
+
+```bash
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=3 ./parallel_sum
+```
+
+1 billion is not divisible by three, so the last rank computes one extra term.
+Its global sum should still agree closely with the one-rank baseline.
+>>>>>>> 070e950 (updating MPI for frontier)
 
 ---
 
@@ -349,8 +369,13 @@ Compile it, then run it under `timeout 10`, which stops each rank after 10
 seconds:
 
 ```bash
+<<<<<<< HEAD
 mpicc -O2 -o ring ring.c
 srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=1:00 --ntasks=4 timeout 10 ./ring
+=======
+cc -O2 -o ring ring.c
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=1:00 --ntasks=4 ./ring
+>>>>>>> 070e950 (updating MPI for frontier)
 ```
 
 After the job-submission filter's checks, the program prints nothing and hangs.
@@ -395,13 +420,13 @@ makes it a good test.
 Compile on the login node:
 
 ```bash
-mpicc -O2 -o ring ring.c
+cc -O2 -o ring ring.c
 ```
 
 Run on a compute node with four ranks:
 
 ```bash
-srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=1:00 --ntasks=4 timeout 10 ./ring
+srun -A TRN001 --reservation=sc26studentprogram --partition=batch --nodes=1 --time=2:00 --ntasks=4 ./ring
 ```
 
 If `srun` reports exit code 124, the ordering still deadlocks: revisit Step 3.
@@ -441,10 +466,10 @@ use the same trick to expose an ordering that relies on buffering.
 
 #### Step 1: Ask for a Ring
 
-Start Qwen Code:
+Start Aider from the main directory :
 
 ```bash
-bash ../../setup/launch_qwen.sh
+cd ../../ bash setup/launch_aider.sh
 ```
 
 Ask it:
@@ -477,7 +502,7 @@ or `MPI_Irecv`, the agent didn't use the requested calls: restart Qwen and
 ask it for `MPI_Send` and `MPI_Recv` first. Then compile and run the copy:
 
 ```bash
-mpicc -O2 -o ring_ssend ring_ssend.c &&
+cc -O2 -o ring_ssend ring_ssend.c &&
   srun --partition=batch -A TRN001 --reservation=sc26studentprogram --nodes=1 --time=1:00 --ntasks=4 timeout 10 ./ring_ssend
 ```
 
@@ -566,7 +591,7 @@ There are **2 TODOs** to fill in:
 #### Step 3: Compile and Submit
 
 ```bash
-mpicc -fopenmp -O2 -o hybrid_sum hybrid_sum.c -lm
+cc -fopenmp -O2 -o hybrid_sum hybrid_sum.c -lm
 sbatch submit_hybrid.sh
 ```
 
